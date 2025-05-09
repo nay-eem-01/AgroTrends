@@ -8,9 +8,11 @@ import java.util.List;
 @Service
 public interface CommentService {
     CommentDto addNewComment(CommentDto commentDto,Long userId,Long BlogId);
-    CommentDto replyToAComment(CommentDto commentDto);
-    CommentDto updateComment(CommentDto commentDto);
-    CommentDto deleteComment(CommentDto commentDto);
-    List<CommentDto> viewAllComments();
-    List<CommentDto> viewReplies();
+    CommentDto replyToAComment(CommentDto commentDto, Long userId, Long blogId, Long parentCommentId);
+    CommentDto updateComment(CommentDto commentDto, Long commentId);
+    String deleteComment(Long  commentId);
+    List<CommentDto> viewAllCommentsByBlogId(Long blogId);
+    List<CommentDto> viewReplies(Long parentCommentId);
+
+
 }
