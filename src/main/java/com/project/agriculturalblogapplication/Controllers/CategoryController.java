@@ -3,7 +3,6 @@ package com.project.agriculturalblogapplication.Controllers;
 import com.project.agriculturalblogapplication.DTOS.CategoryDto;
 import com.project.agriculturalblogapplication.Service.CategoryService;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,7 +25,7 @@ public class CategoryController {
     }
 
     @GetMapping("/getCategory")
-    public ResponseEntity<List<CategoryDto>> getCategories(){
+    public ResponseEntity<List<CategoryDto>> getAllCategories(){
         List<CategoryDto> categoryDtos = categoryService.getAllCategories();
         return new ResponseEntity<>(categoryDtos,HttpStatus.OK);
     }
