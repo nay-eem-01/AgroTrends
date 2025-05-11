@@ -22,7 +22,7 @@ public class UsersServiceImpl implements UsersService {
 
     @Override
     public UserDto addNewAuthor(UserDto userDto) {
-        Optional<Users> existingAuthor = userRepositories.findByUsersEmail(userDto.getUsersEmail());
+        Optional<Users> existingAuthor = userRepositories.findByUserEmail(userDto.getUsersEmail());
         if (existingAuthor.isPresent()){
             throw new APIExceptionHandler("User Already exists");
         }
