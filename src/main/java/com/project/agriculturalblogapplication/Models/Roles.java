@@ -18,10 +18,9 @@ public class Roles {
     @Column(name = "role_name")
     private  APP_ROLE role;
 
+    public Roles(APP_ROLE role) {
+        this.role = role;
+    }
+
 }
 
- enum APP_ROLE {
-    ROLE_USER,
-    ROLE_ADMIN,
-    ROLE_AUTHOR
-}

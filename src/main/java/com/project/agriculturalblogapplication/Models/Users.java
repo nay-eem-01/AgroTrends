@@ -1,8 +1,11 @@
 package com.project.agriculturalblogapplication.Models;
 
-import jakarta.annotation.Nonnull;
+
 import jakarta.persistence.*;
 import lombok.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 import java.util.HashSet;
 import java.util.List;
@@ -13,17 +16,38 @@ import java.util.Set;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Table(name = "users",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = "user_name"),
+                @UniqueConstraint(columnNames = "user_email")
+        })
 public class Users {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long userId;
 
-    @Nonnull
+    @NotBlank
+    @Size(max = 20)
     @Column(name = "user_name")
     private String userName;
 
-    private String usersEmail;
+    @NotBlank
+    @Size(max = 50)
+    @Email
+    @Column(name = "user_email")
+    private String userEmail;
+
+    @NotBlank
+    @Size(max = 120)
+    @Column(name = "user_password")
     private String password;
+
+    public Users(String userName, String userEmail, String userPassword) {
+        this.userName = userName;
+        this.userEmail = userEmail;
+        this.password = userPassword;
+    }
+
 
     @ManyToMany(cascade = {
             CascadeType.PERSIST,

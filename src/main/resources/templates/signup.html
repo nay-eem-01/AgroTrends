@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>Sign Up - AgroTrends</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'media',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#16a34a', // Green-600
+                        secondary: '#059669', // Emerald-600
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui'],
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.5s ease-in-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        },
+                    },
+                },
+            },
+        }
+    </script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans antialiased flex items-center justify-center min-h-screen">
+<!-- Sign Up Form -->
+<div class="w-full max-w-md p-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-2xl shadow-xl animate-slide-up">
+    <div class="text-center mb-6">
+        <a href="/" class="text-2xl font-bold text-primary dark:text-green-300 flex items-center justify-center">
+            <span class="mr-2">🌾</span> AgroTrends
+        </a>
+        <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mt-2">Create an Account</h2>
+    </div>
+
+    <!-- Error/Success Message -->
+    <div id="message" class="hidden mb-4 p-3 rounded-lg text-sm"></div>
+
+    <!-- Form -->
+    <form id="signupForm" th:action="@{/app/api/auth/signup}" method="post" class="space-y-4">
+        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+        <div>
+            <label for="username" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Username</label>
+            <input type="text" id="username" name="userName" required
+                   class="w-full mt-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none transition"
+                   placeholder="Enter your username">
+        </div>
+        <div>
+            <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+            <input type="email" id="email" name="email" required
+                   class="w-full mt-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none transition"
+                   placeholder="Enter your email">
+        </div>
+        <div class="relative">
+            <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
+            <input type="password" id="password" name="password" required
+                   class="w-full mt-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none transition"
+                   placeholder="Enter your password">
+            <button type="button" id="togglePassword" class="absolute right-3 top-9 text-gray-500 dark:text-gray-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+            </button>
+        </div>
+        <div>
+            <label for="role" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Role</label>
+            <select id="role" name="role" required
+                    class="w-full mt-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none transition">
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+            </select>
+        </div>
+        <button type="submit"
+                class="w-full py-2 bg-primary text-white rounded-lg font-medium hover:bg-secondary transition">
+            Sign Up
+        </button>
+    </form>
+
+    <p class="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
+        Already have an account? <a href="/app/api/auth/signin" class="text-primary dark:text-green-400 hover:underline">Sign In</a>
+    </p>
+</div>
+
+<!-- JavaScript for Form Submission and Password Toggle -->
+<script>
+    // Password Visibility Toggle
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('password');
+    togglePassword.addEventListener('click', () => {
+        const type = passwordInput.type === 'password' ? 'text' : 'password';
+        passwordInput.type = type;
+        togglePassword.querySelector('svg').classList.toggle('text-gray-700');
+    });
+
+    // Form Submission with AJAX
+    document.getElementById('signupForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const messageDiv = document.getElementById('message');
+        const data = {
+            userName: form.userName.value,
+            email: form.email.value,
+            password: form.password.value,
+            role: [form.role.value]
+        };
+
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+
+            const result = await response.json();
+            messageDiv.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700');
+
+            if (response.ok) {
+                messageDiv.classList.add('bg-green-100', 'text-green-700');
+                messageDiv.textContent = result.message || 'Sign up successful! Redirecting...';
+                setTimeout(() => window.location.href = '/app/api/auth/signin', 2000);
+            } else {
+                messageDiv.classList.add('bg-red-100', 'text-red-700');
+                messageDiv.textContent = result.message || 'Sign up failed.';
+            }
+        } catch (error) {
+            messageDiv.classList.remove('hidden');
+            messageDiv.classList.add('bg-red-100', 'text-red-700');
+            messageDiv.textContent = 'An error occurred. Please try again.';
+        }
+    });
+</script>
+</body>
+</html>
