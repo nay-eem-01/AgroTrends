@@ -1,6 +1,5 @@
 package com.project.agriculturalblogapplication.Security;
 
-
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -44,24 +43,25 @@ public class WebSecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable()) // For API, CSRF is usually disabled
+                .csrf(csrf -> csrf
+                        .ignoringRequestMatchers("/app/api/auth/**") // Disable CSRF for API endpoints
+                ) // CSRF enabled for Thymeleaf forms
                 .authorizeHttpRequests(auth -> auth
-                                .requestMatchers("app/api/auth/**", "/h2-console/**").permitAll()
-                                .requestMatchers("app/blog/getBlogs/**").permitAll()
-                                .requestMatchers("app/category/getCategory").permitAll()
-//                        .requestMatchers("/admin/**").hasRole("ADMIN")
-                                .anyRequest().authenticated()
+                        .requestMatchers("/app/home").permitAll()
+                        .requestMatchers("/app/api/auth/**").permitAll()
+                        .requestMatchers("/app/blog/getBlogs/**").permitAll()
+                        .requestMatchers("/app/category/getCategory").permitAll()
+                        .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
                         })
                 )
-
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // Add this
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                         .maximumSessions(1)
-                        .expiredUrl("/signin?expired=true")
+                        .expiredUrl("/app/api/auth/signin?expired=true")
                 )
                 .authenticationProvider(authenticationProvider());
 
@@ -70,7 +70,6 @@ public class WebSecurityConfig {
 
         return http.build();
     }
-
 
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {

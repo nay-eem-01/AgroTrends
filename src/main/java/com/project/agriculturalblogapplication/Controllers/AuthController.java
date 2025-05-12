@@ -25,14 +25,15 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpSession;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-@RestController
-@RequestMapping("app/api/auth")
+@Controller
+@RequestMapping("/app/api/auth")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
@@ -49,6 +50,18 @@ public class AuthController {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+    }
+
+    // Render Sign In page
+    @GetMapping("/signin")
+    public String showSignInPage() {
+        return "signin"; // Maps to src/main/resources/templates/signin.html
+    }
+
+    // Render Sign Up page
+    @GetMapping("/signup")
+    public String showSignUpPage() {
+        return "signup"; // Maps to src/main/resources/templates/signup.html
     }
 
     @PostMapping("/signin")
