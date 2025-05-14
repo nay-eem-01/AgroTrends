@@ -23,17 +23,7 @@ public class BlogDto {
     private UserDto author;
 
 
-//    @Override
-//    public String toString() {
-//        return "BlogDto{" +
-//                "blogId=" + blogId +
-//                ", title='" + title + '\'' +
-//                ", content='" + content + '\'' +
-//                ", imageUrl='" + imageUrl + '\'' +
-//                ", createdAt=" + createdAt +
-//                ", updatedAt=" + updatedAt +
-//                '}';
-//    }
+
 
 
 }

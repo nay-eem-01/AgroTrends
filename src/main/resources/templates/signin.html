@@ -118,7 +118,7 @@
             if (response.ok) {
                 messageDiv.classList.add('bg-green-100', 'text-green-700');
                 messageDiv.textContent = 'Sign in successful! Redirecting...';
-                setTimeout(() => window.location.href = '/', 2000);
+                setTimeout(() => window.location.href = '/app/home', 2000);
             } else {
                 messageDiv.classList.add('bg-red-100', 'text-red-700');
                 messageDiv.textContent = result.message || 'Sign in failed.';
