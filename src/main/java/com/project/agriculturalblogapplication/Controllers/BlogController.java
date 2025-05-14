@@ -3,20 +3,36 @@ package com.project.agriculturalblogapplication.Controllers;
 
 import com.project.agriculturalblogapplication.DTOS.BlogDto;
 import com.project.agriculturalblogapplication.Service.BlogService;
+import com.project.agriculturalblogapplication.Service.CategoryService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@RestController
+@Controller
 @RequestMapping("app/blog")
 public class BlogController {
 
     private final BlogService blogService;
+    private final CategoryService categoryService;
 
-    public BlogController(BlogService blogService) {
+    public BlogController(BlogService blogService, CategoryService categoryService) {
         this.blogService = blogService;
+        this.categoryService = categoryService;
+    }
+
+
+
+    @GetMapping("/blog_page")
+    public String showForm(Model model){
+
+        model.addAttribute("blogs",blogService.getAllBlogs());
+        model.addAttribute("categories",categoryService.getAllCategories());
+
+        return "/blog";
     }
 
     @PostMapping("/addNewBlog/user/{authorId}/category/{categoryId}")
@@ -25,7 +41,7 @@ public class BlogController {
         return new ResponseEntity<>(savedBlog, HttpStatus.CREATED);
     }
 
-    @GetMapping("/getBlogs")
+    @GetMapping("/getAllBlogs")
     public ResponseEntity<List<BlogDto>> getAllBlogs() {
         List<BlogDto> blogDtoList = blogService.getAllBlogs();
         return new ResponseEntity<>(blogDtoList, HttpStatus.OK);
