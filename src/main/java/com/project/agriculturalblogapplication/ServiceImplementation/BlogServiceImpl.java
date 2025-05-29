@@ -115,5 +115,14 @@ public class BlogServiceImpl implements BlogService {
         return blogDto;
     }
 
+    @Override
+    public BlogDto getBlogById(Long blogId) {
+
+        Blogs blog = blogRepositories.findById(blogId).orElseThrow(()-> new ResourceNotFoundException("blog","blogId",blogId));
+
+
+        return modelMapper.map(blog, BlogDto.class);
+    }
+
 
 }

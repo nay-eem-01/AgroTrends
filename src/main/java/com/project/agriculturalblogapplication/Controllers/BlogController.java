@@ -4,6 +4,7 @@ package com.project.agriculturalblogapplication.Controllers;
 import com.project.agriculturalblogapplication.DTOS.BlogDto;
 import com.project.agriculturalblogapplication.Service.BlogService;
 import com.project.agriculturalblogapplication.Service.CategoryService;
+import com.project.agriculturalblogapplication.Service.CommentService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -18,10 +19,12 @@ public class BlogController {
 
     private final BlogService blogService;
     private final CategoryService categoryService;
+    private final CommentService commentService;
 
-    public BlogController(BlogService blogService, CategoryService categoryService) {
+    public BlogController(BlogService blogService, CategoryService categoryService, CommentService commentService) {
         this.blogService = blogService;
         this.categoryService = categoryService;
+        this.commentService = commentService;
     }
 
 
@@ -33,6 +36,20 @@ public class BlogController {
         model.addAttribute("categories",categoryService.getAllCategories());
 
         return "/blog";
+    }
+
+
+    @GetMapping("/details/{blogId}")
+    public String showBlogDetailsPage(@PathVariable Long blogId, Model model){
+
+        BlogDto blogDto = blogService.getBlogById(blogId);
+
+        model.addAttribute("blogs",blogService.getAllBlogs());
+        model.addAttribute("categories",categoryService.getAllCategories());
+        model.addAttribute("comments",commentService.viewAllCommentsByBlogId(blogId));
+        model.addAttribute("blog",blogDto);
+
+        return "/blog_details";
     }
 
     @PostMapping("/addNewBlog/user/{authorId}/category/{categoryId}")
@@ -51,6 +68,9 @@ public class BlogController {
         List<BlogDto> blogDtoList = blogService.getBlogsByCategory(categoryId);
         return new ResponseEntity<>(blogDtoList, HttpStatus.OK);
     }
+
+
+
     @GetMapping("/getBlogs/author/{authorId}")
     public ResponseEntity<List<BlogDto>> getBlogsByAuthor(@PathVariable Long authorId) {
         List<BlogDto> blogDtoList = blogService.getBlogsByAuthor(authorId);

@@ -21,6 +21,8 @@ public class BlogDto {
     private LocalDateTime updatedAt;
     private List<CommentDto> comments;
     private UserDto author;
+    private String summary;
+    private String categoryName;
 
 
 

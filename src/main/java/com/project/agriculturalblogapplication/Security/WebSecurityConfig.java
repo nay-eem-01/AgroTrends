@@ -49,7 +49,7 @@ public class WebSecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/app/home").permitAll()
                         .requestMatchers("/app/api/auth/**").permitAll()
-                        .requestMatchers("/app/blog/**").permitAll()
+                        .requestMatchers("/app/blog/**","/blog_details").permitAll()
                         .requestMatchers("/app/category/getAllCategory").permitAll()
                         .anyRequest().authenticated()
                 )

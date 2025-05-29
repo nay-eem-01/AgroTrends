@@ -15,4 +15,6 @@ public interface BlogService {
     BlogDto updateBlogDto(BlogDto blogDto,Long authorId,Long categoryId,Long authorID);
     BlogDto deleteBlog(Long blogID);
 
+    BlogDto getBlogById(Long blogId);
+
 }
