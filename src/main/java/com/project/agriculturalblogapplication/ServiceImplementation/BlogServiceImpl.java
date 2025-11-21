@@ -120,7 +120,6 @@ public class BlogServiceImpl implements BlogService {
 
         Blogs blog = blogRepositories.findById(blogId).orElseThrow(()-> new ResourceNotFoundException("blog","blogId",blogId));
 
-
         return modelMapper.map(blog, BlogDto.class);
     }
 

@@ -1,4 +1,4 @@
-package com.project.agriculturalblogapplication.Controllers;
+package com.project.agriculturalblogapplication.Controllers.web;
 
 import com.project.agriculturalblogapplication.Models.APP_ROLE;
 import com.project.agriculturalblogapplication.Models.Roles;

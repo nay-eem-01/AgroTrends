@@ -1,4 +1,4 @@
-package com.project.agriculturalblogapplication.Controllers;
+package com.project.agriculturalblogapplication.Controllers.web;
 
 
 
