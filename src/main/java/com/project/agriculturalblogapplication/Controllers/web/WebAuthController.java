@@ -1,8 +1,8 @@
 package com.project.agriculturalblogapplication.Controllers.web;
 
-import com.project.agriculturalblogapplication.Models.APP_ROLE;
-import com.project.agriculturalblogapplication.Models.Roles;
-import com.project.agriculturalblogapplication.Models.Users;
+import com.project.agriculturalblogapplication.entities.APP_ROLE;
+import com.project.agriculturalblogapplication.entities.Roles;
+import com.project.agriculturalblogapplication.entities.Users;
 import com.project.agriculturalblogapplication.Repositories.RoleRepository;
 import com.project.agriculturalblogapplication.Repositories.UserRepositories;
 import com.project.agriculturalblogapplication.Security.Request.LogInRequest;

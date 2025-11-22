@@ -1,7 +1,7 @@
 package com.project.agriculturalblogapplication.Repositories;
 
 
-import com.project.agriculturalblogapplication.Models.Users;
+import com.project.agriculturalblogapplication.entities.Users;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

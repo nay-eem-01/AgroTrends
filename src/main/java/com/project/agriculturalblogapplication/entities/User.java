@@ -1,4 +1,4 @@
-package com.project.agriculturalblogapplication.Models;
+package com.project.agriculturalblogapplication.entities;
 
 
 import jakarta.persistence.*;
