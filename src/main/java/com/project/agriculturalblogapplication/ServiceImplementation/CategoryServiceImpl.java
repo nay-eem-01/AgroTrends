@@ -3,7 +3,7 @@ package com.project.agriculturalblogapplication.ServiceImplementation;
 import com.project.agriculturalblogapplication.DTOS.CategoryDto;
 import com.project.agriculturalblogapplication.ExceptionHandler.APIExceptionHandler;
 import com.project.agriculturalblogapplication.ExceptionHandler.ResourceNotFoundException;
-import com.project.agriculturalblogapplication.Models.Categories;
+import com.project.agriculturalblogapplication.entities.Categories;
 import com.project.agriculturalblogapplication.Repositories.CategoryRepositories;
 import com.project.agriculturalblogapplication.Service.CategoryService;
 import org.modelmapper.ModelMapper;

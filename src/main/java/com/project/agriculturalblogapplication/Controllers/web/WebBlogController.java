@@ -15,13 +15,13 @@ import java.util.List;
 
 @Controller
 @RequestMapping("app/blog")
-public class BlogController {
+public class WebBlogController {
 
     private final BlogService blogService;
     private final CategoryService categoryService;
     private final CommentService commentService;
 
-    public BlogController(BlogService blogService, CategoryService categoryService, CommentService commentService) {
+    public WebBlogController(BlogService blogService, CategoryService categoryService, CommentService commentService) {
         this.blogService = blogService;
         this.categoryService = categoryService;
         this.commentService = commentService;

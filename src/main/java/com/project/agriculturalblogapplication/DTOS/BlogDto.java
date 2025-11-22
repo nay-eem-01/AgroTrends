@@ -1,6 +1,5 @@
 package com.project.agriculturalblogapplication.DTOS;
 
-import com.project.agriculturalblogapplication.Models.Comments;
 import lombok.*;
 
 import java.time.LocalDateTime;

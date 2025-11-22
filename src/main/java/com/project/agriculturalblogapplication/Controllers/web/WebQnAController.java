@@ -11,11 +11,11 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/app/qna")
-public class QnAController {
+public class WebQnAController {
 
     private final QnAService qnaService;
 
-    public QnAController(QnAService qnaService) {
+    public WebQnAController(QnAService qnaService) {
         this.qnaService = qnaService;
     }
 

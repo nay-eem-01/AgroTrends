@@ -1,38 +1,38 @@
-package com.project.agriculturalblogapplication.Models;
+package com.project.agriculturalblogapplication.entities;
 
+import com.project.agriculturalblogapplication.constatnt.AppTables.UserTable;
+import com.project.agriculturalblogapplication.constatnt.AppTables.AnswerTable;
+import com.project.agriculturalblogapplication.constatnt.AppTables.QuestionTable;
+import com.project.agriculturalblogapplication.model.AuditModel;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class Answer {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+@Getter
+@Setter
+@Table(name = AnswerTable.NAME)
+public class Answer extends AuditModel<String> {
 
-    @Column(length = 5000)
+    @Column(name = AnswerTable.CONTENT, length = 5000)
     private String content;
 
     @ManyToOne
-    private Users user;
+    @JoinColumn(name = UserTable.USER_ID)
+    private User user;
 
     @ManyToOne
+    @JoinColumn(name = QuestionTable.QUESTION_ID)
     private Question question;
 
     @ManyToOne
+    @JoinColumn(name = AnswerTable.ANSWER_ID)
     private Answer parentAnswer;
 
     @OneToMany(mappedBy = "parentAnswer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Answer> replies = new ArrayList<>();
-
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 }

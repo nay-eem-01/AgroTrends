@@ -1,65 +1,49 @@
 package com.project.agriculturalblogapplication.entities;
 
-
+import com.project.agriculturalblogapplication.constatnt.AppTables;
+import com.project.agriculturalblogapplication.constatnt.AppTables.UserTable;
+import com.project.agriculturalblogapplication.enums.UserType;
+import com.project.agriculturalblogapplication.model.AuditModel;
 import jakarta.persistence.*;
-import lombok.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import lombok.*;
 
-import java.util.HashSet;
-import java.util.List;
+
 import java.util.Set;
 
-
 @Entity
-@Data
-@AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "users",
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = "user_name"),
-                @UniqueConstraint(columnNames = "user_email")
-        })
-public class Users {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long userId;
+@AllArgsConstructor
+@Getter
+@Setter
+@Table(name = AppTables.USER_NAME)
+public class User extends AuditModel<String> {
 
-    @NotBlank
-    @Size(max = 20)
-    @Column(name = "user_name")
-    private String userName;
+    @NotBlank(message = "Name can't be blank")
+    @Column(name = UserTable.NAME)
+    private String name;
 
-    @NotBlank
-    @Size(max = 50)
-    @Email
-    @Column(name = "user_email")
-    private String userEmail;
-
-    @NotBlank
-    @Size(max = 120)
-    @Column(name = "user_password")
+    @NotBlank(message = "Password can't be blank")
+    @Size(min = 4,message = "Password should contain at least 4 character")
+    @Column(name = UserTable.PASSWORD)
     private String password;
 
-    public Users(String userName, String userEmail, String userPassword) {
-        this.userName = userName;
-        this.userEmail = userEmail;
-        this.password = userPassword;
-    }
+    @NotBlank
+    @Email(message = "Invalid email format")
+    @Column(name = UserTable.EMAIL)
+    private String email;
 
+    @Column(name = AppTables.USER_TYPE)
+    private UserType userType;
 
-    @ManyToMany(cascade = {
-            CascadeType.PERSIST,
-            CascadeType.MERGE},
-            fetch = FetchType.EAGER)
-    @JoinTable(name = "user_roles",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id"))
-    private Set<Roles> roles = new HashSet<>();
-
-    @OneToMany(mappedBy = "author",cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Blogs> blogs;
-
-
+    @ManyToMany(fetch =  FetchType.EAGER , cascade =  CascadeType.DETACH)
+    @JoinTable(
+            name = AppTables.USER_ROLE_NAME,
+            joinColumns = @JoinColumn(name = AppTables.UserTable.USER_ID),
+            inverseJoinColumns = @JoinColumn(name = AppTables.RoleTable.ROLE_ID)
+    )
+    private Set<Role> roles ;
 }
+

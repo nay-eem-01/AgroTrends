@@ -10,10 +10,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/app/blog/comment")
-public class CommentController {
+public class WebCommentController {
     private final CommentService commentService;
 
-    public CommentController(CommentService commentService) {
+    public WebCommentController(CommentService commentService) {
         this.commentService = commentService;
     }
 

@@ -1,33 +1,28 @@
-package com.project.agriculturalblogapplication.Models;
+package com.project.agriculturalblogapplication.entities;
 
+import com.project.agriculturalblogapplication.model.AuditModel;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
 @Setter
 @Entity
-@Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class Comments {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long commentId;
+public class Comments extends AuditModel<String> {
+
     private String commentContent;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 
     @ManyToOne
     @JoinColumn(name = "blog_id",nullable = false)
-    private Blogs blog;
+    private Blog blog;
 
 
     @ManyToOne
     @JoinColumn(name = "user_id",nullable = false)
-    private Users user;
+    private User user;
 
 
     @ManyToOne

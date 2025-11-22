@@ -1,17 +1,21 @@
 package com.project.agriculturalblogapplication.Repositories;
 
-import com.project.agriculturalblogapplication.Models.Blogs;
-import com.project.agriculturalblogapplication.Models.Categories;
-import com.project.agriculturalblogapplication.Models.Users;
+import com.project.agriculturalblogapplication.entities.Author;
+import com.project.agriculturalblogapplication.entities.Blog;
+import com.project.agriculturalblogapplication.entities.Categories;
+import com.project.agriculturalblogapplication.entities.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
 @Repository
-public interface BlogRepositories extends JpaRepository<Blogs, Long> {
-    Blogs findBlogsByBlogId(Long blogId);
-    List<Blogs> findBlogsByCategory(Categories category);
-    List<Blogs> findBlogsByAuthor(Users author);
+public interface BlogRepositories extends JpaRepository<Blog, Long> {
+
+    Blog findBlogsById(Long blogId);
+
+    List<Blog> findBlogsByCategory(Categories category);
+
+    List<Blog> findBlogsByAuthor(Author author);
 
 }

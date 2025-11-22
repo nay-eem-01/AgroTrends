@@ -1,13 +1,16 @@
 package com.project.agriculturalblogapplication.Repositories;
 
 
-import com.project.agriculturalblogapplication.Models.APP_ROLE;
-import com.project.agriculturalblogapplication.Models.Roles;
+import com.project.agriculturalblogapplication.entities.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
-public interface RoleRepository extends JpaRepository<Roles, Long> {
+@Repository
+public interface RoleRepository extends JpaRepository<Role, Long> {
 
-    Optional<Roles> findByRole(APP_ROLE appRole);
+    Optional<Role> findByRoleName(String roleName);
+
+    boolean existsRoleByRoleName(String roleName);
 }

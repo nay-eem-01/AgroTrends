@@ -1,6 +1,6 @@
 package com.project.agriculturalblogapplication.Repositories;
 
-import com.project.agriculturalblogapplication.Models.Answer;
+import com.project.agriculturalblogapplication.entities.Answer;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -9,5 +9,6 @@ import java.util.List;
 
 @Repository
 public interface AnswerRepository extends JpaRepository<Answer, Long> {
+
     List<Answer> findByQuestionIdAndParentAnswerIsNull(Long questionId);
 }

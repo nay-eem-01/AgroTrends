@@ -10,10 +10,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/app/category")
-public class CategoryController {
+public class WebCategoryController {
     private final CategoryService categoryService;
 
-    public CategoryController(CategoryService categoryService) {
+    public WebCategoryController(CategoryService categoryService) {
         this.categoryService = categoryService;
     }
 

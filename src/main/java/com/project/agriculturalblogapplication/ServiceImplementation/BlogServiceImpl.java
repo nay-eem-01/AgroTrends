@@ -3,35 +3,32 @@ package com.project.agriculturalblogapplication.ServiceImplementation;
 import com.project.agriculturalblogapplication.DTOS.BlogDto;
 import com.project.agriculturalblogapplication.ExceptionHandler.APIExceptionHandler;
 import com.project.agriculturalblogapplication.ExceptionHandler.ResourceNotFoundException;
-import com.project.agriculturalblogapplication.Models.Blogs;
-import com.project.agriculturalblogapplication.Models.Categories;
-import com.project.agriculturalblogapplication.Models.Users;
+import com.project.agriculturalblogapplication.Repositories.AuthorRepository;
+import com.project.agriculturalblogapplication.entities.Author;
+import com.project.agriculturalblogapplication.entities.Blog;
+import com.project.agriculturalblogapplication.entities.Categories;
+import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.Repositories.BlogRepositories;
 import com.project.agriculturalblogapplication.Repositories.CategoryRepositories;
-import com.project.agriculturalblogapplication.Repositories.UserRepositories;
+import com.project.agriculturalblogapplication.Repositories.UserRepository;
 import com.project.agriculturalblogapplication.Service.BlogService;
+import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PathVariable;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class BlogServiceImpl implements BlogService {
 
 
     private final BlogRepositories blogRepositories;
     private final CategoryRepositories categoryRepositories;
-    private final UserRepositories userRepositories;
+    private final AuthorRepository authorRepository;
     private final ModelMapper modelMapper;
 
-    public BlogServiceImpl(BlogRepositories blogRepositories, CategoryRepositories categoryRepositories, UserRepositories userRepositories, ModelMapper modelMapper) {
-        this.blogRepositories = blogRepositories;
-        this.categoryRepositories = categoryRepositories;
-        this.userRepositories = userRepositories;
-        this.modelMapper = modelMapper;
-    }
 
 
     @Override
@@ -41,12 +38,11 @@ public class BlogServiceImpl implements BlogService {
                 .orElseThrow(() -> new ResourceNotFoundException("Category", "Category Id", categoryId));
 
 
-        Users author = userRepositories.findById(authorId)
+        Author author = authorRepository.findById(authorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Author", "Author Id", authorId));
 
-        Blogs blog = modelMapper.map(blogDto, Blogs.class);
-        blog.setCreatedAt(LocalDateTime.now());
-        blog.setUpdatedAt(LocalDateTime.now());
+        Blog blog = modelMapper.map(blogDto, Blog.class);
+
         blog.setCategory(category);
         blog.setAuthor(author);
         blog = blogRepositories.save(blog);
@@ -56,7 +52,7 @@ public class BlogServiceImpl implements BlogService {
 
     @Override
     public List<BlogDto> getAllBlogs() {
-        List<Blogs> blogs = blogRepositories.findAll();
+        List<Blog> blogs = blogRepositories.findAll();
         if (blogs.isEmpty()){
             throw new APIExceptionHandler("Blogs aren't created yet!!!");
         }
@@ -68,9 +64,9 @@ public class BlogServiceImpl implements BlogService {
         Categories category = categoryRepositories.findById(categoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Category", "Category Id", categoryId));
 
-        List<Blogs> blogsByCategory = blogRepositories.findBlogsByCategory(category);
+        List<Blog> blogByCategory = blogRepositories.findBlogsByCategory(category);
 
-        return blogsByCategory
+        return blogByCategory
                 .stream()
                 .map(blogs -> modelMapper.map(blogs,BlogDto.class))
                 .toList();
@@ -78,9 +74,9 @@ public class BlogServiceImpl implements BlogService {
 
     @Override
     public List<BlogDto> getBlogsByAuthor(Long authorId) {
-        Users author = userRepositories.findById(authorId)
+        Author author = authorRepository.findById(authorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Author", "Author Id", authorId));
-        List<Blogs> blogs = blogRepositories.findBlogsByAuthor(author);
+        List<Blog> blogs = blogRepositories.findBlogsByAuthor(author);
         return blogs
                 .stream()
                 .map(blog -> modelMapper.map(blog, BlogDto.class))
@@ -91,34 +87,37 @@ public class BlogServiceImpl implements BlogService {
     @Override
     public BlogDto updateBlogDto(BlogDto blogDto,Long blogId,Long categoryId,Long authorId) {
 
-        Blogs updatedBlog = blogRepositories.findById(blogId)
+        Blog updatedBlog = blogRepositories.findById(blogId)
                 .orElseThrow(()-> new ResourceNotFoundException("Blog","blog ID",blogId));
+
         Categories category = categoryRepositories.findById(categoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Category", "Category Id", categoryId));
-        Users author = userRepositories.findById(authorId)
+
+        Author author = authorRepository.findById(authorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Author", "Author Id", authorId));
+
         updatedBlog.setCategory(category);
         updatedBlog.setAuthor(author);
-        updatedBlog.setUpdatedAt(LocalDateTime.now());
         updatedBlog.setTitle(blogDto.getTitle());
         updatedBlog.setContent(blogDto.getContent());
         updatedBlog.setImageUrl(blogDto.getImageUrl());
         blogRepositories.save(updatedBlog);
+
         return modelMapper.map(updatedBlog, BlogDto.class);
     }
 
     @Override
     public BlogDto deleteBlog(Long blogID) {
-        Blogs blogs = blogRepositories.findById(blogID).orElseThrow(()-> new ResourceNotFoundException("Blog","blog ID",blogID));
-        BlogDto blogDto = modelMapper.map(blogs, BlogDto.class);
-        blogRepositories.delete(blogs);
+        Blog blog = blogRepositories.findById(blogID).orElseThrow(()-> new ResourceNotFoundException("Blog","blog ID",blogID));
+        BlogDto blogDto = modelMapper.map(blog, BlogDto.class);
+        blogRepositories.delete(blog);
         return blogDto;
     }
 
     @Override
     public BlogDto getBlogById(Long blogId) {
 
-        Blogs blog = blogRepositories.findById(blogId).orElseThrow(()-> new ResourceNotFoundException("blog","blogId",blogId));
+        Blog blog = blogRepositories.findById(blogId).orElseThrow(()-> new ResourceNotFoundException("blog","blogId",blogId));
 
         return modelMapper.map(blog, BlogDto.class);
     }

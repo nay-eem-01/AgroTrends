@@ -1,18 +1,21 @@
 package com.project.agriculturalblogapplication.Repositories;
 
 
-import com.project.agriculturalblogapplication.entities.Users;
+import com.project.agriculturalblogapplication.entities.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-
 import java.util.Optional;
 
 @Repository
-public interface UserRepositories extends JpaRepository<Users, Long> {
-    Optional<Users> findByUserEmail(String email);
-    Optional<Users> findByUserName(String userName);
+public interface UserRepository extends JpaRepository<User, Long> {
 
-    boolean existsByUserName(String user1);
+    Optional<User> findByEmail(String email);
 
-    boolean existsByUserEmail(String email);
+    Optional<User> findByName(String userName);
+
+    boolean existsByName(String user1);
+
+    boolean existsByEmail(String email);
+
+    Optional<User> findTopByEmail(String email);
 }

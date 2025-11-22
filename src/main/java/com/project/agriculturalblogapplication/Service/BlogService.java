@@ -1,7 +1,6 @@
 package com.project.agriculturalblogapplication.Service;
 
 import com.project.agriculturalblogapplication.DTOS.BlogDto;
-import com.project.agriculturalblogapplication.Models.Blogs;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
