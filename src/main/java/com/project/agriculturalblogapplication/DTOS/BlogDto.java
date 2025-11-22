@@ -1,6 +1,5 @@
 package com.project.agriculturalblogapplication.DTOS;
 
-import com.project.agriculturalblogapplication.Models.Comments;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -21,6 +20,8 @@ public class BlogDto {
     private LocalDateTime updatedAt;
     private List<CommentDto> comments;
     private UserDto author;
+    private String summary;
+    private String categoryName;
 
 
 

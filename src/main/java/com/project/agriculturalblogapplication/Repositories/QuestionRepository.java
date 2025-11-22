@@ -1,6 +1,6 @@
 package com.project.agriculturalblogapplication.Repositories;
 
-import com.project.agriculturalblogapplication.Models.Question;
+import com.project.agriculturalblogapplication.entities.Question;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

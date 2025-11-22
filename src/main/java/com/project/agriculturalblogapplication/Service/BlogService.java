@@ -1,7 +1,6 @@
 package com.project.agriculturalblogapplication.Service;
 
 import com.project.agriculturalblogapplication.DTOS.BlogDto;
-import com.project.agriculturalblogapplication.Models.Blogs;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -14,5 +13,7 @@ public interface BlogService {
     List<BlogDto> getBlogsByAuthor(Long authorId);
     BlogDto updateBlogDto(BlogDto blogDto,Long authorId,Long categoryId,Long authorID);
     BlogDto deleteBlog(Long blogID);
+
+    BlogDto getBlogById(Long blogId);
 
 }

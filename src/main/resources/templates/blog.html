@@ -1,147 +1,19 @@
+
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en" class="dark">
 <head>
-    <meta charset="UTF-8">
     <title>Blogs - AgroTrends</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'media',
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#16a34a', // Green-600
-                        secondary: '#059669', // Emerald-600
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'ui-sans-serif', 'system-ui'],
-                    },
-                    animation: {
-                        'fade-in': 'fadeIn 0.5s ease-in-out',
-                        'slide-up': 'slideUp 0.5s ease-in-out',
-                    },
-                    keyframes: {
-                        fadeIn: {
-                            '0%': { opacity: '0' },
-                            '100%': { opacity: '1' },
-                        },
-                        slideUp: {
-                            '0%': { transform: 'translateY(20px)', opacity: '0' },
-                            '100%': { transform: 'translateY(0)', opacity: '1' },
-                        },
-                    },
-                },
-            },
-        }
-    </script>
-    <!-- Inter Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <th:block th:replace="~{fragments/layout :: head}"></th:block>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans antialiased">
-
-<!-- Navbar -->
-<nav class="bg-white dark:bg-gray-800 shadow sticky top-0 z-50">
-    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-        <a href="/app/home" class="text-2xl font-bold text-primary dark:text-green-300">🌾 AgroTrends</a>
-        <button id="mobileMenuButton" class="md:hidden text-gray-700 dark:text-gray-200">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-        </button>
-        <ul class="hidden md:flex gap-6 text-sm font-medium text-gray-700 dark:text-gray-200">
-            <li><a href="/app/home" class="hover:text-primary dark:hover:text-green-400 transition">Home</a></li>
-            <li><a href="/about" class="hover:text-primary dark:hover:text-green-400 transition">About Us</a></li>
-            <li><a href="/blogs" class="text-primary dark:text-green-400 font-semibold">Blogs</a></li>
-            <li class="relative">
-                <button class="flex items-center hover:text-primary dark:hover:text-green-400 transition focus:outline-none" onclick="this.nextElementSibling.classList.toggle('hidden')">
-                    Categories
-                    <svg class="inline w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                </button>
-                <ul class="absolute hidden pt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg text-sm font-medium text-gray-700 dark:text-gray-200 z-50">
-                    <li th:each="category : ${categories}">
-                        <a th:href="@{/blogs/category/{id}(id=${category.categoryId})}"
-                           th:text="${category.categoryName}"
-                           class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary dark:hover:text-green-400 transition">
-                        </a>
-                    </li>
-                    <li th:unless="${categories} and ${#lists.size(categories) > 0}">
-                        <span class="block px-4 py-2 text-gray-500 dark:text-gray-400">No categories</span>
-                    </li>
-                </ul>
-            </li>
-            <li><a href="/products" class="hover:text-primary dark:hover:text-green-400 transition">Products</a></li>
-            <li><a href="/courses" class="hover:text-primary dark:hover:text-green-400 transition">Courses</a></li>
-            <li><a href="/questions" class="hover:text-primary dark:hover:text-green-400 transition">Q&A</a></li>
-            <li><a href="/events" class="hover:text-primary dark:hover:text-green-400 transition">Events</a></li>
-            <li sec:authorize="isAnonymous()">
-                <a href="/app/api/auth/signup" class="hover:text-primary dark:hover:text-green-400 transition">Sign Up</a>
-            </li>
-            <li sec:authorize="isAnonymous()">
-                <a href="/app/api/auth/signin" class="hover:text-primary dark:hover:text-green-400 transition">Sign In</a>
-            </li>
-            <li sec:authorize="isAuthenticated()">
-                <a href="/profile" class="hover:text-primary dark:hover:text-green-400 transition">Profile</a>
-            </li>
-            <li sec:authorize="isAuthenticated()">
-                <form th:action="@{/app/api/auth/signout}" method="post" class="inline">
-                    <button type="submit" class="hover:text-primary dark:hover:text-green-400 transition">Sign Out</button>
-                </form>
-            </li>
-        </ul>
-        <ul id="mobileMenu" class="hidden md:hidden bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200">
-            <li class="py-2"><a href="/app/home" class="hover:text-primary dark:hover:text-green-400 transition">Home</a></li>
-            <li class="py-2"><a href="/about" class="hover:text-primary dark:hover:text-green-400 transition">About Us</a></li>
-            <li class="py-2"><a href="/blogs" class="text-primary dark:text-green-400 font-semibold">Blogs</a></li>
-            <li class="py-2 relative">
-                <button class="flex items-center hover:text-primary dark:hover:text-green-400 transition focus:outline-none" onclick="this.nextElementSibling.classList.toggle('hidden')">
-                    Categories
-                    <svg class="inline w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                </button>
-                <ul class="hidden pl-4 pt-2 text-sm font-medium text-gray-700 dark:text-gray-200">
-                    <li th:each="category : ${categories}">
-                        <a th:href="@{/blogs/category/{id}(id=${category.categoryId})}"
-                           th:text="${category.categoryName}"
-                           class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary dark:hover:text-green-400 transition">
-                        </a>
-                    </li>
-                    <li th:unless="${categories} and ${#lists.size(categories) > 0}">
-                        <span class="block px-4 py-2 text-gray-500 dark:text-gray-400">No categories</span>
-                    </li>
-                </ul>
-            </li>
-            <li class="py-2"><a href="/products" class="hover:text-primary dark:hover:text-green-400 transition">Products</a></li>
-            <li class="py-2"><a href="/courses" class="hover:text-primary dark:hover:text-green-400 transition">Courses</a></li>
-            <li class="py-2"><a href="/questions" class="hover:text-primary dark:hover:text-green-400 transition">Q&A</a></li>
-            <li class="py-2"><a href="/events" class="hover:text-primary dark:hover:text-green-400 transition">Events</a></li>
-            <li class="py-2" sec:authorize="isAnonymous()">
-                <a href="/app/api/auth/signup" class="hover:text-primary dark:hover:text-green-400 transition">Sign Up</a>
-            </li>
-            <li class="py-2" sec:authorize="isAnonymous()">
-                <a href="/app/api/auth/signin" class="hover:text-primary dark:hover:text-green-400 transition">Sign In</a>
-            </li>
-            <li class="py-2" sec:authorize="isAuthenticated()">
-                <a href="/profile" class="hover:text-primary dark:hover:text-green-400 transition">Profile</a>
-            </li>
-            <li class="py-2" sec:authorize="isAuthenticated()">
-                <form th:action="@{/app/api/auth/signout}" method="post" class="inline">
-                    <button type="submit" class="hover:text-primary dark:hover:text-green-400 transition">Sign Out</button>
-                </form>
-            </li>
-        </ul>
-    </div>
-</nav>
+<!-- Header -->
+<th:block th:replace="~{fragments/layout :: header}"></th:block>
 
 <!-- Blog Section -->
 <section class="container mx-auto px-4 py-16 animate-fade-in">
     <h1 class="text-4xl md:text-5xl font-extrabold text-center text-gray-800 dark:text-gray-100 mb-12">Our Latest Blogs</h1>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        <div th:each="blog : ${blogs}"
+        <div th:each="blog : ${blog}"
              class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden transform hover:scale-105 transition duration-300 animate-slide-up">
             <img th:if="${blog.imageUrl}"
                  th:src="${blog.imageUrl}"
@@ -161,74 +33,21 @@
                 </p>
                 <p th:text="${#strings.abbreviate(blog.content, 150)}"
                    class="text-gray-600 dark:text-gray-300 mb-4 text-sm line-clamp-3"></p>
-                <a th:href="@{/blog_details.html}"
+                <a th:href="@{/app/blog/details/{id}(id=${blog.blogId})}"
                    class="inline-block text-primary dark:text-green-400 font-medium hover:underline">Read More →</a>
             </div>
         </div>
-        <div th:unless="${blogs} and ${#lists.size(blogs) > 0}"
+        <div th:unless="${blog} and ${#lists.size(blog) > 0}"
              class="col-span-full text-center text-gray-500 dark:text-gray-400">
-            <p>No blogs available at the moment.</p>
+            <p>No blog available at the moment.</p>
         </div>
     </div>
 </section>
 
 <!-- Footer -->
-<footer class="bg-primary dark:bg-green-800 text-white py-12">
-    <div class="container mx-auto px-4">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-                <a href="/app/home" class="text-2xl font-bold text-white mb-4 inline-block">🌾 AgroTrends</a>
-                <p class="text-sm text-gray-200">Empowering farmers with knowledge, tools, and insights for sustainable agriculture.</p>
-            </div>
-            <div>
-                <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
-                <ul class="space-y-2 text-sm text-gray-200">
-                    <li><a href="/about" class="hover:text-green-300 transition">About Us</a></li>
-                    <li><a href="/blogs" class="hover:text-green-300 transition">Blogs</a></li>
-                    <li><a href="/products" class="hover:text-green-300 transition">Products</a></li>
-                    <li><a href="/courses" class="hover:text-green-300 transition">Courses</a></li>
-                    <li><a href="/events" class="hover:text-green-300 transition">Events</a></li>
-                </ul>
-            </div>
-            <div>
-                <h3 class="text-lg font-semibold mb-4">Stay Updated</h3>
-                <p class="text-sm text-gray-200 mb-4">Subscribe to our newsletter for the latest farming tips and updates.</p>
-                <div class="flex">
-                    <input type="email" placeholder="Enter your email" class="w-full px-3 py-2 text-gray-900 rounded-l-full focus:outline-none">
-                    <button class="px-4 py-2 bg-green-700 text-white rounded-r-full hover:bg-green-600 transition">Subscribe</button>
-                </div>
-            </div>
-            <div>
-                <h3 class="text-lg font-semibold mb-4">Connect With Us</h3>
-                <div class="flex gap-4 mb-4">
-                    <a href="https://twitter.com" target="_blank" class="text-gray-200 hover:text-green-300 transition">
-                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M22.46 6c-.77.35-1.6.58-2.46.69a4.3 4.3 0 001.88-2.38 8.6 8.6 0 01-2.72 1.04A4.28 4.28 0 0016 4c-2.36 0-4.28 1.92-4.28 4.29 0 .34.04.67.11 1a12.14 12.14 0 01-8.82-4.47 4.28 4.28 0 001.33 5.71 4.25 4.25 0 01-1.94-.54v.05c0 2.07 1.47 3.8 3.43 4.19a4.3 4.3 0 01-1.93.07 4.29 4.29 0 004 2.98A8.6 8.6 0 012 18.54a12.14 12.14 0 006.58 1.93c7.9 0 12.22-6.54 12.22-12.21 0-.19 0-.37-.01-.56A8.7 8.7 0 0022.46 6z"/></svg>
-                    </a>
-                    <a href="https://facebook.com" target="_blank" class="text-gray-200 hover:text-green-300 transition">
-                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M22 12a10 10 0 10-11.56 9.88V15h-2.43v-3h2.43V9.75c0-2.41 1.47-3.73 3.62-3.73h2.23v3h-1.28c-1.07 0-1.28.51-1.28 1.25V12h2.56l-.34 3h-2.22v6.88A10 10 0 0022 12z"/></svg>
-                    </a>
-                    <a href="https://instagram.com" target="_blank" class="text-gray-200 hover:text-green-300 transition">
-                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.16c3.21 0 3.58.01 4.85.07 1.17.06 1.81.25 2.23.41.56.22.96.49 1.38.91.42.42.69.82.91 1.38.16.42.35 1.06.41 2.23.06 1.27.07 1.64.07 4.85s-.01 3.58-.07 4.85c-.06 1.17-.25 1.81-.41 2.23-.22.56-.49.96-.91 1.38-.42.42-.82.69-1.38.91-.42.16-1.06.35-2.23.41-1.27.06-1.64.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.06-1.81-.25-2.23-.41-.56-.22-.96-.49-1.38-.91-.42-.42-.69-.82-.91-1.38-.16-.42-.35-1.06-.41-2.23-.06-1.27-.07-1.64-.07-4.85s.01-3.58.07-4.85c.06-1.17.25-1.81.41-2.23.22-.56.49-.96.91-1.38.42-.42.82-.69 1.38-.91.42-.16 1.06-.35 2.23-.41 1.27-.06 1.64-.07 4.85-.07zm0-2.16C8.74 0 8.33.01 7.05.07c-1.3.06-2.19.27-2.97.58-.95.37-1.76.87-2.56 1.67S.02 3.79.65 4.74c-.31.78-.52 1.67-.58 2.97C0 8.99 0 9.4 0 12.5s.01 3.51.07 4.79c.06 1.3.27 2.19.58 2.97.37.95.87 1.76 1.67 2.56s1.61 1.3 2.56 1.67c.78.31 1.67.52 2.97.58 1.28.06 1.69.07 4.79.07s3.51-.01 4.79-.07c1.3-.06 2.19-.27 2.97-.58.95-.37 1.76-.87 2.56-1.67s1.3-1.61 1.67-2.56c.31-.78.52-1.67.58-2.97.06-1.28.07-1.69.07-4.79s-.01-3.51-.07-4.79c-.06-1.3-.27-2.19-.58-2.97-.37-.95-.87-1.76-1.67-2.56s-1.61-1.3-2.56-1.67c-.78-.31-1.67-.52-2.97-.58C15.51.01 15.1 0 12 0zM12 6.04c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 9.96c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm4.9-9.54c-.78 0-1.41.63-1.41 1.41s.63 1.41 1.41 1.41 1.41-.63 1.41-1.41-.63-1.41-1.41-1.41z"/></svg>
-                    </a>
-                </div>
-                <p class="text-sm text-gray-200">Contact: <a href="mailto:support@agrotrends.com" class="hover:text-green-300 transition">support@agrotrends.com</a></p>
-            </div>
-        </div>
-        <div class="mt-8 pt-8 border-t border-green-700 text-center text-sm text-gray-200">
-            <p>© 2025 AgroTrends. All rights reserved.</p>
-            <p class="mt-2">Made with ❤️ by Nayeem for the future of farming</p>
-        </div>
-    </div>
-</footer>
+<th:block th:replace="~{fragments/layout :: footer}"></th:block>
 
-<!-- Mobile Menu Script -->
-<script>
-    const mobileMenuButton = document.getElementById('mobileMenuButton');
-    const mobileMenu = document.getElementById('mobileMenu');
-    mobileMenuButton.addEventListener('click', () => {
-        mobileMenu.classList.toggle('hidden');
-    });
-</script>
-
+<!-- Scripts -->
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
 </body>
 </html>

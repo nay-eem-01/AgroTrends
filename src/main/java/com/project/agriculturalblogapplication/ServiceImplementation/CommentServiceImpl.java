@@ -2,12 +2,12 @@ package com.project.agriculturalblogapplication.ServiceImplementation;
 
 import com.project.agriculturalblogapplication.DTOS.CommentDto;
 import com.project.agriculturalblogapplication.ExceptionHandler.ResourceNotFoundException;
-import com.project.agriculturalblogapplication.Models.Blogs;
-import com.project.agriculturalblogapplication.Models.Comments;
-import com.project.agriculturalblogapplication.Models.Users;
+import com.project.agriculturalblogapplication.entities.Blog;
+import com.project.agriculturalblogapplication.entities.Comments;
+import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.Repositories.BlogRepositories;
 import com.project.agriculturalblogapplication.Repositories.CommentRepository;
-import com.project.agriculturalblogapplication.Repositories.UserRepositories;
+import com.project.agriculturalblogapplication.Repositories.UserRepository;
 import com.project.agriculturalblogapplication.Service.CommentService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,14 +20,14 @@ import java.util.List;
 public class CommentServiceImpl implements CommentService {
 
     private final BlogRepositories blogRepository;
-    private final UserRepositories userRepositories;
+    private final UserRepository userRepository;
     private final CommentRepository commentRepository;
     private final ModelMapper modelMapper;
 
     @Autowired
-    public CommentServiceImpl(BlogRepositories blogRepository, UserRepositories userRepositories, CommentRepository commentRepository, ModelMapper modelMapper) {
+    public CommentServiceImpl(BlogRepositories blogRepository, UserRepository userRepository, CommentRepository commentRepository, ModelMapper modelMapper) {
         this.blogRepository = blogRepository;
-        this.userRepositories = userRepositories;
+        this.userRepository = userRepository;
         this.commentRepository = commentRepository;
         this.modelMapper = modelMapper;
     }
@@ -35,14 +35,12 @@ public class CommentServiceImpl implements CommentService {
     @Override
     public CommentDto addNewComment(CommentDto commentDto,Long userId,Long blogId) {
 
-        Blogs blog = blogRepository.findById(blogId).orElseThrow(()-> new ResourceNotFoundException("Blog","blog ID",blogId));
-        Users user = userRepositories.findById(userId).orElseThrow(()-> new ResourceNotFoundException("User","user ID",userId));
+        Blog blog = blogRepository.findById(blogId).orElseThrow(()-> new ResourceNotFoundException("Blog","blog ID",blogId));
+        User user = userRepository.findById(userId).orElseThrow(()-> new ResourceNotFoundException("User","user ID",userId));
 
         Comments newComment = modelMapper.map(commentDto, Comments.class);
         newComment.setUser(user);
         newComment.setBlog(blog);
-        newComment.setCreatedAt(LocalDateTime.now());
-        newComment.setUpdatedAt(LocalDateTime.now());
 
        Comments savedComment = commentRepository.save(newComment);
 
@@ -71,7 +69,7 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     public List<CommentDto> viewAllCommentsByBlogId(Long blogId) {
-        List<Comments> topLevelComments = commentRepository.findByBlogBlogIdAndParentCommentIsNull(blogId);
+        List<Comments> topLevelComments = commentRepository.findByBlogIdAndParentCommentIsNull(blogId);
         return topLevelComments.stream()
                 .map(this::convertToDtoWithReplies)
                 .toList();
@@ -81,10 +79,10 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     public CommentDto replyToAComment(CommentDto commentDto, Long userId, Long blogId, Long parentCommentId) {
-        Blogs blog = blogRepository.findById(blogId)
+        Blog blog = blogRepository.findById(blogId)
                 .orElseThrow(() -> new ResourceNotFoundException("Blog", "Blog ID", blogId));
 
-        Users user = userRepositories.findById(userId)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "User ID", userId));
 
         Comments parentComment = commentRepository.findById(parentCommentId)
@@ -94,8 +92,6 @@ public class CommentServiceImpl implements CommentService {
         reply.setUser(user);
         reply.setBlog(blog);
         reply.setParentComment(parentComment);
-        reply.setCreatedAt(LocalDateTime.now());
-        reply.setUpdatedAt(LocalDateTime.now());
 
         Comments savedReply = commentRepository.save(reply);
         return modelMapper.map(savedReply, CommentDto.class);
@@ -120,9 +116,9 @@ public class CommentServiceImpl implements CommentService {
         CommentDto dto = modelMapper.map(comment, CommentDto.class);
 
         // Manually map the IDs
-        dto.setUserId(comment.getUser() != null ? comment.getUser().getUserId() : null);
-        dto.setBlogId(comment.getBlog() != null ? comment.getBlog().getBlogId() : null);
-        dto.setParentCommentId(comment.getParentComment() != null ? comment.getParentComment().getCommentId() : null);
+        dto.setUserId(comment.getUser() != null ? comment.getUser().getId() : null);
+        dto.setBlogId(comment.getBlog() != null ? comment.getBlog().getId() : null);
+        dto.setParentCommentId(comment.getParentComment() != null ? comment.getParentComment().getId() : null);
 
         List<CommentDto> replyDtos = comment.getReplies()
                 .stream()
