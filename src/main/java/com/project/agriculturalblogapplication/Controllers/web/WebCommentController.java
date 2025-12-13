@@ -1,7 +1,7 @@
 package com.project.agriculturalblogapplication.Controllers.web;
 
 import com.project.agriculturalblogapplication.DTOS.CommentDto;
-import com.project.agriculturalblogapplication.Service.CommentService;
+import com.project.agriculturalblogapplication.service.CommentService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

@@ -1,10 +1,13 @@
 package com.project.agriculturalblogapplication.Repositories;
 
 
+import com.project.agriculturalblogapplication.entities.Role;
 import com.project.agriculturalblogapplication.entities.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
@@ -18,4 +21,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByEmail(String email);
 
     Optional<User> findTopByEmail(String email);
+
+    Optional<User> findTopByEmailEqualsIgnoreCase(String username);
+
+    Boolean existsByRolesIn(Set<Role> role);
+
+    Boolean existsByMobileNumber(String mobileNumber);
 }

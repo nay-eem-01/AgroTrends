@@ -35,8 +35,12 @@ public class User extends AuditModel<String> {
     @Column(name = UserTable.EMAIL)
     private String email;
 
-    @Column(name = AppTables.USER_TYPE)
-    private UserType userType;
+    @NotBlank
+    @Column(name = UserTable.MOBILE_NUMBER)
+    private String mobileNumber;
+
+    @Column(name = AppTables.USER_TYPES)
+    private Set<String> userTypes;
 
     @ManyToMany(fetch =  FetchType.EAGER , cascade =  CascadeType.DETACH)
     @JoinTable(

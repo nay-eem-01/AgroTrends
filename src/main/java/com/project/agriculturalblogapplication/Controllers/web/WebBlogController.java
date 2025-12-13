@@ -2,9 +2,9 @@ package com.project.agriculturalblogapplication.Controllers.web;
 
 
 import com.project.agriculturalblogapplication.DTOS.BlogDto;
-import com.project.agriculturalblogapplication.Service.BlogService;
-import com.project.agriculturalblogapplication.Service.CategoryService;
-import com.project.agriculturalblogapplication.Service.CommentService;
+import com.project.agriculturalblogapplication.service.BlogService;
+import com.project.agriculturalblogapplication.service.CategoryService;
+import com.project.agriculturalblogapplication.service.CommentService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;

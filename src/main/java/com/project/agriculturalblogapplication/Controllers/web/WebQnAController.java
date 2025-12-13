@@ -2,7 +2,7 @@ package com.project.agriculturalblogapplication.Controllers.web;
 
 import com.project.agriculturalblogapplication.DTOS.AnswerDto;
 import com.project.agriculturalblogapplication.DTOS.QuestionDto;
-import com.project.agriculturalblogapplication.Service.QnAService;
+import com.project.agriculturalblogapplication.service.QnAService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

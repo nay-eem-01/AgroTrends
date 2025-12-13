@@ -4,8 +4,8 @@ package com.project.agriculturalblogapplication.Controllers.web;
 
 import com.project.agriculturalblogapplication.DTOS.BlogDto;
 import com.project.agriculturalblogapplication.DTOS.CategoryDto;
-import com.project.agriculturalblogapplication.Service.BlogService;
-import com.project.agriculturalblogapplication.Service.CategoryService;
+import com.project.agriculturalblogapplication.service.BlogService;
+import com.project.agriculturalblogapplication.service.CategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;

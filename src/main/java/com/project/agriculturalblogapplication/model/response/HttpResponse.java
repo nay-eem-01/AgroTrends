@@ -18,47 +18,35 @@ public class HttpResponse {
     private Object payload;
     private boolean success;
 
-    public HttpResponse(HttpStatus status, String message, boolean success) {
+    public HttpResponse(HttpStatus status, boolean success, String message, Object payload) {
+        super();
         this.status = status;
-        this.message = message;
-        this.success = success;
-    }
-
-
-    public HttpResponse(boolean success, String message, Object payload) {
         this.success = success;
         this.message = message;
         this.payload = payload;
     }
 
-    public HttpResponse(HttpStatus status, Object payload) {
+    public HttpResponse(HttpStatus status, boolean success, String message) {
+        super();
         this.status = status;
-        this.payload = payload;
+        this.success = success;
+        this.message = message;
     }
 
     public static ResponseEntity<HttpResponse> getResponseEntity(boolean success, String message, Object payload) {
-        return new ResponseEntity<>(new HttpResponse(success ? HttpStatus.OK : HttpStatus.BAD_REQUEST, message, payload, success), success ? HttpStatus.OK : HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(new HttpResponse(success ? HttpStatus.OK : HttpStatus.BAD_REQUEST, success, message, payload), success ? HttpStatus.OK : HttpStatus.BAD_REQUEST);
     }
 
     public static ResponseEntity<HttpResponse> getResponseEntity(boolean success, String message) {
-        return new ResponseEntity<>(new HttpResponse(success ? HttpStatus.OK : HttpStatus.BAD_REQUEST, message, null, success), success ? HttpStatus.OK : HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(new HttpResponse(success ? HttpStatus.OK : HttpStatus.BAD_REQUEST, success, message, null), success ? HttpStatus.OK : HttpStatus.BAD_REQUEST);
     }
 
-    public static ResponseEntity<HttpResponse> getResponseEntity(HttpStatus httpStatus, String message, boolean success) {
-        return new ResponseEntity<>(new HttpResponse(httpStatus, message, success), httpStatus);
+    public static ResponseEntity<HttpResponse> getResponseEntity(HttpStatus httpStatus, String message, Object payload) {
+        return new ResponseEntity<>(new HttpResponse(httpStatus, httpStatus.equals(HttpStatus.OK), message, payload), httpStatus);
     }
 
-    public static ResponseEntity<HttpResponse> getResponseEntity(HttpStatus httpStatus, String message, Object payload, boolean success) {
-        return new ResponseEntity<>(new HttpResponse(httpStatus, message, payload, success), httpStatus);
-    }
-
-    public static ResponseEntity<HttpResponse> getResponseEntity(HttpStatus httpStatus, Object payload) {
-        return new ResponseEntity<>(new HttpResponse(httpStatus, payload), HttpStatus.OK);
-    }
-
-
-    public static ResponseEntity<HttpResponse> getResponseEntityForError(HttpStatus httpStatus, String message, Object payload) {
-        return new ResponseEntity<>(new HttpResponse(httpStatus, message, payload, httpStatus.equals(HttpStatus.OK)), httpStatus);
+    public static ResponseEntity<HttpResponse> getResponseEntity(HttpStatus httpStatus, String message) {
+        return new ResponseEntity<>(new HttpResponse(httpStatus, httpStatus.equals(HttpStatus.OK), message, null), httpStatus);
     }
 
 

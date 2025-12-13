@@ -1,7 +1,7 @@
 package com.project.agriculturalblogapplication.Controllers.web;
 
 import com.project.agriculturalblogapplication.DTOS.UserDto;
-import com.project.agriculturalblogapplication.Service.UsersService;
+import com.project.agriculturalblogapplication.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -10,15 +10,15 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("app/users/")
 public class WebUserController {
 
-    private final UsersService usersService ;
+    private final UserService userService;
 
-    public WebUserController(UsersService usersService) {
-        this.usersService = usersService;
+    public WebUserController(UserService userService) {
+        this.userService = userService;
     }
 
     @PostMapping("register")
     public ResponseEntity<UserDto> addNewUser(@RequestBody UserDto userDto){
-        UserDto savedUserDto = usersService.addNewAuthor(userDto);
+        UserDto savedUserDto = userService.addNewAuthor(userDto);
         return new ResponseEntity<>(savedUserDto,HttpStatus.OK);
     }
 }

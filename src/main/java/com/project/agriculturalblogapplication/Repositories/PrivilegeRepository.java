@@ -10,4 +10,6 @@ import java.util.Optional;
 public interface PrivilegeRepository extends JpaRepository<Privilege,Long> {
 
     Optional<Privilege> findByPrivilegeName(String privilegeName);
+
+    Optional<Privilege> findByPrivilegeNameEquals(String name);
 }
