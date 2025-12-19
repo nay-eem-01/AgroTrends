@@ -1,14 +1,14 @@
 package com.project.agriculturalblogapplication.service;
 
-import com.project.agriculturalblogapplication.DTOS.BlogDto;
-import com.project.agriculturalblogapplication.ExceptionHandler.APIExceptionHandler;
-import com.project.agriculturalblogapplication.ExceptionHandler.ResourceNotFoundException;
-import com.project.agriculturalblogapplication.Repositories.AuthorRepository;
+import com.project.agriculturalblogapplication.dtos.BlogDto;
+import com.project.agriculturalblogapplication.exceptionHandler.APIExceptionHandler;
+import com.project.agriculturalblogapplication.exceptionHandler.ResourceNotFoundException;
+import com.project.agriculturalblogapplication.repositories.AuthorRepository;
 import com.project.agriculturalblogapplication.entities.Author;
 import com.project.agriculturalblogapplication.entities.Blog;
 import com.project.agriculturalblogapplication.entities.Categories;
-import com.project.agriculturalblogapplication.Repositories.BlogRepositories;
-import com.project.agriculturalblogapplication.Repositories.CategoryRepositories;
+import com.project.agriculturalblogapplication.repositories.BlogRepositories;
+import com.project.agriculturalblogapplication.repositories.CategoryRepositories;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;

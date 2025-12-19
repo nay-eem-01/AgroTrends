@@ -1,13 +1,13 @@
 package com.project.agriculturalblogapplication.service;
 
-import com.project.agriculturalblogapplication.DTOS.UserDto;
-import com.project.agriculturalblogapplication.ExceptionHandler.APIExceptionHandler;
-import com.project.agriculturalblogapplication.ExceptionHandler.ApplicationException;
+import com.project.agriculturalblogapplication.dtos.UserDto;
+import com.project.agriculturalblogapplication.exceptionHandler.APIExceptionHandler;
+import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.constatnt.AppConstants;
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import com.project.agriculturalblogapplication.entities.Role;
 import com.project.agriculturalblogapplication.entities.User;
-import com.project.agriculturalblogapplication.Repositories.UserRepository;
+import com.project.agriculturalblogapplication.repositories.UserRepository;
 import com.project.agriculturalblogapplication.enums.UserType;
 import com.project.agriculturalblogapplication.model.request.AuthorCreateRequest;
 import com.project.agriculturalblogapplication.model.request.CreateUserRequest;

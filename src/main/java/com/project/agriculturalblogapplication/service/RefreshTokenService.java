@@ -1,7 +1,7 @@
 package com.project.agriculturalblogapplication.service;
 
-import com.project.agriculturalblogapplication.ExceptionHandler.ApplicationException;
-import com.project.agriculturalblogapplication.Repositories.RefreshTokenRepository;
+import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
+import com.project.agriculturalblogapplication.repositories.RefreshTokenRepository;
 import com.project.agriculturalblogapplication.constatnt.SecurityConstants;
 import com.project.agriculturalblogapplication.entities.RefreshToken;
 import lombok.RequiredArgsConstructor;

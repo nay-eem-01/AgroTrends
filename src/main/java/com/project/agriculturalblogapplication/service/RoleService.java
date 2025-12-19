@@ -1,8 +1,8 @@
 package com.project.agriculturalblogapplication.service;
 
-import com.project.agriculturalblogapplication.ExceptionHandler.ApplicationException;
-import com.project.agriculturalblogapplication.Repositories.RoleRepository;
-import com.project.agriculturalblogapplication.Repositories.UserRepository;
+import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
+import com.project.agriculturalblogapplication.repositories.RoleRepository;
+import com.project.agriculturalblogapplication.repositories.UserRepository;
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import com.project.agriculturalblogapplication.entities.Privilege;
 import com.project.agriculturalblogapplication.entities.Role;

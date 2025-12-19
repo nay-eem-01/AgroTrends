@@ -1,13 +1,13 @@
 package com.project.agriculturalblogapplication.service;
 
-import com.project.agriculturalblogapplication.DTOS.CommentDto;
-import com.project.agriculturalblogapplication.ExceptionHandler.ResourceNotFoundException;
+import com.project.agriculturalblogapplication.dtos.CommentDto;
+import com.project.agriculturalblogapplication.exceptionHandler.ResourceNotFoundException;
 import com.project.agriculturalblogapplication.entities.Blog;
 import com.project.agriculturalblogapplication.entities.Comments;
 import com.project.agriculturalblogapplication.entities.User;
-import com.project.agriculturalblogapplication.Repositories.BlogRepositories;
-import com.project.agriculturalblogapplication.Repositories.CommentRepository;
-import com.project.agriculturalblogapplication.Repositories.UserRepository;
+import com.project.agriculturalblogapplication.repositories.BlogRepositories;
+import com.project.agriculturalblogapplication.repositories.CommentRepository;
+import com.project.agriculturalblogapplication.repositories.UserRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

@@ -1,10 +1,10 @@
 package com.project.agriculturalblogapplication.service;
 
-import com.project.agriculturalblogapplication.DTOS.CategoryDto;
-import com.project.agriculturalblogapplication.ExceptionHandler.APIExceptionHandler;
-import com.project.agriculturalblogapplication.ExceptionHandler.ResourceNotFoundException;
+import com.project.agriculturalblogapplication.dtos.CategoryDto;
+import com.project.agriculturalblogapplication.exceptionHandler.APIExceptionHandler;
+import com.project.agriculturalblogapplication.exceptionHandler.ResourceNotFoundException;
 import com.project.agriculturalblogapplication.entities.Categories;
-import com.project.agriculturalblogapplication.Repositories.CategoryRepositories;
+import com.project.agriculturalblogapplication.repositories.CategoryRepositories;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 

@@ -1,6 +1,6 @@
 package com.project.agriculturalblogapplication.service;
 
-import com.project.agriculturalblogapplication.ExceptionHandler.ApplicationException;
+import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.request.*;
 import com.project.agriculturalblogapplication.security.entites.UserSession;
 import com.project.agriculturalblogapplication.security.jwt.JwtUtil;

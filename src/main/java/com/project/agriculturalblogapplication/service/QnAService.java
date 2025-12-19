@@ -1,15 +1,15 @@
 package com.project.agriculturalblogapplication.service;
 
-import com.project.agriculturalblogapplication.DTOS.AnswerDto;
-import com.project.agriculturalblogapplication.DTOS.QuestionDto;
-import com.project.agriculturalblogapplication.ExceptionHandler.ResourceNotFoundException;
-import com.project.agriculturalblogapplication.ExceptionHandler.UnauthorizedActionException;
+import com.project.agriculturalblogapplication.dtos.AnswerDto;
+import com.project.agriculturalblogapplication.dtos.QuestionDto;
+import com.project.agriculturalblogapplication.exceptionHandler.ResourceNotFoundException;
+import com.project.agriculturalblogapplication.exceptionHandler.UnauthorizedActionException;
 import com.project.agriculturalblogapplication.entities.Answer;
 import com.project.agriculturalblogapplication.entities.Question;
 import com.project.agriculturalblogapplication.entities.User;
-import com.project.agriculturalblogapplication.Repositories.AnswerRepository;
-import com.project.agriculturalblogapplication.Repositories.QuestionRepository;
-import com.project.agriculturalblogapplication.Repositories.UserRepository;
+import com.project.agriculturalblogapplication.repositories.AnswerRepository;
+import com.project.agriculturalblogapplication.repositories.QuestionRepository;
+import com.project.agriculturalblogapplication.repositories.UserRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 

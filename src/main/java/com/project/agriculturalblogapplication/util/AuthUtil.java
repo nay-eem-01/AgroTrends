@@ -2,7 +2,7 @@ package com.project.agriculturalblogapplication.util;
 
 
 import com.project.agriculturalblogapplication.entities.User;
-import com.project.agriculturalblogapplication.Repositories.UserRepository;
+import com.project.agriculturalblogapplication.repositories.UserRepository;
 import com.project.agriculturalblogapplication.security.service.CustomUserDetails;
 import com.project.agriculturalblogapplication.service.UserService;
 import org.springframework.security.core.Authentication;

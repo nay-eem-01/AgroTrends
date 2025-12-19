@@ -1,6 +1,6 @@
 package com.project.agriculturalblogapplication.security;
 
-import com.project.agriculturalblogapplication.ExceptionHandler.AuthenticationExceptionHandler;
+import com.project.agriculturalblogapplication.exceptionHandler.AuthenticationExceptionHandler;
 import com.project.agriculturalblogapplication.security.jwt.JwtAuthenticationFilter;
 import com.project.agriculturalblogapplication.security.service.CustomUserDetailService;
 import com.project.agriculturalblogapplication.constatnt.SecurityConstants;

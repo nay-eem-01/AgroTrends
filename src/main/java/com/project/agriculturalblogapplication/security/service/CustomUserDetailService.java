@@ -1,6 +1,6 @@
 package com.project.agriculturalblogapplication.security.service;
 
-import com.project.agriculturalblogapplication.Repositories.UserRepository;
+import com.project.agriculturalblogapplication.repositories.UserRepository;
 import com.project.agriculturalblogapplication.entities.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
