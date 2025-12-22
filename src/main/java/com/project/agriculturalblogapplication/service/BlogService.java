@@ -1,16 +1,20 @@
 package com.project.agriculturalblogapplication.service;
 
-import com.project.agriculturalblogapplication.dtos.BlogDto;
-import com.project.agriculturalblogapplication.exceptionHandler.APIExceptionHandler;
-import com.project.agriculturalblogapplication.exceptionHandler.ResourceNotFoundException;
-import com.project.agriculturalblogapplication.repositories.AuthorRepository;
+import com.project.agriculturalblogapplication.constatnt.ErrorCode;
+import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
+import com.project.agriculturalblogapplication.model.request.CreateBlogRequest;
+import com.project.agriculturalblogapplication.model.request.UpdateBlogRequest;
+import com.project.agriculturalblogapplication.payloads.PaginationArgs;
 import com.project.agriculturalblogapplication.entities.Author;
 import com.project.agriculturalblogapplication.entities.Blog;
-import com.project.agriculturalblogapplication.entities.Categories;
+import com.project.agriculturalblogapplication.entities.Category;
 import com.project.agriculturalblogapplication.repositories.BlogRepositories;
-import com.project.agriculturalblogapplication.repositories.CategoryRepositories;
+import com.project.agriculturalblogapplication.util.CommonUtils;
 import lombok.RequiredArgsConstructor;
-import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -19,97 +23,70 @@ import java.util.List;
 @RequiredArgsConstructor
 public class BlogService {
 
-
     private final BlogRepositories blogRepositories;
-    private final CategoryRepositories categoryRepositories;
-    private final AuthorRepository authorRepository;
-    private final ModelMapper modelMapper;
 
+    private final CategoryService categoryService;
 
-    public BlogDto addNewBlog(BlogDto blogDto, Long authorId, Long categoryId) {
+    private final AuthorService authorService;
 
-        Categories category = categoryRepositories.findById(categoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("Category", "Category Id", categoryId));
+    public Blog create(CreateBlogRequest request) {
+        Category category = categoryService.findByIdWithException(request.getCategoryId());
 
+        Author author = authorService.findByUserIdWithException(request.getAuthorUserId());
 
-        Author author = authorRepository.findById(authorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Author", "Author Id", authorId));
-
-        Blog blog = modelMapper.map(blogDto, Blog.class);
-
+        Blog blog = new Blog();
         blog.setCategory(category);
         blog.setAuthor(author);
-        blog = blogRepositories.save(blog);
+        blog.setTitle(request.getTitle());
+        blog.setContent(request.getContent());
+        blog.setImageUrl(request.getImageUrl());
 
-        return modelMapper.map(blog, BlogDto.class);
+        return blogRepositories.save(blog);
     }
 
-    public List<BlogDto> getAllBlogs() {
-        List<Blog> blogs = blogRepositories.findAll();
-        if (blogs.isEmpty()){
-            throw new APIExceptionHandler("Blogs aren't created yet!!!");
-        }
-        return blogs.stream().map((blog)-> modelMapper.map(blog,BlogDto.class)).toList();
+    public Page<Blog> getAll(PaginationArgs paginationArgs) {
+        Pageable pageable = CommonUtils.getPageable(paginationArgs);
+        return blogRepositories.findAll(pageable);
     }
 
+    public Page<Blog> getAllByCategory(PaginationArgs paginationArgs, Long categoryId) {
+        Pageable pageable = CommonUtils.getPageable(paginationArgs);
 
-    public List<BlogDto> getBlogsByCategory(Long categoryId) {
-        Categories category = categoryRepositories.findById(categoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("Category", "Category Id", categoryId));
+        Category category = categoryService.findByIdWithException(categoryId);
+        List<Blog> blogs = blogRepositories.findAllByCategory((category));
 
-        List<Blog> blogByCategory = blogRepositories.findBlogsByCategory(category);
-
-        return blogByCategory
-                .stream()
-                .map(blogs -> modelMapper.map(blogs,BlogDto.class))
-                .toList();
+        return new PageImpl<>(blogs, pageable, blogs.size());
     }
 
 
-    public List<BlogDto> getBlogsByAuthor(Long authorId) {
-        Author author = authorRepository.findById(authorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Author", "Author Id", authorId));
-        List<Blog> blogs = blogRepositories.findBlogsByAuthor(author);
-        return blogs
-                .stream()
-                .map(blog -> modelMapper.map(blog, BlogDto.class))
-                .toList();
+    public Page<Blog> getAllByAuthor(PaginationArgs paginationArgs, Long authorUserId) {
+        Pageable pageable = CommonUtils.getPageable(paginationArgs);
+
+        Author author = authorService.findByUserIdWithException(authorUserId);
+        List<Blog> blogs = blogRepositories.findAllByAuthor(author);
+
+        return new PageImpl<>(blogs, pageable, blogs.size());
     }
 
-    public BlogDto updateBlogDto(BlogDto blogDto,Long blogId,Long categoryId,Long authorId) {
+    public Blog update(UpdateBlogRequest request) {
+        Category category = categoryService.findByIdWithException(request.getCategoryId());
 
-        Blog updatedBlog = blogRepositories.findById(blogId)
-                .orElseThrow(()-> new ResourceNotFoundException("Blog","blog ID",blogId));
+        Blog blog = findByIdWithException(request.getBlogId());
+        blog.setTitle(request.getTitle());
+        blog.setContent(request.getContent());
+        blog.setCategory(category);
+        blog.setImageUrl(request.getImageUrl());
 
-        Categories category = categoryRepositories.findById(categoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("Category", "Category Id", categoryId));
-
-        Author author = authorRepository.findById(authorId)
-                .orElseThrow(() -> new ResourceNotFoundException("Author", "Author Id", authorId));
-
-        updatedBlog.setCategory(category);
-        updatedBlog.setAuthor(author);
-        updatedBlog.setTitle(blogDto.getTitle());
-        updatedBlog.setContent(blogDto.getContent());
-        updatedBlog.setImageUrl(blogDto.getImageUrl());
-        blogRepositories.save(updatedBlog);
-
-        return modelMapper.map(updatedBlog, BlogDto.class);
+        return blogRepositories.save(blog);
     }
 
-    public BlogDto deleteBlog(Long blogID) {
-        Blog blog = blogRepositories.findById(blogID).orElseThrow(()-> new ResourceNotFoundException("Blog","blog ID",blogID));
-        BlogDto blogDto = modelMapper.map(blog, BlogDto.class);
+    public void delete(Long id) {
+        Blog blog = findByIdWithException(id);
         blogRepositories.delete(blog);
-        return blogDto;
     }
 
-    public BlogDto getBlogById(Long blogId) {
-
-        Blog blog = blogRepositories.findById(blogId).orElseThrow(()-> new ResourceNotFoundException("blog","blogId",blogId));
-
-        return modelMapper.map(blog, BlogDto.class);
+    public Blog findByIdWithException(Long blogId) {
+        return blogRepositories.findById(blogId).orElseThrow(()->
+                new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_BLOG_NOT_FOUND));
     }
-
-
 }

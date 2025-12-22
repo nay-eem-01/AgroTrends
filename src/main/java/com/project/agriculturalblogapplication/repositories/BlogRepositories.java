@@ -2,7 +2,7 @@ package com.project.agriculturalblogapplication.repositories;
 
 import com.project.agriculturalblogapplication.entities.Author;
 import com.project.agriculturalblogapplication.entities.Blog;
-import com.project.agriculturalblogapplication.entities.Categories;
+import com.project.agriculturalblogapplication.entities.Category;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -13,8 +13,7 @@ public interface BlogRepositories extends JpaRepository<Blog, Long> {
 
     Blog findBlogsById(Long blogId);
 
-    List<Blog> findBlogsByCategory(Categories category);
+    List<Blog> findAllByAuthor(Author author);
 
-    List<Blog> findBlogsByAuthor(Author author);
-
+    List<Blog> findAllByCategory(Category category);
 }

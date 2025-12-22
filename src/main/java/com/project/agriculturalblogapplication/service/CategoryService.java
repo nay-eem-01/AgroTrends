@@ -1,11 +1,14 @@
 package com.project.agriculturalblogapplication.service;
 
+import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import com.project.agriculturalblogapplication.dtos.CategoryDto;
 import com.project.agriculturalblogapplication.exceptionHandler.APIExceptionHandler;
+import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.exceptionHandler.ResourceNotFoundException;
-import com.project.agriculturalblogapplication.entities.Categories;
+import com.project.agriculturalblogapplication.entities.Category;
 import com.project.agriculturalblogapplication.repositories.CategoryRepositories;
 import org.modelmapper.ModelMapper;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -24,10 +27,10 @@ public class CategoryService {
 
     public CategoryDto addNewCategory(CategoryDto categoryDto) {
 
-        Categories category = modelMapper.map(categoryDto, Categories.class);
+        Category category = modelMapper.map(categoryDto, Category.class);
 
 
-        Categories savedCategory = categoryRepositories.findByCategoryName(categoryDto.getCategoryName());
+        Category savedCategory = categoryRepositories.findByCategoryName(categoryDto.getCategoryName());
 
         if (savedCategory != null) {
             throw new APIExceptionHandler("Category Already Exists");
@@ -40,7 +43,7 @@ public class CategoryService {
 
     public List<CategoryDto> getAllCategories() {
 
-        List<Categories> categories = categoryRepositories.findAll();
+        List<Category> categories = categoryRepositories.findAll();
 
         if (categories.isEmpty()) {
             throw new APIExceptionHandler("Categories haven't created yet !");
@@ -55,7 +58,7 @@ public class CategoryService {
 
     public CategoryDto updateCategory(CategoryDto categoryDto, Long categoryId) {
 
-        Categories savedCategory = categoryRepositories.findById(categoryId)
+        Category savedCategory = categoryRepositories.findById(categoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Category", "Category Id", categoryId));
         savedCategory.setCategoryName(categoryDto.getCategoryName());
         if (categoryDto.getCategoryName().equals(savedCategory.getCategoryName())) {
@@ -67,11 +70,16 @@ public class CategoryService {
 
 
     public CategoryDto deleteCategory(Long categoryId) {
-        Categories category = categoryRepositories.findById(categoryId)
+        Category category = categoryRepositories.findById(categoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Category", "Category Id", categoryId));
         CategoryDto categoryDto = modelMapper.map(category, CategoryDto.class);
         categoryRepositories.delete(category);
         return categoryDto;
+    }
+
+    public Category findByIdWithException(Long id){
+        return categoryRepositories.findById(id).orElseThrow(()->
+                new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_CATEGORY_NOT_FOUND));
     }
 
 }

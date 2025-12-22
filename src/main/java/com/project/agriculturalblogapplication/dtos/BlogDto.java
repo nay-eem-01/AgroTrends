@@ -22,11 +22,6 @@ public class BlogDto {
     private UserDto author;
     private String summary;
     private String categoryName;
-
-
-
-
-
 }
 
 

@@ -1,6 +1,5 @@
 package com.project.agriculturalblogapplication.entities;
 
-
 import com.project.agriculturalblogapplication.constatnt.AppTables.CategoryTable;
 import com.project.agriculturalblogapplication.constatnt.AppTables.BlogTable;
 import com.project.agriculturalblogapplication.constatnt.AppTables.AuthorTable;
@@ -9,7 +8,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.List;
-
 
 @Entity
 @NoArgsConstructor
@@ -30,7 +28,7 @@ public class Blog extends AuditModel<String> {
 
     @ManyToOne
     @JoinColumn(name = CategoryTable.CATEGORY_ID, nullable = false)
-    private Categories category;
+    private Category category;
 
     @ManyToOne
     @JoinColumn(name = AuthorTable.AUTHOR_ID, nullable = false)
@@ -38,5 +36,4 @@ public class Blog extends AuditModel<String> {
 
     @OneToMany(mappedBy = "blog", cascade = CascadeType.PERSIST,fetch = FetchType.LAZY)
     private List<Comments> comments;
-
 }

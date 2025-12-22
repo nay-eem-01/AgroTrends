@@ -13,12 +13,11 @@ import java.util.List;
 @Getter
 @Setter
 @Table(name = CategoryTable.NAME)
-public class Categories extends AuditModel<String> {
+public class Category extends AuditModel<String> {
 
     @Column(name = CategoryTable.CATEGORY_NAME)
     private String categoryName;
 
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
     private List<Blog> blogs;
-
 }

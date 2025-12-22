@@ -16,7 +16,7 @@ public class AppConstants {
     public static final String DEFAULT_PAGE_NO = "0";
     public static final String DEFAULT_PAGE_SIZE = "20";
     public static final String ASC_OR_DESC_VALUE = "asc";
-    public static final String SORT_BY_VALUE = "creationDate";
+    public static final String SORT_BY_VALUE = "createdDate";
     public static final String PARAMETERS = "parameters";
     public static final String LANG = "lang";
 
