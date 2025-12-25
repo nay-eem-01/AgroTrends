@@ -169,6 +169,7 @@ public final class ErrorCode {
     public static final String ERROR_BLOG_ID_IS_REQUIRED = "Blog id is required.";
 
     public static final String ERROR_CATEGORY_NOT_FOUND = "Category not found";
+    public static final String ERROR_CATEGORY_ALREADY_EXISTS = "Category already exists";
     public static final String ERROR_AUTHOR_NOT_FOUND = "Author not found";
     public static final String ERROR_BLOG_NOT_FOUND = "Blog not found";
 }

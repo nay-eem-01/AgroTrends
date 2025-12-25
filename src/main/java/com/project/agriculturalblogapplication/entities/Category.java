@@ -17,7 +17,4 @@ public class Category extends AuditModel<String> {
 
     @Column(name = CategoryTable.CATEGORY_NAME)
     private String categoryName;
-
-    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
-    private List<Blog> blogs;
 }
