@@ -7,6 +7,8 @@ import com.project.agriculturalblogapplication.constatnt.AppConstants;
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import com.project.agriculturalblogapplication.entities.Role;
 import com.project.agriculturalblogapplication.entities.User;
+import com.project.agriculturalblogapplication.model.request.UpdateUserRequest;
+import com.project.agriculturalblogapplication.payloads.PaginationArgs;
 import com.project.agriculturalblogapplication.repositories.UserRepository;
 import com.project.agriculturalblogapplication.enums.UserType;
 import com.project.agriculturalblogapplication.model.request.AuthorCreateRequest;
@@ -15,6 +17,8 @@ import com.project.agriculturalblogapplication.util.AuthUtil;
 import com.project.agriculturalblogapplication.util.CommonUtils;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -134,6 +138,26 @@ public class UserService {
     }
 
     public User saveUser(User user) {
+        return userRepository.save(user);
+    }
+
+    public Page<User> getAllPaginatedUser(PaginationArgs paginationArgs){
+        Pageable pageable = CommonUtils.getPageable(paginationArgs);
+        return userRepository.findAll(pageable);
+    }
+
+    public void deleteUser(User user){
+        userRepository.delete(user);
+    }
+
+    public User update(UpdateUserRequest request, String lang){
+        User user = findByIdWithException(request.getUserId(), lang);
+        String mobileNumber = request.getCountryCode() + request.getMobileNumber();
+
+        user.setName(request.getName());
+        user.setEmail(request.getEmail());
+        user.setMobileNumber(mobileNumber);
+
         return userRepository.save(user);
     }
 }

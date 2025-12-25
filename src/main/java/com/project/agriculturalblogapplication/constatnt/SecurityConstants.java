@@ -13,6 +13,7 @@ public class SecurityConstants {
             "/swagger-ui.html",
             "/api/public",
             "/api/auth/**",
+            "/api/admin/sign-in",
             "/swagger-ui/**",
             "/api-docs/**",
             "/api/verify/**",

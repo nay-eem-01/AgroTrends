@@ -54,6 +54,11 @@ public class AppConstants {
             put("ROLE_UPDATE", "ROLE UPDATE");
             put("ROLE_DELETE", "ROLE DELETE");
 
+            put("CATEGORY_CREATE", "CATEGORY CREATE");
+            put("CATEGORY_READ", "CATEGORY READ");
+            put("CATEGORY_UPDATE", "CATEGORY UPDATE");
+            put("CATEGORY_DELETE", "CATEGORY DELETE");
+
             put("NOTIFICATION_SEND", "NOTIFICATION SEND");
             put("USER_UPDATE_FROM_ADMIN", "USER UPDATE FROM ADMIN");
         }

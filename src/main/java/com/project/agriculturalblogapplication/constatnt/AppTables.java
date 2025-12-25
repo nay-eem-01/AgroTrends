@@ -53,8 +53,7 @@ public final class AppTables {
 
         public static final String PASSWORD = "user_password";
 
-        public static final String MOBILE_NUMBER ="mobile_number";
-
+        public static final String MOBILE_NUMBER = "mobile_number";
     }
 
     public static final class CategoryTable {
