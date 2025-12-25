@@ -61,7 +61,7 @@ public class CategoryController {
     @ApiResponse(content = @Content(schema = @Schema(implementation = Category.class)), responseCode = "200")
     @PreAuthorize("hasAuthority('CATEGORY_CREATE')")
     @PostMapping(value = "/create")
-    public ResponseEntity<HttpResponse> createNewCategory(@RequestBody String categoryName) {
+    public ResponseEntity<HttpResponse> createNewCategory(@RequestParam String categoryName) {
         return HttpResponse.getResponseEntity(
                 true, "Category created successfully.", categoryService.create(categoryName));
     }
