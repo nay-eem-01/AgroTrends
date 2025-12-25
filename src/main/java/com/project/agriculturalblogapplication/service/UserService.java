@@ -1,7 +1,5 @@
 package com.project.agriculturalblogapplication.service;
 
-import com.project.agriculturalblogapplication.dtos.UserDto;
-import com.project.agriculturalblogapplication.exceptionHandler.APIExceptionHandler;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.constatnt.AppConstants;
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
@@ -16,7 +14,6 @@ import com.project.agriculturalblogapplication.model.request.CreateUserRequest;
 import com.project.agriculturalblogapplication.util.AuthUtil;
 import com.project.agriculturalblogapplication.util.CommonUtils;
 import lombok.RequiredArgsConstructor;
-import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -24,7 +21,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -34,23 +30,11 @@ public class UserService {
 
     private final UserRepository userRepository;
 
-    private final ModelMapper modelMapper;
-
     private final PasswordEncoder passwordEncoder;
 
     private final RoleService roleService;
 
     private final AuthorService authorService;
-
-
-    public UserDto addNewAuthor(UserDto userDto) {
-        Optional<User> existingAuthor = userRepository.findByEmail(userDto.getUsersEmail());
-        if (existingAuthor.isPresent()){
-            throw new APIExceptionHandler("User Already exists");
-        }
-        User savedUser = userRepository.save(modelMapper.map(userDto, User.class));
-        return modelMapper.map(savedUser,UserDto.class);
-    }
 
     public void validateEmail(String email, String lang) {
         if (!CommonUtils.isValidMail(email)) {

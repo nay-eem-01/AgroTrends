@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.project.agriculturalblogapplication.config.CommonApiResponses;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.enums.AscOrDescType;
+import com.project.agriculturalblogapplication.model.request.UpdateUserRequest;
 import com.project.agriculturalblogapplication.model.response.HttpResponse;
 import com.project.agriculturalblogapplication.payloads.PaginationArgs;
 import com.project.agriculturalblogapplication.service.UserService;
@@ -83,5 +84,17 @@ public class UserController {
         return HttpResponse.getResponseEntity(
                 true,
                 "User deleted successfully.");
+    }
+
+    @Operation(summary = "Update User with User Details", security = @SecurityRequirement(name = "jwtToken"))
+    @ApiResponse(content = @Content(schema = @Schema(implementation = HttpResponse.class)), responseCode = "200")
+    @DeleteMapping("/update")
+    public ResponseEntity<HttpResponse> update(@RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang,
+                                               @RequestBody UpdateUserRequest request) {
+
+        userService.update(request, lang);
+        return HttpResponse.getResponseEntity(
+                true,
+                "User updated successfully.");
     }
 }
