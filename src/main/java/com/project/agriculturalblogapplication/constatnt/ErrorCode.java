@@ -174,4 +174,7 @@ public final class ErrorCode {
     public static final String ERROR_BLOG_NOT_FOUND = "Blog not found";
     public static final String ERROR_COMMENT_BLOG_MISMATCH = "Comment Blog mismatch";
     public static final String ERROR_COMMENT_NOT_FOUND = "Comment not found";
+    public static final String ERROR_QUESTION_NOT_FOUND = "Question not found";
+    public static final String ERROR_ANSWER_NOT_FOUND = "Answer not found";
+    public static final String ERROR_ANSWER_QUESTION_MISMATCH  = "Answer And Question mismatch";
 }
