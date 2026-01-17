@@ -35,5 +35,5 @@ public class Blog extends AuditModel<String> {
     private Author author;
 
     @OneToMany(mappedBy = "blog", cascade = CascadeType.PERSIST,fetch = FetchType.LAZY)
-    private List<Comments> comments;
+    private List<Comment> comments;
 }

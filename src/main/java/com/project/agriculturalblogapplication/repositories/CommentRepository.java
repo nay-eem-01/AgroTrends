@@ -1,15 +1,15 @@
 package com.project.agriculturalblogapplication.repositories;
 
-import com.project.agriculturalblogapplication.entities.Comments;
+import com.project.agriculturalblogapplication.entities.Comment;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
 @Repository
-public interface CommentRepository extends JpaRepository<Comments,Long> {
+public interface CommentRepository extends JpaRepository<Comment,Long> {
 
-    List<Comments> findByBlogIdAndParentCommentIsNull(Long blogId);
+    List<Comment> findByBlogIdAndParentCommentIsNull(Long blogId);
 
-    List<Comments> findByParentCommentId(Long parentCommentId);
+    List<Comment> findByParentCommentId(Long parentCommentId);
 }

@@ -172,4 +172,6 @@ public final class ErrorCode {
     public static final String ERROR_CATEGORY_ALREADY_EXISTS = "Category already exists";
     public static final String ERROR_AUTHOR_NOT_FOUND = "Author not found";
     public static final String ERROR_BLOG_NOT_FOUND = "Blog not found";
+    public static final String ERROR_COMMENT_BLOG_MISMATCH = "Comment Blog mismatch";
+    public static final String ERROR_COMMENT_NOT_FOUND = "Comment not found";
 }

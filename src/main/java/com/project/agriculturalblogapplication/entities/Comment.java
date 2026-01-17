@@ -11,7 +11,7 @@ import java.util.List;
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
-public class Comments extends AuditModel<String> {
+public class Comment extends AuditModel<String> {
 
     private String commentContent;
 
@@ -27,7 +27,7 @@ public class Comments extends AuditModel<String> {
 
     @ManyToOne
     @JoinColumn(name = "parent_comment_id")
-    private Comments parentComment;
+    private Comment parentComment;
 
     @OneToMany(
             mappedBy = "parentComment",
@@ -35,6 +35,6 @@ public class Comments extends AuditModel<String> {
             fetch = FetchType.EAGER,
             orphanRemoval = true
     )
-    List<Comments> replies;
+    List<Comment> replies;
 
 }
