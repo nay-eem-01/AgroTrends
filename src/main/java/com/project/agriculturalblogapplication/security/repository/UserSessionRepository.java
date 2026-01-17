@@ -11,7 +11,7 @@ import java.util.Optional;
 @Repository
 public interface UserSessionRepository extends JpaRepository<UserSession, Long> {
 
-    Optional<UserSession> findFirstByUserIdOrderByCreatedDateDesc(Long userId);
+    Optional<UserSession> findFirstByUserIdOrderByCreationDateDesc(Long userId);
 
     Optional<UserSession> findByTokenAndIsActive(String token, Boolean isActive);
 

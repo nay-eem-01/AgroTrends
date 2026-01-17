@@ -24,7 +24,7 @@ public class UserSessionService {
     }
 
     public UserSession getActiveSessionByUserId(Long userId) {
-        return userSessionRepository.findFirstByUserIdOrderByCreatedDateDesc(userId).orElse(null);
+        return userSessionRepository.findFirstByUserIdOrderByCreationDateDesc(userId).orElse(null);
     }
 
     public UserSession getActiveSessionByToken(String token) {

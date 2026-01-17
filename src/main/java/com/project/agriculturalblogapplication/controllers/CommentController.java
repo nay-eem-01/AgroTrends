@@ -1,4 +1,4 @@
-package com.project.agriculturalblogapplication.controllers.rest;
+package com.project.agriculturalblogapplication.controllers;
 
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;

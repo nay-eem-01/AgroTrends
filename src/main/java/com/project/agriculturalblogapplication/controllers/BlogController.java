@@ -1,4 +1,4 @@
-package com.project.agriculturalblogapplication.controllers.rest;
+package com.project.agriculturalblogapplication.controllers;
 
 import com.project.agriculturalblogapplication.config.CommonApiResponses;
 import com.project.agriculturalblogapplication.entities.Blog;

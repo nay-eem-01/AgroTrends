@@ -1,6 +1,6 @@
 package com.project.agriculturalblogapplication.exceptionHandler;
 
-import com.hospitalia.common.models.responses.Response;
+import com.project.agriculturalblogapplication.model.response.HttpResponse;
 import io.swagger.v3.oas.annotations.Hidden;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,13 +14,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<?> resourceNotFoundException(ResourceNotFoundException ex, WebRequest request) {
-        Response errorResponse = new Response(HttpStatus.NOT_FOUND, false, ex.getMessage(), request.getDescription(false));
+        HttpResponse errorResponse = new HttpResponse(HttpStatus.NOT_FOUND, false, ex.getMessage(), request.getDescription(false));
         return new ResponseEntity<>(errorResponse, errorResponse.getStatus());
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> globalExceptionHandler(Exception ex, WebRequest request) {
-        Response errorResponse = new Response(HttpStatus.INTERNAL_SERVER_ERROR, false, ex.getMessage(), request.getDescription(false));
+        HttpResponse errorResponse = new HttpResponse(HttpStatus.INTERNAL_SERVER_ERROR, false, ex.getMessage(), request.getDescription(false));
         return new ResponseEntity<>(errorResponse, errorResponse.getStatus());
     }
 }

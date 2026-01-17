@@ -187,5 +187,29 @@ public final class AppTables {
         public static final String LOCALIZED_TEXT_ID = "localized_text_id";
     }
 
+    public static final class ErrorCodeEntityTable {
+
+        private ErrorCodeEntityTable() {}
+
+        public static final String TABLE_NAME =  "error_codes";
+
+        public static final String INTERNAL_CODE = "internal_code";
+
+        public static final String MESSAGE = "message_id";
+
+        public static final String INTERNAL_MESSAGE = "internal_message";
+    }
+    public static final class LanguageTable {
+
+        private LanguageTable() {}
+
+        public static final String TABLE_NAME =  "languages";
+
+        public static final String LANGUAGE_CODE = "language_code";
+
+        public static final String NAME = "name";
+
+        public static final String ACTIVE = "active";
+    }
 
 }
