@@ -88,7 +88,7 @@ public class UserController {
 
     @Operation(summary = "Update User with User Details", security = @SecurityRequirement(name = "jwtToken"))
     @ApiResponse(content = @Content(schema = @Schema(implementation = HttpResponse.class)), responseCode = "200")
-    @DeleteMapping("/update")
+    @PutMapping("/update")
     public ResponseEntity<HttpResponse> update(@RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang,
                                                @RequestBody UpdateUserRequest request) {
 
