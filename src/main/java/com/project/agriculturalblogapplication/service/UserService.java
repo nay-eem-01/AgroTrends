@@ -74,16 +74,16 @@ public class UserService {
         user.setUserTypes(userTypeStrings);
 
         user = userRepository.save(user);
-        Long userId = user.getId();
 
+        User finalUser = user;
         userTypeStrings.forEach(userType -> {
             if (userType.equals(UserType.AUTHOR.name())) {
                 AuthorCreateRequest authorCreateRequest = AuthorCreateRequest.builder()
-                        .userId(userId)
+                        .user(finalUser)
                         .professionalInfoRequest(createUserRequest.getProfessionalInfoRequest())
                         .build();
 
-                authorService.createAuthorUser(authorCreateRequest);
+                authorService.createAuthorUser(authorCreateRequest, lang);
             }
         });
 

@@ -131,6 +131,7 @@ public final class ErrorCode {
     public static final String ERROR_SESSION_TOKEN_IS_REQUIRED = "Session token is required.";
     public static final String ERROR_INVALID_SESSION_TOKEN = "Session token is invalid.";
     public static final String ERROR_USER_ID_IS_REQUIRED = "User ID is required.";
+    public static final String ERROR_USER_IS_REQUIRED = "User is required.";
 
     public static final String ERROR_PROFILE_CREATION_FAILED = "Profile creation failed.";
     public static final String ERROR_USER_ALREADY_EXISTS_WITH_EMAIL = "User already exists with email.";

@@ -1,6 +1,7 @@
 package com.project.agriculturalblogapplication.model.request;
 
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
+import com.project.agriculturalblogapplication.entities.User;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
@@ -12,8 +13,8 @@ import lombok.*;
 @NoArgsConstructor
 public class AuthorCreateRequest {
 
-    @NotNull(message = ErrorCode.ERROR_USER_ID_IS_REQUIRED)
-    private Long userId;
+    @NotNull(message = ErrorCode.ERROR_USER_IS_REQUIRED)
+    private User user;
 
     private ProfessionalInfoRequest professionalInfoRequest;
 }

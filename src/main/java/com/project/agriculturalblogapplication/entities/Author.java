@@ -9,6 +9,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
@@ -29,4 +31,6 @@ public class Author extends AuditModel<String> {
 
     @Column(name = AuthorTable.WORK_PLACE_OR_INSTITUTION)
     private String workPlaceOrInstitution;
+
+    private List<String> specialities;
 }

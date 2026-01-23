@@ -22,6 +22,8 @@ public class ProfessionalInfoRequest {
 
     private String profileImageUrl;
 
+    private String occupation;
+
     private String institution;
 
     private String professionalStatement;

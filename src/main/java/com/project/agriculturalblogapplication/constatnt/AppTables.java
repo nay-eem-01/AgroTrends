@@ -69,7 +69,7 @@ public final class AppTables {
 
         public static final String AUTHOR_ID = "author_id";
         
-        public static final String NAME = "name";
+        public static final String NAME = "authors";
         
         public static final String AUTHOR_NAME = "author_name";
         
