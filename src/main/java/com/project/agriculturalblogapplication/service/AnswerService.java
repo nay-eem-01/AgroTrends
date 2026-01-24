@@ -5,6 +5,10 @@ import com.project.agriculturalblogapplication.exceptionHandler.ApplicationExcep
 import com.project.agriculturalblogapplication.entities.Answer;
 import com.project.agriculturalblogapplication.entities.Question;
 import com.project.agriculturalblogapplication.entities.User;
+import com.project.agriculturalblogapplication.model.request.CreateAnswerRequest;
+import com.project.agriculturalblogapplication.model.request.ReplyToAnswerRequest;
+import com.project.agriculturalblogapplication.model.request.UpdateAnswerRequest;
+import com.project.agriculturalblogapplication.model.response.AnswerResponse;
 import com.project.agriculturalblogapplication.repositories.AnswerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,26 +21,31 @@ import java.util.List;
 public class AnswerService {
 
     private final QuestionService questionService;
+
     private final UserService userService;
+
     private final AnswerRepository answerRepository;
 
-    public Answer addNewAnswer(String content, Long userId, Long questionId, String lang) {
-        Question question = questionService.findByIdWithException(questionId);
-        User user = userService.findByIdWithException(userId, lang);
+    public AnswerResponse create(CreateAnswerRequest request, String lang) {
+        Question question = questionService.findByIdWithException(request.getQuestionId());
 
-        Answer newAnswer = new Answer();
-        newAnswer.setContent(content);
-        newAnswer.setUser(user);
-        newAnswer.setQuestion(question);
+        User user = userService.findByIdWithException(request.getUserId(), lang);
 
-        return answerRepository.save(newAnswer);
+        Answer answer = new Answer();
+        answer.setContent(request.getContent());
+        answer.setUser(user);
+        answer.setQuestion(question);
+        answer = answerRepository.save(answer);
+
+        return mapToAnswerResponse(answer);
     }
 
-    public Answer updateAnswer(String content, Long answerId) {
-        Answer answer = findByIdWithException(answerId);
-        answer.setContent(content);
+    public AnswerResponse update(UpdateAnswerRequest request, String lang) {
+        Answer answer = findByIdWithException(request.getAnswerId());
+        answer.setContent(request.getContent());
+        answer = answerRepository.save(answer);
 
-        return answerRepository.save(answer);
+        return mapToAnswerResponse(answer);
     }
 
     public void delete(Long answerId) {
@@ -44,36 +53,59 @@ public class AnswerService {
         answerRepository.delete(answer);
     }
 
-    public List<Answer> viewAllAnswersByQuestionId(Long questionId) {
-        questionService.findByIdWithException(questionId);
-        return answerRepository.findByQuestionIdAndParentAnswerIsNull(questionId);
+    public List<AnswerResponse> getAllByQuestionId(Long questionId) {
+        List<Answer> answers = answerRepository.findAllByQuestionId(questionId);
+
+        return answers.stream()
+                .map(this::mapToAnswerResponse)
+                .toList();
     }
 
-    public Answer replyToAnswer(String content, Long userId, Long questionId, Long parentAnswerId, String lang) {
-        Question question = questionService.findByIdWithException(questionId);
-        User user = userService.findByIdWithException(userId, lang);
-        Answer parentAnswer = findByIdWithException(parentAnswerId);
+    public AnswerResponse replyToAnswer(ReplyToAnswerRequest request, String lang) {
+        Question question = questionService.findByIdWithException(request.getQuestionId());
 
-        if (!parentAnswer.getQuestion().getId().equals(questionId)) {
+        User user = userService.findByIdWithException(request.getUserId(), lang);
+
+        Answer parentAnswer = findByIdWithException(request.getParentAnswerId());
+
+        if (!parentAnswer.getQuestion().getId().equals(request.getQuestionId())) {
             throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_ANSWER_QUESTION_MISMATCH);
         }
 
         Answer reply = new Answer();
-        reply.setContent(content);
+        reply.setContent(request.getContent());
         reply.setUser(user);
         reply.setQuestion(question);
         reply.setParentAnswer(parentAnswer);
+        reply = answerRepository.save(reply);
 
-        return answerRepository.save(reply);
+        return mapToAnswerResponse(reply);
     }
 
-    public List<Answer> viewReplies(Long parentAnswerId) {
+    public List<AnswerResponse> viewReplies(Long parentAnswerId) {
         Answer parentAnswer = findByIdWithException(parentAnswerId);
-        return parentAnswer.getReplies();
+
+        return parentAnswer.getReplies().stream()
+                .map(this::mapToAnswerResponse)
+                .toList();
     }
 
     public Answer findByIdWithException(Long answerId) {
         return answerRepository.findById(answerId).orElseThrow(() ->
                 new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_ANSWER_NOT_FOUND));
+    }
+
+    public AnswerResponse findById(Long answerId) {
+        return mapToAnswerResponse(findByIdWithException(answerId));
+    }
+
+
+    private AnswerResponse mapToAnswerResponse(Answer answer){
+        AnswerResponse response = new AnswerResponse();
+        response.setUserId(answer.getUser().getId());
+        response.setQuestionId(answer.getQuestion().getId());
+        response.setContent(answer.getContent());
+
+        return response;
     }
 }

@@ -11,4 +11,6 @@ import java.util.List;
 public interface AnswerRepository extends JpaRepository<Answer, Long> {
 
     List<Answer> findByQuestionIdAndParentAnswerIsNull(Long questionId);
+
+    List<Answer> findAllByQuestionId(Long questionId);
 }

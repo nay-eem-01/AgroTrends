@@ -2,6 +2,9 @@ package com.project.agriculturalblogapplication.controllers;
 
 import com.project.agriculturalblogapplication.config.CommonApiResponses;
 import com.project.agriculturalblogapplication.entities.Answer;
+import com.project.agriculturalblogapplication.model.request.CreateAnswerRequest;
+import com.project.agriculturalblogapplication.model.request.ReplyToAnswerRequest;
+import com.project.agriculturalblogapplication.model.request.UpdateAnswerRequest;
 import com.project.agriculturalblogapplication.model.response.HttpResponse;
 import com.project.agriculturalblogapplication.service.AnswerService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,10 +14,13 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import static com.project.agriculturalblogapplication.constatnt.AppConstants.DEFAULT_LANGUAGE_CODE;
 
 @Tag(name = "Answer controller", description = "Answer related operations.")
 @RestController
@@ -28,11 +34,11 @@ public class AnswerController {
     @Operation(summary = "Get all answers by question id", security = @SecurityRequirement(name = "jwtToken"))
     @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = Answer.class))), responseCode = "200")
     @GetMapping(value = "/question/{questionId}")
-    public ResponseEntity<HttpResponse> getAllAnswersByQuestionId(@PathVariable Long questionId) {
+    public ResponseEntity<HttpResponse> getAllByQuestionId(@PathVariable Long questionId) {
         return HttpResponse.getResponseEntity(
                 true,
                 "Answers loaded successfully.",
-                answerService.viewAllAnswersByQuestionId(questionId));
+                answerService.getAllByQuestionId(questionId));
     }
 
     @Operation(summary = "Get all replies by parent answer id", security = @SecurityRequirement(name = "jwtToken"))
@@ -52,53 +58,52 @@ public class AnswerController {
         return HttpResponse.getResponseEntity(
                 true,
                 "Answer loaded successfully.",
-                answerService.findByIdWithException(answerId));
+                answerService.findById(answerId));
     }
 
     @Operation(summary = "Add new answer", security = @SecurityRequirement(name = "jwtToken"))
     @ApiResponse(content = @Content(schema = @Schema(implementation = Answer.class)), responseCode = "200")
-    @PostMapping(value = "/question/{questionId}/user/{userId}")
-    public ResponseEntity<HttpResponse> addNewAnswer(
-            @RequestParam @NotBlank String content,
-            @PathVariable Long userId,
-            @PathVariable Long questionId,
-            @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang) {
+    @PostMapping(value = "/create")
+    public ResponseEntity<HttpResponse> create(
+            @Valid @RequestBody CreateAnswerRequest request,
+            @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang
+            ) {
+
         return HttpResponse.getResponseEntity(
                 true,
-                "Answer added successfully.",
-                answerService.addNewAnswer(content, userId, questionId, lang));
+                "Answer created successfully.",
+                answerService.create(request, lang));
     }
 
     @Operation(summary = "Reply to an answer", security = @SecurityRequirement(name = "jwtToken"))
     @ApiResponse(content = @Content(schema = @Schema(implementation = Answer.class)), responseCode = "200")
-    @PostMapping(value = "/question/{questionId}/user/{userId}/reply/{parentAnswerId}")
+    @PostMapping(value = "/reply")
     public ResponseEntity<HttpResponse> replyToAnswer(
-            @RequestParam @NotBlank String content,
-            @PathVariable Long userId,
-            @PathVariable Long questionId,
-            @PathVariable Long parentAnswerId,
-            @RequestHeader(value = "Accept-Language", defaultValue = "en") String lang) {
+            @Valid @RequestBody ReplyToAnswerRequest request,
+            @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+
         return HttpResponse.getResponseEntity(
                 true,
                 "Reply added successfully.",
-                answerService.replyToAnswer(content, userId, questionId, parentAnswerId, lang));
+                answerService.replyToAnswer(request, lang));
     }
 
     @Operation(summary = "Update answer", security = @SecurityRequirement(name = "jwtToken"))
     @ApiResponse(content = @Content(schema = @Schema(implementation = Answer.class)), responseCode = "200")
-    @PutMapping(value = "/id/{answerId}")
+    @PutMapping(value = "/update/")
     public ResponseEntity<HttpResponse> updateAnswer(
-            @RequestParam @NotBlank String content,
-            @PathVariable Long answerId) {
+            @Valid @RequestBody UpdateAnswerRequest request,
+            @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang
+        ) {
         return HttpResponse.getResponseEntity(
                 true,
                 "Answer updated successfully.",
-                answerService.updateAnswer(content, answerId));
+                answerService.update(request, lang));
     }
 
     @Operation(summary = "Delete answer", security = @SecurityRequirement(name = "jwtToken"))
     @ApiResponse(content = @Content(schema = @Schema(implementation = HttpResponse.class)), responseCode = "200")
-    @DeleteMapping(value = "/id/{answerId}")
+    @DeleteMapping(value = "/delete/id/{answerId}")
     public ResponseEntity<HttpResponse> deleteAnswer(@PathVariable Long answerId) {
         answerService.delete(answerId);
         return HttpResponse.getResponseEntity(true, "Answer deleted successfully.");
