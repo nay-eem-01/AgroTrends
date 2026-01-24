@@ -1,14 +1,16 @@
 package com.project.agriculturalblogapplication.service;
 
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
-import com.project.agriculturalblogapplication.dtos.CommentDto;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.entities.Blog;
 import com.project.agriculturalblogapplication.entities.Comment;
 import com.project.agriculturalblogapplication.entities.User;
+import com.project.agriculturalblogapplication.model.request.CreateCommentRequest;
+import com.project.agriculturalblogapplication.model.request.ReplyCommentRequest;
+import com.project.agriculturalblogapplication.model.request.UpdateCommentRequest;
+import com.project.agriculturalblogapplication.model.response.CommentResponse;
 import com.project.agriculturalblogapplication.repositories.CommentRepository;
 import lombok.RequiredArgsConstructor;
-import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -19,27 +21,35 @@ import java.util.List;
 public class CommentService {
 
     private final BlogService blogService;
+
     private final UserService userService;
+
     private final CommentRepository commentRepository;
-    private final ModelMapper modelMapper;
 
-    public Comment addNewComment(CommentDto commentDto, Long userId, Long blogId, String lang) {
-        Blog blog = blogService.findByIdWithException(blogId);
-        User user = userService.findByIdWithException(userId, lang);
+    public CommentResponse create(CreateCommentRequest request, String lang) {
+        Blog blog = blogService.findByIdWithException(request.getBlogId());
+        User user = userService.findByIdWithException(request.getUserId(), lang);
 
-        Comment newComment = modelMapper.map(commentDto, Comment.class);
-        newComment.setUser(user);
-        newComment.setBlog(blog);
+        Comment comment = new Comment();
+        comment.setBlog(blog);
+        comment.setUser(user);
+        comment.setCommentContent(request.getContent());
+        comment =  commentRepository.save(comment);
 
-        return commentRepository.save(newComment);
-
+        return mapToCommentResponse(comment);
     }
 
-    public Comment updateComment(CommentDto commentDto, Long commentId) {
-        Comment comment = findByIdWithException(commentId);
-        comment.setCommentContent(commentDto.getCommentContent());
+    public CommentResponse update(UpdateCommentRequest request, String lang) {
+        Comment comment = findByIdWithException(request.getCommentId());
 
-        return commentRepository.save(comment);
+        if (!comment.getUser().getId().equals(request.getUserId())){
+            throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_COMMENT_AND_USER_MISMATCH, lang);
+        }
+
+        comment.setCommentContent(request.getContent());
+        comment = commentRepository.save(comment);
+
+        return mapToCommentResponse(comment);
     }
 
     public void delete(Long commentId) {
@@ -47,36 +57,68 @@ public class CommentService {
         commentRepository.delete(comment);
     }
 
-    public List<Comment> viewAllCommentsByBlogId(Long blogId) {
+    public List<CommentResponse> getAllByBlogId(Long blogId) {
         blogService.findByIdWithException(blogId);
 
-        return commentRepository.findByBlogIdAndParentCommentIsNull(blogId);
+        List<Comment> comments = commentRepository.findByBlogIdAndParentCommentIsNull(blogId);
+
+        return comments.stream()
+                .map(this::mapToCommentResponse)
+                .toList();
     }
 
-    public Comment replyToAComment(CommentDto commentDto, Long userId, Long blogId, Long parentCommentId, String lang) {
-        Blog blog = blogService.findByIdWithException(blogId);
-        User user = userService.findByIdWithException(userId, lang);
-        Comment parentComment = findByIdWithException(parentCommentId);
+    public CommentResponse reply(ReplyCommentRequest request, String lang) {
+        Blog blog = blogService.findByIdWithException(request.getBlogId());
 
-        if (!parentComment.getBlog().getId().equals(blogId)) {
+        User user = userService.findByIdWithException(request.getUserId(), lang);
+
+        Comment parentComment = findByIdWithException(request.getParentCommentId());
+
+        if (!parentComment.getBlog().getId().equals(request.getBlogId())) {
             throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_COMMENT_BLOG_MISMATCH);
         }
 
-        Comment reply = modelMapper.map(commentDto, Comment.class);
+        Comment reply = new Comment();
         reply.setUser(user);
         reply.setBlog(blog);
         reply.setParentComment(parentComment);
+        reply.setCommentContent(request.getContent());
 
-        return commentRepository.save(reply);
+        reply =  commentRepository.save(reply);
+
+        return mapToCommentResponse(reply);
     }
 
-    public List<Comment> viewReplies(Long parentCommentId) {
+    public List<CommentResponse> viewReplies(Long parentCommentId) {
         Comment parentComment = findByIdWithException(parentCommentId);
-        return parentComment.getReplies();
+
+        return parentComment.getReplies().stream()
+                .map(this::mapToCommentResponse)
+                .toList();
     }
 
     public Comment findByIdWithException(Long commentId) {
         return commentRepository.findById(commentId).orElseThrow(() ->
                 new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_COMMENT_NOT_FOUND));
+    }
+
+    public CommentResponse findById(Long commentId) {
+        return mapToCommentResponse(findByIdWithException(commentId));
+    }
+
+    private CommentResponse mapToCommentResponse(Comment comment){
+        CommentResponse response = new CommentResponse();
+        response.setCommentId(comment.getId());
+
+        if (comment.getParentComment() == null){
+            response.setParentCommentId(null);
+        }
+
+        response.setParentCommentId(comment.getParentComment().getId());
+        response.setBlogId(comment.getBlog().getId());
+        response.setUserId(comment.getUser().getId());
+        response.setContent(comment.getCommentContent());
+
+        return response;
     }
 }

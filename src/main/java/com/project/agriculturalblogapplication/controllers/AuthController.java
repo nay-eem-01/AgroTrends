@@ -34,7 +34,8 @@ public class AuthController {
     @Operation(summary = "Sign up")
     @ApiResponse(content = @Content(schema = @Schema(implementation = User.class)), responseCode = "200")
     @PostMapping(value = "/sign-up")
-    public ResponseEntity<HttpResponse> signUp(@Valid @RequestBody SignUpRequest request, @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+    public ResponseEntity<HttpResponse> signUp(@Valid @RequestBody SignUpRequest request,
+                                               @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
         return HttpResponse.getResponseEntity(
                 HttpStatus.OK,
                 "Sign-up successful.",

@@ -1,5 +1,6 @@
 package com.project.agriculturalblogapplication.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.project.agriculturalblogapplication.constatnt.AppTables.UserTable;
 import com.project.agriculturalblogapplication.constatnt.AppTables.AnswerTable;
 import com.project.agriculturalblogapplication.constatnt.AppTables.QuestionTable;
@@ -33,6 +34,7 @@ public class Answer extends AuditModel<String> {
     @JoinColumn(name = AnswerTable.ANSWER_ID)
     private Answer parentAnswer;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "parentAnswer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Answer> replies = new ArrayList<>();
 }

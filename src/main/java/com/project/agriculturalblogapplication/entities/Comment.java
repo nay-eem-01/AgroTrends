@@ -1,9 +1,11 @@
 package com.project.agriculturalblogapplication.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.project.agriculturalblogapplication.model.AuditModel;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -15,26 +17,26 @@ public class Comment extends AuditModel<String> {
 
     private String commentContent;
 
-    @ManyToOne
-    @JoinColumn(name = "blog_id",nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "blog_id", nullable = false)
+    @JsonIgnore
     private Blog blog;
 
-
-    @ManyToOne
-    @JoinColumn(name = "user_id",nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
     private User user;
 
-
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_comment_id")
     private Comment parentComment;
 
     @OneToMany(
             mappedBy = "parentComment",
             cascade = CascadeType.ALL,
-            fetch = FetchType.EAGER,
-            orphanRemoval = true
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
     )
-    List<Comment> replies;
-
+    @JsonIgnore
+    private List<Comment> replies = new ArrayList<>();
 }

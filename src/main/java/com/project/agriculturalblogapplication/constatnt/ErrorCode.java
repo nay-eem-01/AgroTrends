@@ -178,4 +178,5 @@ public final class ErrorCode {
     public static final String ERROR_QUESTION_NOT_FOUND = "Question not found";
     public static final String ERROR_ANSWER_NOT_FOUND = "Answer not found";
     public static final String ERROR_ANSWER_QUESTION_MISMATCH  = "Answer And Question mismatch";
+    public static final String ERROR_COMMENT_AND_USER_MISMATCH  = "Comment and User mismatch";
 }
