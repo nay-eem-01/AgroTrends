@@ -28,6 +28,11 @@ public class AuthorService {
     }
 
     public Author findByUserIdWithException(Long userId){
+        return authorRepository.findByUserId(userId).orElseThrow(()->
+                new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_AUTHOR_NOT_FOUND));
+    }
+
+    public Author findByIdWithException(Long userId){
         return authorRepository.findById(userId).orElseThrow(()->
                 new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_AUTHOR_NOT_FOUND));
     }
