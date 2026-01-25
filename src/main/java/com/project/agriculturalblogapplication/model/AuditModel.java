@@ -57,4 +57,36 @@ public abstract class AuditModel<U> {
         if (lastModifiedDate == null) return 0L;
         return this.lastModifiedDate.toEpochSecond(OffsetDateTime.now().getOffset());
     }
+
+    public U getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(U createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public U getLastModifiedBy() {
+        return lastModifiedBy;
+    }
+
+    public void setLastModifiedBy(U lastModifiedBy) {
+        this.lastModifiedBy = lastModifiedBy;
+    }
+
+    public LocalDateTime getCreationDate() {
+        return creationDate;
+    }
+
+    public void setCreationDate(LocalDateTime creationDate) {
+        this.creationDate = creationDate;
+    }
+
+    public LocalDateTime getLastModifiedDate() {
+        return lastModifiedDate;
+    }
+
+    public void setLastModifiedDate(LocalDateTime lastModifiedDate) {
+        this.lastModifiedDate = lastModifiedDate;
+    }
 }
