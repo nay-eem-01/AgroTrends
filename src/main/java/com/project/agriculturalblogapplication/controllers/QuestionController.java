@@ -66,7 +66,7 @@ public class QuestionController {
     @GetMapping(value = "/id/{questionId}")
     public ResponseEntity<HttpResponse> findById(@PathVariable Long questionId) {
         return HttpResponse.getResponseEntity(
-                true, "Data loaded successfully.", questionService.findByIdWithException(questionId));
+                true, "Data loaded successfully.", questionService.findById(questionId));
     }
 
     @Operation(summary = "New question creation", security = @SecurityRequirement(name = "jwtToken"))
