@@ -8,6 +8,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class AnswerResponse {
+    private Long answerId;
     private Long questionId;
     private Long userId;
     private String content;

@@ -102,6 +102,7 @@ public class AnswerService {
 
     private AnswerResponse mapToAnswerResponse(Answer answer){
         AnswerResponse response = new AnswerResponse();
+        response.setAnswerId(answer.getId());
         response.setUserId(answer.getUser().getId());
         response.setQuestionId(answer.getQuestion().getId());
         response.setContent(answer.getContent());
