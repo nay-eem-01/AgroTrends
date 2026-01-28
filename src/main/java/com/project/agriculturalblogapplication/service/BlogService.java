@@ -29,6 +29,8 @@ public class BlogService {
 
     private final AuthorService authorService;
 
+    private final DocumentService documentService;
+
     public Blog create(CreateBlogRequest request) {
         Category category = categoryService.findByIdWithException(request.getCategoryId());
 
@@ -41,7 +43,9 @@ public class BlogService {
         blog.setContent(request.getContent());
         blog.setImageUrl(request.getImageUrl());
 
-        return blogRepositories.save(blog);
+        blog = blogRepositories.save(blog);
+        documentService.indexBlog(blog);
+        return blog;
     }
 
     public Page<Blog> getAll(PaginationArgs paginationArgs) {
@@ -77,7 +81,10 @@ public class BlogService {
         blog.setCategory(category);
         blog.setImageUrl(request.getImageUrl());
 
-        return blogRepositories.save(blog);
+        blog = blogRepositories.save(blog);
+        documentService.indexBlog(blog);
+
+        return blog;
     }
 
     public void delete(Long id) {

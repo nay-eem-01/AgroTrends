@@ -20,6 +20,7 @@ public class Blog extends AuditModel<String> {
     @Column(name = BlogTable.TITLE)
     private String title;
 
+    @Lob
     @Column(name = BlogTable.CONTENT)
     private String content;
 
