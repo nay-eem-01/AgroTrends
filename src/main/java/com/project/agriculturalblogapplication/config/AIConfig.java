@@ -1,5 +1,6 @@
 package com.project.agriculturalblogapplication.config;
 
+import lombok.Value;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

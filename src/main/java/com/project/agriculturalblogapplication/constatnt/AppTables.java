@@ -212,4 +212,16 @@ public final class AppTables {
         public static final String ACTIVE = "active";
     }
 
+    public static final class AiAnswerTable {
+
+        private AiAnswerTable() {}
+
+        public static final String TABLE_NAME =  "ai_answers";
+
+        public static final String USER_ID = "user_id";
+
+        public static final String QUESTION = "question";
+
+        public static final String AI_ANSWER = "ai_answer";
+    }
 }
