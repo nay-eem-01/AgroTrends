@@ -94,6 +94,10 @@ public class QuestionService {
         response.setQuestionId(question.getId());
         response.setUserId(question.getUser().getId());
         response.setContent(question.getContent());
+        response.setCreatedBy(question.getCreatedBy());
+        response.setCreationDate(question.getCreationDate());
+        response.setLastModifiedBy(question.getLastModifiedBy());
+        response.setLastModifiedDate(question.getLastModifiedDate());
 
         return response;
     }
