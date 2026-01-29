@@ -68,11 +68,23 @@ public class UserController {
     @Operation(summary = "Get user info by ID", security = @SecurityRequirement(name = "jwtToken"))
     @ApiResponse(content = @Content(schema = @Schema(implementation = User.class)), responseCode = "200")
     @GetMapping("/id/{id}")
-    public ResponseEntity<HttpResponse> findById(@PathVariable Long id, @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) throws JsonProcessingException {
+    public ResponseEntity<HttpResponse> findById(@PathVariable Long id,
+                                                 @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) throws JsonProcessingException {
         return HttpResponse.getResponseEntity(
                 true,
                 "Data loaded successfully.",
                 userService.findByIdWithException(id, lang));
+    }
+
+    @Operation(summary = "Get user info by email", security = @SecurityRequirement(name = "jwtToken"))
+    @ApiResponse(content = @Content(schema = @Schema(implementation = User.class)), responseCode = "200")
+    @GetMapping("/get")
+    public ResponseEntity<HttpResponse> findByEmail(@RequestParam String email,
+                                                    @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) throws JsonProcessingException {
+        return HttpResponse.getResponseEntity(
+                true,
+                "Data loaded successfully.",
+                userService.findByEmailWithException(email, lang));
     }
 
     @Operation(summary = "Delete User with User Details", security = @SecurityRequirement(name = "jwtToken"))
