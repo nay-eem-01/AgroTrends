@@ -4,6 +4,7 @@ import com.project.agriculturalblogapplication.constatnt.AppTables.AiAnswerTable
 import com.project.agriculturalblogapplication.model.AuditModel;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -24,6 +25,7 @@ public class AiAnswer extends AuditModel<String> {
     @Column(name = AiAnswerTable.QUESTION)
     private String question;
 
+    @Lob
     @Column(name = AiAnswerTable.AI_ANSWER)
     private String aiAnswer;
 }

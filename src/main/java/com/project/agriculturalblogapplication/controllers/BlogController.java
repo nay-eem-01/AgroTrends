@@ -31,7 +31,7 @@ public class BlogController {
 
     private final BlogService blogService;
 
-    @Operation(summary = "Get all blogs - paginated", security = @SecurityRequirement(name = "jwtToken"))
+    @Operation(summary = "Get all blogs - paginated")
     @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = Blog.class))), responseCode = "200")
     @GetMapping(value = "/all")
     public ResponseEntity<HttpResponse> getAll(@RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,

@@ -54,7 +54,7 @@ public class AiChatController {
         aiResponseRequest.setAnswer(answer);
         aiResponseRequest.setUserId(user.getId());
 
-        aiService.save( request);
+        aiService.save(aiResponseRequest);
 
         return HttpResponse.getResponseEntity(
                 true,

@@ -45,6 +45,7 @@ public class BlogService {
 
         blog = blogRepositories.save(blog);
         documentService.indexBlog(blog);
+
         return blog;
     }
 

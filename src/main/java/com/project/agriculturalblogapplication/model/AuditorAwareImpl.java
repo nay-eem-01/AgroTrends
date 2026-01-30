@@ -11,7 +11,6 @@ public class AuditorAwareImpl implements AuditorAware<String> {
     @Override
     public Optional<String> getCurrentAuditor() {
         if (SecurityContextHolder.getContext().getAuthentication() != null) {
-            log.info("Security context holder: {}", SecurityContextHolder.getContext().getAuthentication().getName());
             return Optional.of(SecurityContextHolder.getContext().getAuthentication().getName());
         } else {
             return Optional.of("SYSTEM");
