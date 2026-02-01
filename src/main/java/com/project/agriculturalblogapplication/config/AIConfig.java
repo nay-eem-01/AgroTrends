@@ -10,7 +10,9 @@ public class AIConfig {
     @Bean
     public ChatClient chatClient(ChatClient.Builder builder) {
         return builder
-            .defaultSystem("You are an expert agricultural advisor. Answer in Bangla if the question is in Bangla.")
+            .defaultSystem("You are an expert agricultural advisor. Answer in Bangla if the question is in Bangla." +
+                    "If The question is in English answer in English unless the user tell specifically to answer in Bangla")
+
             .build();
     }
 }

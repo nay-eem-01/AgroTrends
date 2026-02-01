@@ -106,6 +106,10 @@ public class AnswerService {
         response.setUserId(answer.getUser().getId());
         response.setQuestionId(answer.getQuestion().getId());
         response.setContent(answer.getContent());
+        response.setCreatedBy(answer.getCreatedBy());
+        response.setCreationDate(answer.getCreationDate());
+        response.setLastModifiedBy(answer.getLastModifiedBy());
+        response.setLastModifiedDate(answer.getLastModifiedDate());
 
         return response;
     }

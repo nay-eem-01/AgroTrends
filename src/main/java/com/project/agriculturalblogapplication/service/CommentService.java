@@ -34,7 +34,7 @@ public class CommentService {
         comment.setBlog(blog);
         comment.setUser(user);
         comment.setCommentContent(request.getContent());
-        comment =  commentRepository.save(comment);
+        comment = commentRepository.save(comment);
 
         return mapToCommentResponse(comment);
     }
@@ -109,15 +109,17 @@ public class CommentService {
     private CommentResponse mapToCommentResponse(Comment comment){
         CommentResponse response = new CommentResponse();
         response.setCommentId(comment.getId());
-
-        if (comment.getParentComment() == null){
-            response.setParentCommentId(null);
-        }
-
-        response.setParentCommentId(comment.getParentComment().getId());
         response.setBlogId(comment.getBlog().getId());
         response.setUserId(comment.getUser().getId());
         response.setContent(comment.getCommentContent());
+        response.setCreatedBy(comment.getCreatedBy());
+        response.setCreationDate(comment.getCreationDate());
+        response.setLastModifiedBy(comment.getLastModifiedBy());
+        response.setLastModifiedDate(comment.getLastModifiedDate());
+
+        if (comment.getParentComment() != null){
+            response.setParentCommentId(comment.getParentComment().getId());
+        }
 
         return response;
     }
