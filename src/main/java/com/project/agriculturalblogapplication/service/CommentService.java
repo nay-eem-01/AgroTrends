@@ -1,6 +1,7 @@
 package com.project.agriculturalblogapplication.service;
 
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
+import com.project.agriculturalblogapplication.events.CommentCreatedEvent;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.entities.Blog;
 import com.project.agriculturalblogapplication.entities.Comment;
@@ -26,6 +27,8 @@ public class CommentService {
 
     private final CommentRepository commentRepository;
 
+    public final KafkaProducerService kafkaProducerService;
+
     public CommentResponse create(CreateCommentRequest request, String lang) {
         Blog blog = blogService.findByIdWithException(request.getBlogId());
         User user = userService.findByIdWithException(request.getUserId(), lang);
@@ -35,6 +38,16 @@ public class CommentService {
         comment.setUser(user);
         comment.setCommentContent(request.getContent());
         comment = commentRepository.save(comment);
+
+        CommentCreatedEvent commentCreatedEvent = new CommentCreatedEvent();
+        commentCreatedEvent.setCommentId(comment.getId());
+        commentCreatedEvent.setBlogId(comment.getBlog().getId());
+        commentCreatedEvent.setBlogTitle(blog.getTitle());
+        commentCreatedEvent.setBlogAuthorId(blog.getAuthor().getId());
+        commentCreatedEvent.setCommentText(comment.getCommentContent());
+        commentCreatedEvent.setCommenterUserId(user.getId());
+
+        kafkaProducerService.publishEvent("comment-events", commentCreatedEvent);
 
         return mapToCommentResponse(comment);
     }
