@@ -1,6 +1,8 @@
 package com.project.agriculturalblogapplication.service;
 
+import com.project.agriculturalblogapplication.entities.Comment;
 import com.project.agriculturalblogapplication.entities.Notification;
+import com.project.agriculturalblogapplication.enums.NotificationType;
 import com.project.agriculturalblogapplication.events.CommentCreatedEvent;
 import com.project.agriculturalblogapplication.repositories.NotificationRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +17,7 @@ public class NotificationConsumerService {
 
     private final NotificationRepository notificationRepository;
 
-    @KafkaListener(topics = "comment-events", groupId = "blog-app-group")
+    @KafkaListener(topics = "comment-events", groupId = "blog-app-group-v2")
     public void consumeCommentEvent(CommentCreatedEvent event) {
         log.info("Received comment created event: {}", event);
 
@@ -26,13 +28,10 @@ public class NotificationConsumerService {
 
         Notification notification = Notification.builder()
                 .userId(event.getBlogAuthorId())
-                .type("COMMENT_CREATED")
-                .message(String.format("%s commented on your blog '%s': %s",
-                        event.getCommenterUserName(),
-                        event.getBlogTitle(),
-                        event.getCommentText()))
-                .relatedEntityId(event.getBlogId())
-                .relatedEntityType("BLOG")
+                .type(NotificationType.COMMENT_CREATED.name())
+                .message(event.getCommenterUserName() + "commented on your blog")
+                .relatedEntityId(event.getCommentId())
+                .relatedEntityType(Comment.class.getSimpleName())
                 .isRead(false)
                 .build();
 

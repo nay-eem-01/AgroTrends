@@ -46,6 +46,7 @@ public class CommentService {
         commentCreatedEvent.setBlogAuthorId(blog.getAuthor().getId());
         commentCreatedEvent.setCommentText(comment.getCommentContent());
         commentCreatedEvent.setCommenterUserId(user.getId());
+        commentCreatedEvent.setCommenterUserName(comment.getUser().getName());
 
         kafkaProducerService.publishEvent("comment-events", commentCreatedEvent);
 
