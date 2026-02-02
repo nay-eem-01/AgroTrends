@@ -1,6 +1,7 @@
 package com.project.agriculturalblogapplication.service;
 
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
+import com.project.agriculturalblogapplication.events.BlogCreatedEvent;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.request.CreateBlogRequest;
 import com.project.agriculturalblogapplication.model.request.UpdateBlogRequest;
@@ -16,6 +17,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -29,6 +31,9 @@ public class BlogService {
 
     private final AuthorService authorService;
 
+    private final KafkaProducerService kafkaProducerService;
+
+    @Transactional
     public Blog create(CreateBlogRequest request) {
         Category category = categoryService.findByIdWithException(request.getCategoryId());
 
@@ -40,8 +45,16 @@ public class BlogService {
         blog.setTitle(request.getTitle());
         blog.setContent(request.getContent());
         blog.setImageUrl(request.getImageUrl());
+        blog = blogRepositories.save(blog);
 
-        return blogRepositories.save(blog);
+        BlogCreatedEvent blogCreatedEvent = new BlogCreatedEvent();
+        blogCreatedEvent.setBlogId(blog.getId());
+        blogCreatedEvent.setBlogTitle(blog.getTitle());
+        blogCreatedEvent.setAuthorId(blog.getAuthor().getId());
+
+        kafkaProducerService.publishEvent("blog-events", blogCreatedEvent);
+
+        return blog;
     }
 
     public Page<Blog> getAll(PaginationArgs paginationArgs) {

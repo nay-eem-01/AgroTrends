@@ -212,4 +212,25 @@ public final class AppTables {
         public static final String ACTIVE = "active";
     }
 
+    public static final class NotificationTable {
+
+        private NotificationTable() {}
+
+        public static final String TABLE_NAME =  "notifications";
+
+        public static final String USER_ID = "user_id";
+
+        public static final String TYPE = "type";
+
+        public static final String RELATED_ENTITY_ID = "related_entity_id";
+
+        public static final String RELATED_ENTITY_TYPE = "related_entity_type";
+
+        public static final String IS_READ = "is_read";
+
+        public static final String READ_AT = "read_at";
+
+        public static final String MESSAGE = "message";
+    }
+
 }
