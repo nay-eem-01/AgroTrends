@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### OpenCode Config ###
+opencode-config.json

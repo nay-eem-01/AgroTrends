@@ -12,12 +12,9 @@ import com.project.agriculturalblogapplication.repositories.QuestionRepository;
 import com.project.agriculturalblogapplication.util.CommonUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -41,31 +38,18 @@ public class QuestionService {
 
     public Page<QuestionResponse> getAll(PaginationArgs paginationArgs) {
         Pageable pageable = CommonUtils.getPageable(paginationArgs);
-
-        List<Question> questions = questionRepository.findAll();
-
-        List<QuestionResponse> questionResponses = questions.stream()
-                .map(this::mapToQuestionResponse)
-                .toList();
-
-        return new PageImpl<>(questionResponses, pageable, questionResponses.size());
+        Page<Question> questions = questionRepository.findAll(pageable);
+        return questions.map(this::mapToQuestionResponse);
     }
 
     public Page<QuestionResponse> getAllByUser(PaginationArgs paginationArgs, Long userId, String lang) {
         Pageable pageable = CommonUtils.getPageable(paginationArgs);
-
         User user = userService.findByIdWithException(userId, lang);
-
-        List<Question> questions = questionRepository.findAllByUser(user);
-
-        List<QuestionResponse> questionResponses = questions.stream()
-                .map(this::mapToQuestionResponse)
-                .toList();
-
-        return new PageImpl<>(questionResponses, pageable, questionResponses.size());
+        Page<Question> questions = questionRepository.findAllByUser(user, pageable);
+        return questions.map(this::mapToQuestionResponse);
     }
 
-    public QuestionResponse update(UpdateQuestionRequest request) {
+    public QuestionResponse update(UpdateQuestionRequest request, String lang) {
         Question question = findByIdWithException(request.getQuestionId());
 
         question.setTitle(request.getTitle());
@@ -75,7 +59,7 @@ public class QuestionService {
         return mapToQuestionResponse(question);
     }
 
-    public void delete(Long id) {
+    public void delete(Long id, String lang) {
         Question question = findByIdWithException(id);
         questionRepository.delete(question);
     }
@@ -89,11 +73,14 @@ public class QuestionService {
         return mapToQuestionResponse(findByIdWithException(questionId));
     }
 
-    private QuestionResponse mapToQuestionResponse(Question question){
+    private QuestionResponse mapToQuestionResponse(Question question) {
         QuestionResponse response = new QuestionResponse();
         response.setQuestionId(question.getId());
         response.setUserId(question.getUser().getId());
+        response.setTitle(question.getTitle());
         response.setContent(question.getContent());
+        response.setCreatedAt(question.getCreationDate());
+        response.setUpdatedAt(question.getLastModifiedDate());
 
         return response;
     }
