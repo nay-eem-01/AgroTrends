@@ -17,7 +17,7 @@ public final class AppTables {
 
     public static final String ROLE_PRIVILEGE_NAME = "role_privilege";
 
-    public static final String USER_TYPE = "user_type";
+    public static final String USER_TYPES = "user_types";
 
     public static final class AuditModelTable {
 
@@ -53,6 +53,7 @@ public final class AppTables {
 
         public static final String PASSWORD = "user_password";
 
+        public static final String MOBILE_NUMBER = "mobile_number";
     }
 
     public static final class CategoryTable {
@@ -68,7 +69,7 @@ public final class AppTables {
 
         public static final String AUTHOR_ID = "author_id";
         
-        public static final String NAME = "name";
+        public static final String NAME = "authors";
         
         public static final String AUTHOR_NAME = "author_name";
         
@@ -116,5 +117,111 @@ public final class AppTables {
         public static final String CONTENT = "content";
 
         public static final String TITLE = "title";
+    }
+
+    public static final class RefreshTokenTable {
+
+        private RefreshTokenTable() {}
+
+        public static final String TABLE_NAME =  "refresh_tokens";
+
+        public static final String USER_ID = "user_id";
+
+        public static final String TOKEN = "token";
+
+        public static final String EXPIRY_TIME = "image_url";
+    }
+
+    public static final class UserSessionTable {
+
+        private UserSessionTable() {}
+
+        public static final String TABLE_NAME = "user_sessions";
+
+        public static final String TOKEN = "token";
+
+        public static final String TOKEN_TYPE = "token_type";
+
+        public static final String SESSION_TOKEN = "session_token";
+
+        public static final String IS_SESSION_TOKEN_VALID = "is_session_token_valid";
+
+        public static final String ISSUES_AT = "issues_at";
+
+        public static final String EXPIRES_AT = "expires_at";
+
+        public static final String DEACTIVATED_AT = "deactivated_at";
+
+        public static final String PLATFORM_TYPE = "platform_type";
+
+        public static final String IS_ACTIVE = "is_active";
+
+        public static final String USER_DEVICE_ID = "user_device_id";
+
+        public static final String USER_TYPE = "user_type";
+
+        public static final String USER_ID = "user_id";
+    }
+
+    public static final class LocalizedTextTable {
+        private LocalizedTextTable() {}
+
+        public static final String TABLE_NAME = "localized_texts";
+
+        public static final String ORIGINAL_TEXT = "original_text";
+
+        public static final String ORIGINAL_LANGUAGE_CODE = "original_language_code";
+    }
+
+    public static final class TranslationTable {
+        private TranslationTable() {}
+
+        public static final String TABLE_NAME = "translations";
+
+        public static final String LANGUAGE_ID = "language_id";
+
+        public static final String LANGUAGE_CODE = "language_code";
+
+        public static final String TRANSLATED_TEXT = "translated_text";
+
+        public static final String LOCALIZED_TEXT_ID = "localized_text_id";
+    }
+
+    public static final class ErrorCodeEntityTable {
+
+        private ErrorCodeEntityTable() {}
+
+        public static final String TABLE_NAME =  "error_codes";
+
+        public static final String INTERNAL_CODE = "internal_code";
+
+        public static final String MESSAGE = "message_id";
+
+        public static final String INTERNAL_MESSAGE = "internal_message";
+    }
+    public static final class LanguageTable {
+
+        private LanguageTable() {}
+
+        public static final String TABLE_NAME =  "languages";
+
+        public static final String LANGUAGE_CODE = "language_code";
+
+        public static final String NAME = "name";
+
+        public static final String ACTIVE = "active";
+    }
+
+    public static final class AiAnswerTable {
+
+        private AiAnswerTable() {}
+
+        public static final String TABLE_NAME =  "ai_answers";
+
+        public static final String USER_ID = "user_id";
+
+        public static final String QUESTION = "question";
+
+        public static final String AI_ANSWER = "ai_answer";
     }
 }

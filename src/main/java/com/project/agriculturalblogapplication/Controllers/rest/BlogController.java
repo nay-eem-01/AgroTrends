@@ -1,9 +1,0 @@
-package com.project.agriculturalblogapplication.Controllers.rest;
-
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-@RestController
-@RequestMapping("/api/blog")
-public class BlogController {
-}

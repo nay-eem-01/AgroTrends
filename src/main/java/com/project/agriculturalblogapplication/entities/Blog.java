@@ -1,6 +1,6 @@
 package com.project.agriculturalblogapplication.entities;
 
-
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.project.agriculturalblogapplication.constatnt.AppTables.CategoryTable;
 import com.project.agriculturalblogapplication.constatnt.AppTables.BlogTable;
 import com.project.agriculturalblogapplication.constatnt.AppTables.AuthorTable;
@@ -9,7 +9,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.List;
-
 
 @Entity
 @NoArgsConstructor
@@ -22,6 +21,7 @@ public class Blog extends AuditModel<String> {
     @Column(name = BlogTable.TITLE)
     private String title;
 
+    @Lob
     @Column(name = BlogTable.CONTENT)
     private String content;
 
@@ -30,13 +30,13 @@ public class Blog extends AuditModel<String> {
 
     @ManyToOne
     @JoinColumn(name = CategoryTable.CATEGORY_ID, nullable = false)
-    private Categories category;
+    private Category category;
 
     @ManyToOne
     @JoinColumn(name = AuthorTable.AUTHOR_ID, nullable = false)
     private Author author;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "blog", cascade = CascadeType.PERSIST,fetch = FetchType.LAZY)
-    private List<Comments> comments;
-
+    private List<Comment> comments;
 }

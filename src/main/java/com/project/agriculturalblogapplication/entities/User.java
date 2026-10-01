@@ -1,5 +1,6 @@
 package com.project.agriculturalblogapplication.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.project.agriculturalblogapplication.constatnt.AppTables;
 import com.project.agriculturalblogapplication.constatnt.AppTables.UserTable;
 import com.project.agriculturalblogapplication.enums.UserType;
@@ -7,7 +8,6 @@ import com.project.agriculturalblogapplication.model.AuditModel;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.*;
 
 
@@ -25,8 +25,8 @@ public class User extends AuditModel<String> {
     @Column(name = UserTable.NAME)
     private String name;
 
+    @JsonIgnore
     @NotBlank(message = "Password can't be blank")
-    @Size(min = 4,message = "Password should contain at least 4 character")
     @Column(name = UserTable.PASSWORD)
     private String password;
 
@@ -35,8 +35,16 @@ public class User extends AuditModel<String> {
     @Column(name = UserTable.EMAIL)
     private String email;
 
-    @Column(name = AppTables.USER_TYPE)
-    private UserType userType;
+    @NotBlank
+    @Column(name = UserTable.MOBILE_NUMBER)
+    private String mobileNumber;
+
+    @Column(name = AppTables.USER_TYPES)
+    private Set<String> userTypes;
+
+    /** Set for seeded accounts; blocks every endpoint except change-password until cleared. Null counts as false. */
+    @Column(name = "must_change_password")
+    private Boolean mustChangePassword = false;
 
     @ManyToMany(fetch =  FetchType.EAGER , cascade =  CascadeType.DETACH)
     @JoinTable(
