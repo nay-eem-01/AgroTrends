@@ -1,5 +1,6 @@
 package com.project.agriculturalblogapplication.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.project.agriculturalblogapplication.constatnt.AppTables.CategoryTable;
 import com.project.agriculturalblogapplication.constatnt.AppTables.BlogTable;
 import com.project.agriculturalblogapplication.constatnt.AppTables.AuthorTable;
@@ -35,6 +36,7 @@ public class Blog extends AuditModel<String> {
     @JoinColumn(name = AuthorTable.AUTHOR_ID, nullable = false)
     private Author author;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "blog", cascade = CascadeType.PERSIST,fetch = FetchType.LAZY)
     private List<Comment> comments;
 }
