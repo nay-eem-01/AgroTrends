@@ -13,9 +13,6 @@ import lombok.ToString;
 @ToString
 public class CreateBlogRequest {
 
-    @NotNull(message = ErrorCode.ERROR_AUTHOR_USER_ID_IS_REQUIRED)
-    private Long authorUserId;
-
     @NotNull(message = ErrorCode.ERROR_CATEGORY_IS_REQUIRED)
     private Long categoryId;
 

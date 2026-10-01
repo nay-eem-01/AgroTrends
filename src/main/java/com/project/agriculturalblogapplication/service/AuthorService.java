@@ -31,6 +31,12 @@ public class AuthorService {
                 new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_AUTHOR_NOT_FOUND));
     }
 
+    /** Publishing requires an author profile; callers without one are refused (403) rather than told "not found". */
+    public Author findByUserIdOrForbidden(Long userId, String lang){
+        return authorRepository.findByUserId(userId).orElseThrow(()->
+                new ApplicationException(HttpStatus.FORBIDDEN, ErrorCode.ERROR_AUTHOR_PROFILE_REQUIRED, lang));
+    }
+
     public Author findByIdWithException(Long userId){
         return authorRepository.findById(userId).orElseThrow(()->
                 new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_AUTHOR_NOT_FOUND));

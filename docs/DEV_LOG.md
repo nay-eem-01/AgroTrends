@@ -37,6 +37,20 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-01 (roadmap 1.6)
+
+**Done**
+- Blog create: author = the caller's `Author` row, else 403 `Only registered authors can publish blogs.`;
+  update/delete owner-or-admin (verified live). Dead commented `@PreAuthorize` lines removed.
+- `DELETE /api/categories/id/{id}/delete` now requires `CATEGORY_DELETE`.
+
+**Breaking API changes**
+- Removed `authorUserId` from `CreateBlogRequest`. Blog create/update/delete take optional `?lang`.
+
+**Known limitation**
+- Blog delete/update do not yet remove or replace the blog's vectors (roadmap 3.3), and embedding currently
+  depends on the shut-down model (roadmap 3.1).
+
 ## 2026-10-01 (roadmap 1.5)
 
 **Done**

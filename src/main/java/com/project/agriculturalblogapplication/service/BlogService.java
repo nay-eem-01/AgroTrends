@@ -10,6 +10,7 @@ import com.project.agriculturalblogapplication.entities.Blog;
 import com.project.agriculturalblogapplication.entities.Category;
 import com.project.agriculturalblogapplication.repositories.BlogRepositories;
 import com.project.agriculturalblogapplication.util.CommonUtils;
+import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -31,10 +32,12 @@ public class BlogService {
 
     private final DocumentService documentService;
 
-    public Blog create(CreateBlogRequest request) {
+    private final AuthorizationService authorizationService;
+
+    public Blog create(CreateBlogRequest request, String lang) {
         Category category = categoryService.findByIdWithException(request.getCategoryId());
 
-        Author author = authorService.findByUserIdWithException(request.getAuthorUserId());
+        Author author = authorService.findByUserIdOrForbidden(authorizationService.currentUserId(lang), lang);
 
         Blog blog = new Blog();
         blog.setCategory(category);
@@ -73,10 +76,11 @@ public class BlogService {
         return new PageImpl<>(blogs, pageable, blogs.size());
     }
 
-    public Blog update(UpdateBlogRequest request) {
-        Category category = categoryService.findByIdWithException(request.getCategoryId());
-
+    public Blog update(UpdateBlogRequest request, String lang) {
         Blog blog = findByIdWithException(request.getBlogId());
+        authorizationService.assertOwnerOrAdmin(blog.getAuthor().getUser().getId(), lang);
+
+        Category category = categoryService.findByIdWithException(request.getCategoryId());
         blog.setTitle(request.getTitle());
         blog.setContent(request.getContent());
         blog.setCategory(category);
@@ -88,8 +92,9 @@ public class BlogService {
         return blog;
     }
 
-    public void delete(Long id) {
+    public void delete(Long id, String lang) {
         Blog blog = findByIdWithException(id);
+        authorizationService.assertOwnerOrAdmin(blog.getAuthor().getUser().getId(), lang);
         blogRepositories.delete(blog);
     }
 
