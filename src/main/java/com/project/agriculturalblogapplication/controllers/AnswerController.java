@@ -104,8 +104,9 @@ public class AnswerController {
     @Operation(summary = "Delete answer", security = @SecurityRequirement(name = "jwtToken"))
     @ApiResponse(content = @Content(schema = @Schema(implementation = HttpResponse.class)), responseCode = "200")
     @DeleteMapping(value = "/delete/id/{answerId}")
-    public ResponseEntity<HttpResponse> deleteAnswer(@PathVariable Long answerId) {
-        answerService.delete(answerId);
+    public ResponseEntity<HttpResponse> deleteAnswer(@PathVariable Long answerId,
+                                                     @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        answerService.delete(answerId, lang);
         return HttpResponse.getResponseEntity(true, "Answer deleted successfully.");
     }
 }

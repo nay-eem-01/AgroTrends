@@ -1,5 +1,7 @@
 package com.project.agriculturalblogapplication.model.request;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -9,7 +11,9 @@ import lombok.Setter;
 @NoArgsConstructor
 public class UpdateAnswerRequest {
 
+    @NotNull
+
     private Long answerId;
-    private Long userId;
+    @NotBlank
     private String content;
 }
