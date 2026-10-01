@@ -37,6 +37,17 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-01 (roadmap 1.2)
+
+**Done**
+- `GlobalExceptionHandler`: generic message + `{errorId}` payload, full exception logged with that id;
+  `@Order(LOWEST_PRECEDENCE)`. `ExceptionAuthHandlingController`: `@Order(HIGHEST_PRECEDENCE + 1)`, adds an
+  `AccessDeniedException` -> 403 handler. `ExceptionHandlingController`: no more `getLocalizedMessage()` payloads.
+- `AuthenticationExceptionHandler` (entry point): 401 JSON `Authentication required or token is invalid.`
+
+**Breaking**
+- Unauthenticated requests are now **401** (were 403); bad sign-in is 401 (was 403).
+
 ## 2026-10-01 (roadmap 1.1)
 
 **Done**
