@@ -6,6 +6,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -14,12 +15,26 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Component
 public class JwtUtil {
 
+    private static final int MIN_SECRET_BYTES = 32;
+
+    private final SecretKey signingKey;
+
+    public JwtUtil(@Value("${app.jwt.secret}") String secret) {
+        byte[] keyBytes = secret == null ? new byte[0] : secret.getBytes(StandardCharsets.UTF_8);
+        if (keyBytes.length < MIN_SECRET_BYTES) {
+            throw new IllegalStateException(
+                    "app.jwt.secret (JWT_SECRET) must be at least " + MIN_SECRET_BYTES + " bytes long.");
+        }
+        this.signingKey = Keys.hmacShaKeyFor(keyBytes);
+    }
+
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(SecurityConstants.SECRET.getBytes(StandardCharsets.UTF_8));
+        return signingKey;
     }
 
     public String extractUsername(String token) {
@@ -52,6 +67,12 @@ public class JwtUtil {
         return generateToken(claims, customUserDetails.getUsername(), SecurityConstants.EXPIRATION_TIME);
     }
 
+    public String generateAccessToken(String username) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("type", "access");
+        return generateToken(claims, username, SecurityConstants.EXPIRATION_TIME);
+    }
+
     public String generateRefreshToken(String username) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("type", "refresh");
@@ -62,6 +83,7 @@ public class JwtUtil {
         return Jwts.builder()
                 .claims(extractClaims)
                 .subject(username)
+                .id(UUID.randomUUID().toString())
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSigningKey())
