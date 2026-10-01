@@ -17,11 +17,11 @@ import java.io.Serializable;
 public class AuthenticationExceptionHandler implements AuthenticationEntryPoint, Serializable {
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
-
         ObjectMapper mapper = new ObjectMapper();
-        HttpResponse errorResponse = new HttpResponse(HttpStatus.FORBIDDEN, "(JWT) " + authException.getMessage(), null, false);
-        String responseMsg = mapper.writeValueAsString(errorResponse);
-        response.getWriter().write(responseMsg);
-        response.setStatus(403);
+        HttpResponse errorResponse = new HttpResponse(HttpStatus.UNAUTHORIZED, false, "Authentication required or token is invalid.");
+        response.setStatus(HttpStatus.UNAUTHORIZED.value());
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        response.getWriter().write(mapper.writeValueAsString(errorResponse));
     }
 }
