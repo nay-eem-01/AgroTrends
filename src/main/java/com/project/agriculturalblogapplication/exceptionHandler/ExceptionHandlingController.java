@@ -45,13 +45,13 @@ public class ExceptionHandlingController extends ResponseEntityExceptionHandler 
 	@Override
 	protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
 		String error = "Invalid input.";
-		return buildResponseEntity((new HttpResponse(HttpStatus.valueOf(status.value()), false, error, ex.getLocalizedMessage())));
+		return buildResponseEntity((new HttpResponse(HttpStatus.valueOf(status.value()), false, error, null)));
 	}
 
 	@Override
 	protected ResponseEntity<Object> handleConversionNotSupported(ConversionNotSupportedException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
 		// TODO Auto-generated method stub
-		return buildResponseEntity((new HttpResponse(HttpStatus.valueOf(status.value()), false, "Invalid Input", ex.getLocalizedMessage())));
+		return buildResponseEntity((new HttpResponse(HttpStatus.valueOf(status.value()), false, "Invalid Input", null)));
 	}
 
 	@Override
@@ -59,7 +59,7 @@ public class ExceptionHandlingController extends ResponseEntityExceptionHandler 
 
 		// TODO Auto-generated method stub
 		return buildResponseEntity(
-				(new HttpResponse(HttpStatus.valueOf(status.value()), false, "Invalid File Type provided.", ex.getLocalizedMessage())));
+				(new HttpResponse(HttpStatus.valueOf(status.value()), false, "Invalid File Type provided.", null)));
 	}
 
 	@Override
@@ -67,29 +67,29 @@ public class ExceptionHandlingController extends ResponseEntityExceptionHandler 
 
 		// TODO Auto-generated method stub
 		return buildResponseEntity(
-				(new HttpResponse(HttpStatus.valueOf(status.value()), false, "Server Error. Write Failed", ex.getLocalizedMessage())));
+				(new HttpResponse(HttpStatus.valueOf(status.value()), false, "Server Error. Write Failed", null)));
 	}
 
 	@Override
 	protected ResponseEntity<Object> handleHttpRequestMethodNotSupported(HttpRequestMethodNotSupportedException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
 
 		// TODO Auto-generated method stub
-		return buildResponseEntity((new HttpResponse(HttpStatus.valueOf(status.value()), false, "Invalid type of request.", ex.getLocalizedMessage())));
+		return buildResponseEntity((new HttpResponse(HttpStatus.valueOf(status.value()), false, "Invalid type of request.", null)));
 	}
 
 	@Override
 	protected ResponseEntity<Object> handleExceptionInternal(Exception ex, @Nullable Object body, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
+		log.warn("Request failed with {}: {}", statusCode, ex.getMessage());
 
 		// TODO Auto-generated method stub
-		return buildResponseEntity((new HttpResponse(HttpStatus.valueOf(statusCode.value()), false, "Server Error Occurred.", ex.getLocalizedMessage())));
+		return buildResponseEntity((new HttpResponse(HttpStatus.valueOf(statusCode.value()), false, "Server Error Occurred.", null)));
 	}
 
 	@Override
 	protected ResponseEntity<Object> handleMissingPathVariable(MissingPathVariableException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
 
 		// TODO Auto-generated method stub
-		return buildResponseEntity((new HttpResponse(HttpStatus.valueOf(status.value()), false, "Request Failed. Invalid Request. Please Try Again.",
-				ex.getLocalizedMessage())));
+		return buildResponseEntity((new HttpResponse(HttpStatus.valueOf(status.value()), false, "Request Failed. Invalid Request. Please Try Again.", null)));
 	}
 
 
@@ -98,8 +98,7 @@ public class ExceptionHandlingController extends ResponseEntityExceptionHandler 
 	protected ResponseEntity<Object> handleHttpMediaTypeNotSupported(HttpMediaTypeNotSupportedException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
 
 		// TODO Auto-generated method stub
-		return buildResponseEntity((new HttpResponse(HttpStatus.valueOf(status.value()), false, "Request Failed. Invalid Request. Please Try Again.",
-				ex.getLocalizedMessage())));
+		return buildResponseEntity((new HttpResponse(HttpStatus.valueOf(status.value()), false, "Request Failed. Invalid Request. Please Try Again.", null)));
 	}
 
 	@ResponseBody
@@ -127,7 +126,7 @@ public class ExceptionHandlingController extends ResponseEntityExceptionHandler 
 	@ResponseBody
 	@ExceptionHandler(SocketTimeoutException.class)
 	public ResponseEntity<Object> handleSocketTimeoutException(SocketTimeoutException ex) {
-		return buildResponseEntity(new HttpResponse(HttpStatus.REQUEST_TIMEOUT, false, "The server did not respond within the expected time. Please try again.", ex.getLocalizedMessage()));
+		return buildResponseEntity(new HttpResponse(HttpStatus.REQUEST_TIMEOUT, false, "The server did not respond within the expected time. Please try again.", null));
 	}
 
 	@ResponseBody
@@ -139,8 +138,8 @@ public class ExceptionHandlingController extends ResponseEntityExceptionHandler 
 	@ResponseBody
 	@ExceptionHandler(SQLException.class)
 	public ResponseEntity<Object> handleSQLException(SQLException ex) {
-		return buildResponseEntity((new HttpResponse(HttpStatus.BAD_REQUEST, false, "Request Failed. Invalid Request. Please Try Again.",
-				ex.getLocalizedMessage())));
+		log.error("SQL error", ex);
+		return buildResponseEntity((new HttpResponse(HttpStatus.BAD_REQUEST, false, "Request Failed. Invalid Request. Please Try Again.", null)));
 	}
 
 	@Override
