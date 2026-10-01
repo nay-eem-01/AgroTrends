@@ -2,7 +2,6 @@ package com.project.agriculturalblogapplication.model.request;
 
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 @Getter
@@ -11,9 +10,6 @@ import lombok.*;
 @NoArgsConstructor
 @ToString
 public class UpdateUserRequest {
-
-    @NotNull(message = ErrorCode.ERROR_USER_ID_IS_REQUIRED)
-    private Long userId;
 
     @NotBlank(message = ErrorCode.ERROR_NAME_IS_REQUIRED)
     private String name;

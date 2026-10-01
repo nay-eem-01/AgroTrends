@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.project.agriculturalblogapplication.config.CommonApiResponses;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.enums.AscOrDescType;
+import com.project.agriculturalblogapplication.model.request.ChangePasswordRequest;
 import com.project.agriculturalblogapplication.model.request.UpdateUserRequest;
 import com.project.agriculturalblogapplication.model.response.HttpResponse;
 import com.project.agriculturalblogapplication.payloads.PaginationArgs;
@@ -15,6 +16,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -90,11 +92,20 @@ public class UserController {
     @ApiResponse(content = @Content(schema = @Schema(implementation = HttpResponse.class)), responseCode = "200")
     @PutMapping("/update")
     public ResponseEntity<HttpResponse> update(@RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang,
-                                               @RequestBody UpdateUserRequest request) {
+                                               @Valid @RequestBody UpdateUserRequest request) {
 
         userService.update(request, lang);
         return HttpResponse.getResponseEntity(
                 true,
                 "User updated successfully.");
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<HttpResponse> changePassword(@RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang,
+                                                       @Valid @RequestBody ChangePasswordRequest request) {
+        userService.changePassword(request, lang);
+        return HttpResponse.getResponseEntity(
+                true,
+                "Password changed. Please sign in again.");
     }
 }

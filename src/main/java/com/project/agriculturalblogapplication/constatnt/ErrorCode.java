@@ -184,5 +184,6 @@ public final class ErrorCode {
     public static final String ERROR_TOO_MANY_ATTEMPTS = "Too many attempts. Please try again later.";
     public static final String ERROR_FORBIDDEN = "You do not have permission to perform this action.";
     public static final String ERROR_REFRESH_TOKEN_EXPIRED = "Refresh token has expired. Please sign in again.";
+    public static final String ERROR_NEW_PASSWORD_SAME_AS_CURRENT = "New password must be different from the current password.";
     public static final String ERROR_AUTHOR_PROFILE_REQUIRED = "Only registered authors can publish blogs.";
 }

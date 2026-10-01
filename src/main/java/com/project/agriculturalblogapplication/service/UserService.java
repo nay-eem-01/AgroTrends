@@ -5,12 +5,16 @@ import com.project.agriculturalblogapplication.constatnt.AppConstants;
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import com.project.agriculturalblogapplication.entities.Role;
 import com.project.agriculturalblogapplication.entities.User;
+import com.project.agriculturalblogapplication.model.request.ChangePasswordRequest;
 import com.project.agriculturalblogapplication.model.request.UpdateUserRequest;
 import com.project.agriculturalblogapplication.payloads.PaginationArgs;
 import com.project.agriculturalblogapplication.repositories.UserRepository;
 import com.project.agriculturalblogapplication.enums.UserType;
 import com.project.agriculturalblogapplication.model.request.AuthorCreateRequest;
 import com.project.agriculturalblogapplication.model.request.CreateUserRequest;
+import com.project.agriculturalblogapplication.security.service.AttemptLimiter;
+import com.project.agriculturalblogapplication.security.service.AuthorizationService;
+import com.project.agriculturalblogapplication.security.service.UserSessionService;
 import com.project.agriculturalblogapplication.util.AuthUtil;
 import com.project.agriculturalblogapplication.util.CommonUtils;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +24,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -35,6 +40,14 @@ public class UserService {
     private final RoleService roleService;
 
     private final AuthorService authorService;
+
+    private final AuthorizationService authorizationService;
+
+    private final RefreshTokenService refreshTokenService;
+
+    private final UserSessionService userSessionService;
+
+    private final AttemptLimiter attemptLimiter;
 
     public void validateEmail(String email, String lang) {
         if (!CommonUtils.isValidMail(email)) {
@@ -131,17 +144,71 @@ public class UserService {
     }
 
     public void deleteUser(User user){
+        refreshTokenService.deleteAllByUserId(user.getId());
+        userSessionService.deleteAllByUserId(user.getId());
         userRepository.delete(user);
     }
 
+    /** Updates the signed-in user's own profile; the target is never taken from the request. */
     public User update(UpdateUserRequest request, String lang){
-        User user = findByIdWithException(request.getUserId(), lang);
+        User user = findByIdWithException(authorizationService.currentUserId(lang), lang);
         String mobileNumber = request.getCountryCode() + request.getMobileNumber();
+
+        boolean emailChanged = !user.getEmail().equalsIgnoreCase(request.getEmail());
+        if (emailChanged) {
+            validateEmail(request.getEmail(), lang);
+        }
+        if (!mobileNumber.equals(user.getMobileNumber())) {
+            validateMobile(mobileNumber, lang);
+        }
 
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setMobileNumber(mobileNumber);
+        user = userRepository.save(user);
 
-        return userRepository.save(user);
+        if (emailChanged) {
+            // The e-mail is the JWT subject, so existing tokens stop resolving; make that explicit.
+            revokeAllCredentials(user.getId());
+        }
+        return user;
+    }
+
+    public void changePassword(ChangePasswordRequest request, String lang) {
+        User user = getUserInfo(lang);
+        String attemptKey = "change-password:" + user.getId();
+
+        if (attemptLimiter.isBlocked(attemptKey)) {
+            throw new ApplicationException(HttpStatus.TOO_MANY_REQUESTS, ErrorCode.ERROR_TOO_MANY_ATTEMPTS, lang);
+        }
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            attemptLimiter.record(attemptKey, 5, Duration.ofMinutes(15));
+            throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_INCORRECT_PASSWORD, lang);
+        }
+        attemptLimiter.reset(attemptKey);
+
+        if (request.getCurrentPassword().equals(request.getNewPassword())) {
+            throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_NEW_PASSWORD_SAME_AS_CURRENT, lang);
+        }
+        setNewPassword(user, request.getNewPassword(), lang);
+    }
+
+    /** Applies a new password (policy-checked), clears the must-change flag and signs the user out everywhere. */
+    public void setNewPassword(User user, String newPassword, String lang) {
+        String invalidPasswordMessage = CommonUtils.getInvalidPasswordMessage(newPassword);
+        if (invalidPasswordMessage != null) {
+            throw new ApplicationException(HttpStatus.BAD_REQUEST, invalidPasswordMessage, lang);
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setMustChangePassword(false);
+        userRepository.save(user);
+        revokeAllCredentials(user.getId());
+    }
+
+    /** Kills every access session and refresh token of the user. */
+    public void revokeAllCredentials(Long userId) {
+        userSessionService.deactivatePreviousSession(userId);
+        refreshTokenService.deleteAllByUserId(userId);
     }
 }
