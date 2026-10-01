@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 12 of 42 steps done
+**Progress:** 13 of 42 steps done
 
 ---
 
@@ -38,7 +38,7 @@ Make the existing API trustworthy. Breaking API changes are recorded in the DEV_
 | 1.7 | Profile edits act on the caller only; uniqueness checks; change-password; revoke credentials on change/delete | ✅ |
 | 1.8 | Forgot / reset password by e-mail link (`MailService`: SMTP or dev logger) | ✅ |
 | 1.9 | Audit: anonymous requests stamped `SYSTEM`; `AuthUtil` cleanup | ✅ |
-| 1.10 | Default sort field `creationDate` (was a non-existent `createdDate`); stop serializing lazy `Blog.comments` | ⬜ |
+| 1.10 | Default sort field `creationDate` (was a non-existent `createdDate`); stop serializing lazy `Blog.comments` | ✅ |
 
 ## Phase 2 — Medium core
 

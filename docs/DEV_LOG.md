@@ -37,6 +37,16 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-01 (roadmap 1.10 — Phase 1 done)
+
+**Done**
+- Default sort `creationDate` (was `createdDate`, a property that doesn't exist). `Blog.comments` is `@JsonIgnore`
+  (verified live: `/api/blogs/all` was 500 with a reply present, 200 after).
+
+**Found while testing, not fixed here**
+- `Blog.content` is `@Lob` and is stored as Postgres `oid` (roadmap 2.5).
+- Entities are still returned directly for User/Blog/Category (roadmap 2.1).
+
 ## 2026-10-01 (roadmap 1.9)
 
 **Done**
