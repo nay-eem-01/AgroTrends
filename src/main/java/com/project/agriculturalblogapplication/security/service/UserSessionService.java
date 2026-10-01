@@ -3,10 +3,12 @@ package com.project.agriculturalblogapplication.security.service;
 import com.project.agriculturalblogapplication.security.entites.UserSession;
 import com.project.agriculturalblogapplication.security.model.request.CreateUserSessionRequest;
 import com.project.agriculturalblogapplication.security.repository.UserSessionRepository;
+import com.project.agriculturalblogapplication.constatnt.SecurityConstants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -41,7 +43,7 @@ public class UserSessionService {
         userSession.setToken(request.getToken());
         userSession.setTokenType(request.getTokenType());
         userSession.setIssuesAt(OffsetDateTime.now(ZoneOffset.UTC));
-        userSession.setExpiresAt(userSession.getIssuesAt().plusDays(3));
+        userSession.setExpiresAt(userSession.getIssuesAt().plus(Duration.ofMillis(SecurityConstants.EXPIRATION_TIME)));
         userSession.setSessionToken(UUID.randomUUID().toString());
         userSession.setIsSessionTokenValid(true);
         userSession.setPlatformType(request.getPlatformType());
@@ -66,6 +68,16 @@ public class UserSessionService {
             userSession.setDeactivatedAt(OffsetDateTime.now(ZoneOffset.UTC));
             userSession.setIsActive(false);
             userSessionRepository.save(userSession);
+        }
+    }
+
+    /** Housekeeping: sessions whose access token has expired can never authenticate again. */
+    public void deactivateExpiredSessions(Long userId) {
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+        for (UserSession userSession : findActiveUserSession(userId)) {
+            if (userSession.getExpiresAt() != null && userSession.getExpiresAt().isBefore(now)) {
+                deactivateSession(userSession);
+            }
         }
     }
 

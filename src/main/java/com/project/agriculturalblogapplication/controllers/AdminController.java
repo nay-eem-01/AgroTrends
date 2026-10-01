@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -30,10 +31,12 @@ public class AdminController {
     @Operation(summary = "Sign in")
     @ApiResponse(content = @Content(schema = @Schema(implementation = WebTokenResponse.class)), responseCode = "200")
     @PostMapping(value = "/sign-in")
-    public ResponseEntity<HttpResponse> signIn(@Valid @RequestBody SignInRequest request, @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) throws JsonProcessingException {
+    public ResponseEntity<HttpResponse> signIn(@Valid @RequestBody SignInRequest request,
+                                               @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang,
+                                               HttpServletRequest httpServletRequest) throws JsonProcessingException {
         return HttpResponse.getResponseEntity(
                 true,
                 "Sign-in successful.",
-                authService.signInAsAdmin(request, lang));
+                authService.signInAsAdmin(request, lang, httpServletRequest.getRemoteAddr()));
     }
 }
