@@ -77,7 +77,7 @@ public class CommentController {
     @PostMapping(value = "/reply")
     public ResponseEntity<HttpResponse> replyToComment(
             @Valid @RequestBody ReplyCommentRequest request,
-            @RequestParam(value = "Accept-Language", defaultValue = "en") String lang) {
+            @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
 
         return HttpResponse.getResponseEntity(
                 true,
@@ -101,8 +101,9 @@ public class CommentController {
     @Operation(summary = "Delete comment", security = @SecurityRequirement(name = "jwtToken"))
     @ApiResponse(content = @Content(schema = @Schema(implementation = HttpResponse.class)), responseCode = "200")
     @DeleteMapping(value = "/id/{commentId}")
-    public ResponseEntity<HttpResponse> delete(@PathVariable Long commentId) {
-        commentService.delete(commentId);
+    public ResponseEntity<HttpResponse> delete(@PathVariable Long commentId,
+                                               @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        commentService.delete(commentId, lang);
         return HttpResponse.getResponseEntity(true, "Comment deleted successfully.");
     }
 }
