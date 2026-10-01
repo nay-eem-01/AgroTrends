@@ -37,6 +37,17 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-01 (roadmap 0.2)
+
+**Done**
+- `JwtUtil(@Value app.jwt.secret)`: startup fails if the secret is missing or < 32 bytes. `SecurityConstants.SECRET`
+  removed. Every token gets a random `jti`, so tokens issued in the same second are distinct.
+- Access token lifetime 1 h -> 15 min.
+- `JwtUtilTest` (4): short/missing secret, round trip, forged-secret rejection, distinct tokens.
+
+**Breaking**
+- Every existing token is invalid after deploy (new secret) — intended.
+
 ## 2026-10-01 (roadmap 0.1)
 
 **Done**
