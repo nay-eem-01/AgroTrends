@@ -110,11 +110,8 @@ public class CommentService {
         CommentResponse response = new CommentResponse();
         response.setCommentId(comment.getId());
 
-        if (comment.getParentComment() == null){
-            response.setParentCommentId(null);
-        }
-
-        response.setParentCommentId(comment.getParentComment().getId());
+        // Top-level comments have no parent.
+        response.setParentCommentId(comment.getParentComment() == null ? null : comment.getParentComment().getId());
         response.setBlogId(comment.getBlog().getId());
         response.setUserId(comment.getUser().getId());
         response.setContent(comment.getCommentContent());
