@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 2 of 42 steps done
+**Progress:** 3 of 42 steps done
 
 ---
 
@@ -20,7 +20,7 @@ Secrets, tokens and the default admin.
 |---|---|---|
 | 0.1 | Move every secret to environment variables; `.env.example`; ignore `.env` | ✅ |
 | 0.2 | JWT secret injected and validated at startup; 15-minute access tokens with a unique `jti` | ✅ |
-| 0.3 | No default admin credentials — generated/env password, forced change, legacy default auto-locked | ⬜ |
+| 0.3 | No default admin credentials — generated/env password, forced change, legacy default auto-locked | ✅ |
 | 0.4 | **Nayeem:** revoke the five Gemini keys, rotate the DB password, purge git history (`filter-repo`/BFG) and force-push | ⬜ |
 
 ## Phase 1 — Correct and authorized
