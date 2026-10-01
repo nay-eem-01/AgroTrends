@@ -8,17 +8,17 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 ## Where we are
 
 - Vision: a Medium for agricultural knowledge with AI (`docs/PLAN.md`). Estimated 30–35 % there.
-- Phase 0 (secrets/tokens/admin) and Phase 1 (correctness/authorization) are being committed as a stack of
-  small step branches on `feat/hardening-base` (code was written and verified 2026-10-01; 19 unit tests
-  and ~60 live HTTP checks against a throwaway pgvector database passed).
-- Current branch history: `main` ← `feature/rag-impl` (RAG groundwork) ← `docs/conventions-and-plan` ←
-  `feat/hardening-base` ← step branches.
+- Phase 0 (except 0.4) and Phase 1 are **merged** (PR #19 into `main`, 2026-10-01).
+- **Branch model (decided 2026-10-01):** `development` -> `staging` -> `production`, all created from `main`
+  at `da19a32`. Feature work: base branch off `development`, serial step PRs into the base, base -> `development`
+  (test) -> `staging` (test) -> `production`. `main` is frozen; no new work there. See the `git-workflow` skill.
 
 ## Next up
 
-1. Merge the Phase 0/1 step branches serially into `feat/hardening-base`, then base → `main`.
+1. **Nayeem:** GitHub settings — make `development` the default branch; protect `development`, `staging`,
+   `production` (PRs only, require review/CI once 4.5 lands).
 2. **Nayeem:** roadmap 0.4 — revoke keys, rotate the DB password, purge git history.
-3. Phase 2 starts with 2.1 (response DTOs) and 2.2 (real pagination): everything after builds on them.
+3. Phase 2 starts (base `feat/medium-core-base` off `development`) with 2.1 (response DTOs) and 2.2 (real pagination): everything after builds on them.
 4. Phase 3.1 (replace the shut-down embedding model) is urgent for blog create/update — consider pulling it
    forward ahead of the rest of Phase 2.
 
@@ -33,9 +33,19 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | `/api/user/id/{id}` still returns the full `User` entity (e-mail, mobile, roles) to any signed-in user | roadmap 2.1 | public profiles |
 | `contextLoads` fails without a local Postgres | roadmap 4.4 | CI |
 | No SMTP configured: reset links are written to the log (dev only) | an SMTP account | production password reset |
+| Hotfix path is not defined yet (proposal: branch off `production`, PR into `production`, then back-merge into `development`) | Nayeem to confirm | — |
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-01 (branching model)
+
+**Decisions**
+- Long-lived branches `development`, `staging`, `production` created from `main` (`da19a32`) and pushed.
+  No more merging to `main`.
+- Feature flow: feature base off `development` -> step branches stacked serially -> step PRs into the base ->
+  base PR into `development` -> test -> `development` -> `staging` -> test -> `staging` -> `production`.
+- Assumption to confirm: the last hop is `staging` -> `production`, and hotfixes branch off `production`.
 
 ## 2026-10-01 (roadmap 1.10 — Phase 1 done)
 

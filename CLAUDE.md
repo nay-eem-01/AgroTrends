@@ -34,5 +34,6 @@ Swagger UI: `/swagger-ui.html`. Never read, print or commit `.env`.
 - Mutations are owner-or-admin, asserted in the service.
 - Return DTOs, not entities. No secrets in code or config. No exception detail in responses.
 - Lombok accessors and `@RequiredArgsConstructor`; no hand-written boilerplate (`coding-conventions`).
-- Small conventional commits, no attribution, step branches off the previous step (`git-workflow`).
+- Branch flow: `development` -> feature base -> serial step PRs -> base into `development` -> `staging` -> `production`.
+  Never work on or merge into `main`. Small conventional commits, no attribution (`git-workflow`).
 - Every fix ships with a regression test; update `docs/ROADMAP.md` and `docs/DEV_LOG.md` in the same PR.
