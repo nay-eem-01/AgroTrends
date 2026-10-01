@@ -37,6 +37,18 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-01 (roadmap 0.3)
+
+**Done**
+- `InitialDataLoader` -> `ApplicationReadyEvent`; admin e-mail/password from `app.admin.*` (random if unset,
+  logged once at WARN). `AppConstants` is now a final utility class with final fields.
+- New `User.mustChangePassword` (nullable column, null = false); carried on `CustomUserDetails`.
+  Enforced by the JWT filter in 1.3.
+- Legacy `admin@gmail.com` / `123456` accounts are detected on startup and reset to a random password.
+- `User.password` is `@JsonIgnore` — hashes no longer leak in sign-in, `/me`, `/id/{id}`, `/paginated`.
+
+**Verified live** against a throwaway pgvector database: generated password works, `123456` is rejected.
+
 ## 2026-10-01 (roadmap 0.2)
 
 **Done**
