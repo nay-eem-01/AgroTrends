@@ -37,6 +37,18 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-01 (roadmap 0.1)
+
+**Done**
+- `application.properties`: DB password, Gemini key and JWT secret come from env vars (`DB_PASSWORD`,
+  `GEMINI_API_KEY`, `JWT_SECRET`) with no defaults; `.env` is imported via `spring.config.import`.
+- `.env.example` documents every variable; `.env` and `*-local.properties` are git-ignored.
+- Removed the commented MySQL password, the `org.example.bankingManagementApplication` logger, Security
+  DEBUG and `show-sql`.
+
+**Known limitation**
+- The old keys and password are still in git history until roadmap 0.4 (revoke, rotate, purge) is done.
+
 ## 2026-10-01 (audit, research and plan)
 
 **Done**
