@@ -10,6 +10,7 @@ import com.project.agriculturalblogapplication.model.request.ReplyCommentRequest
 import com.project.agriculturalblogapplication.model.request.UpdateCommentRequest;
 import com.project.agriculturalblogapplication.model.response.CommentResponse;
 import com.project.agriculturalblogapplication.repositories.CommentRepository;
+import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -24,11 +25,13 @@ public class CommentService {
 
     private final UserService userService;
 
+    private final AuthorizationService authorizationService;
+
     private final CommentRepository commentRepository;
 
     public CommentResponse create(CreateCommentRequest request, String lang) {
         Blog blog = blogService.findByIdWithException(request.getBlogId());
-        User user = userService.findByIdWithException(request.getUserId(), lang);
+        User user = userService.findByIdWithException(authorizationService.currentUserId(lang), lang);
 
         Comment comment = new Comment();
         comment.setBlog(blog);
@@ -42,9 +45,7 @@ public class CommentService {
     public CommentResponse update(UpdateCommentRequest request, String lang) {
         Comment comment = findByIdWithException(request.getCommentId());
 
-        if (!comment.getUser().getId().equals(request.getUserId())){
-            throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_COMMENT_AND_USER_MISMATCH, lang);
-        }
+        authorizationService.assertOwnerOrAdmin(comment.getUser().getId(), lang);
 
         comment.setCommentContent(request.getContent());
         comment = commentRepository.save(comment);
@@ -52,8 +53,9 @@ public class CommentService {
         return mapToCommentResponse(comment);
     }
 
-    public void delete(Long commentId) {
+    public void delete(Long commentId, String lang) {
         Comment comment = findByIdWithException(commentId);
+        authorizationService.assertOwnerOrAdmin(comment.getUser().getId(), lang);
         commentRepository.delete(comment);
     }
 
@@ -70,7 +72,7 @@ public class CommentService {
     public CommentResponse reply(ReplyCommentRequest request, String lang) {
         Blog blog = blogService.findByIdWithException(request.getBlogId());
 
-        User user = userService.findByIdWithException(request.getUserId(), lang);
+        User user = userService.findByIdWithException(authorizationService.currentUserId(lang), lang);
 
         Comment parentComment = findByIdWithException(request.getParentCommentId());
 

@@ -1,5 +1,7 @@
 package com.project.agriculturalblogapplication.model.request;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -9,9 +11,11 @@ import lombok.ToString;
 @ToString
 public class CreateCommentRequest {
 
-    private Long userId;
+    @NotBlank
 
     private String content;
+
+    @NotNull
 
     private Long blogId;
 }
