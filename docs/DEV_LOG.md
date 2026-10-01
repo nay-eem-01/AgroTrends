@@ -37,6 +37,19 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-01 (roadmap 1.8)
+
+**Done**
+- `POST /api/auth/forgot-password` `{email}` (always 200) and `POST /api/auth/reset-password` `{token,newPassword}`.
+  Token: 256-bit random, only the SHA-256 hash stored in `password_reset_token`, 15 min, single use.
+- `MailService`: `SmtpMailService` when `spring.mail.host` is set, else `LoggingMailService` (logs the link at WARN).
+  Link = `{app.frontendUrl}/reset-password?token=...` — the frontend needs a page for it.
+- Verified live: unknown e-mail -> 200, weak password does not burn the token, reuse -> 400, old sessions dead.
+
+**Known limitation**
+- Dev mode logs the reset link; production needs `MAIL_HOST` etc. (see `.env.example`). The legacy, fully
+  commented `ForgetPasswordService` and its orphan OTP DTOs are still in the tree (roadmap 4.7).
+
 ## 2026-10-01 (roadmap 1.7)
 
 **Done**

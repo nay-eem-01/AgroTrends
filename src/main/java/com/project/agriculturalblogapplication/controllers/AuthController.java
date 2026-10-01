@@ -7,6 +7,7 @@ import com.project.agriculturalblogapplication.model.request.*;
 import com.project.agriculturalblogapplication.model.response.HttpResponse;
 import com.project.agriculturalblogapplication.model.response.WebTokenResponse;
 import com.project.agriculturalblogapplication.service.AuthService;
+import com.project.agriculturalblogapplication.service.PasswordResetService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -30,6 +31,8 @@ import static com.project.agriculturalblogapplication.constatnt.AppConstants.DEF
 public class AuthController {
 
     private final AuthService authService;
+
+    private final PasswordResetService passwordResetService;
 
     @Operation(summary = "Sign up")
     @ApiResponse(content = @Content(schema = @Schema(implementation = User.class)), responseCode = "200")
@@ -63,6 +66,29 @@ public class AuthController {
                 true,
                 "Token refreshed.",
                 authService.refreshToken(request, lang));
+    }
+
+    @Operation(summary = "Request a password-reset e-mail. Always answers 200 so accounts cannot be enumerated.")
+    @ApiResponse(content = @Content(schema = @Schema(implementation = HttpResponse.class)), responseCode = "200")
+    @PostMapping(value = "/forgot-password")
+    public ResponseEntity<HttpResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request,
+                                                       @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang,
+                                                       HttpServletRequest httpServletRequest) {
+        passwordResetService.requestReset(request.getEmail(), httpServletRequest.getRemoteAddr(), lang);
+        return HttpResponse.getResponseEntity(
+                true,
+                "If an account exists for that e-mail, a reset link has been sent.");
+    }
+
+    @Operation(summary = "Set a new password using the token from the reset e-mail")
+    @ApiResponse(content = @Content(schema = @Schema(implementation = HttpResponse.class)), responseCode = "200")
+    @PostMapping(value = "/reset-password")
+    public ResponseEntity<HttpResponse> resetPassword(@Valid @RequestBody ResetPasswordWithTokenRequest request,
+                                                      @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        passwordResetService.reset(request.getToken(), request.getNewPassword(), lang);
+        return HttpResponse.getResponseEntity(
+                true,
+                "Password has been reset. Please sign in with your new password.");
     }
 
     @Operation(summary = "Sign-out.", security = @SecurityRequirement(name = "jwtToken"))
