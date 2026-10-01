@@ -7,9 +7,6 @@ import lombok.Data;
 @Data
 public class CreateQuestionRequest {
     
-    @NotNull
-    private Long userId;
-    
     @NotBlank
     private String title;
     

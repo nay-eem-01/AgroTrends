@@ -10,6 +10,7 @@ import com.project.agriculturalblogapplication.entities.Question;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.repositories.QuestionRepository;
 import com.project.agriculturalblogapplication.util.CommonUtils;
+import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,8 +25,10 @@ public class QuestionService {
 
     private final UserService userService;
 
+    private final AuthorizationService authorizationService;
+
     public QuestionResponse create(CreateQuestionRequest request, String lang) {
-        User user = userService.findByIdWithException(request.getUserId(), lang);
+        User user = userService.findByIdWithException(authorizationService.currentUserId(lang), lang);
 
         Question question = new Question();
         question.setTitle(request.getTitle());
@@ -51,6 +54,7 @@ public class QuestionService {
 
     public QuestionResponse update(UpdateQuestionRequest request, String lang) {
         Question question = findByIdWithException(request.getQuestionId());
+        authorizationService.assertOwnerOrAdmin(question.getUser().getId(), lang);
 
         question.setTitle(request.getTitle());
         question.setContent(request.getContent());
@@ -61,6 +65,7 @@ public class QuestionService {
 
     public void delete(Long id, String lang) {
         Question question = findByIdWithException(id);
+        authorizationService.assertOwnerOrAdmin(question.getUser().getId(), lang);
         questionRepository.delete(question);
     }
 

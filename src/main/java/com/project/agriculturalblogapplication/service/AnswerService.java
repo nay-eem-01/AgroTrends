@@ -10,6 +10,7 @@ import com.project.agriculturalblogapplication.model.request.ReplyToAnswerReques
 import com.project.agriculturalblogapplication.model.request.UpdateAnswerRequest;
 import com.project.agriculturalblogapplication.model.response.AnswerResponse;
 import com.project.agriculturalblogapplication.repositories.AnswerRepository;
+import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -24,12 +25,14 @@ public class AnswerService {
 
     private final UserService userService;
 
+    private final AuthorizationService authorizationService;
+
     private final AnswerRepository answerRepository;
 
     public AnswerResponse create(CreateAnswerRequest request, String lang) {
         Question question = questionService.findByIdWithException(request.getQuestionId());
 
-        User user = userService.findByIdWithException(request.getUserId(), lang);
+        User user = userService.findByIdWithException(authorizationService.currentUserId(lang), lang);
 
         Answer answer = new Answer();
         answer.setContent(request.getContent());
@@ -42,14 +45,16 @@ public class AnswerService {
 
     public AnswerResponse update(UpdateAnswerRequest request, String lang) {
         Answer answer = findByIdWithException(request.getAnswerId());
+        authorizationService.assertOwnerOrAdmin(answer.getUser().getId(), lang);
         answer.setContent(request.getContent());
         answer = answerRepository.save(answer);
 
         return mapToAnswerResponse(answer);
     }
 
-    public void delete(Long answerId) {
+    public void delete(Long answerId, String lang) {
         Answer answer = findByIdWithException(answerId);
+        authorizationService.assertOwnerOrAdmin(answer.getUser().getId(), lang);
         answerRepository.delete(answer);
     }
 
@@ -64,7 +69,7 @@ public class AnswerService {
     public AnswerResponse replyToAnswer(ReplyToAnswerRequest request, String lang) {
         Question question = questionService.findByIdWithException(request.getQuestionId());
 
-        User user = userService.findByIdWithException(request.getUserId(), lang);
+        User user = userService.findByIdWithException(authorizationService.currentUserId(lang), lang);
 
         Answer parentAnswer = findByIdWithException(request.getParentAnswerId());
 
