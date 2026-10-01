@@ -37,6 +37,12 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-01 (roadmap 1.9)
+
+**Done**
+- `AuditorAwareImpl`: anonymous / unauthenticated -> `SYSTEM`. `AuthUtil` is a static helper only; unused
+  `LoggedInEmail/UserId/User` (looked up by name, but the JWT subject is the e-mail) removed.
+
 ## 2026-10-01 (roadmap 1.8)
 
 **Done**
