@@ -88,28 +88,28 @@ public class BlogController {
 
     @Operation(summary = "New blog creation", security = @SecurityRequirement(name = "jwtToken"))
     @ApiResponse(content = @Content(schema = @Schema(implementation = Blog.class)), responseCode = "200")
-//    @PreAuthorize("hasAuthority('BLOG_CREATE')")
     @PostMapping(value = "/create")
-    public ResponseEntity<HttpResponse> createNewBlog(@Valid @RequestBody CreateBlogRequest request) {
+    public ResponseEntity<HttpResponse> createNewBlog(@Valid @RequestBody CreateBlogRequest request,
+                                                      @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
         return HttpResponse.getResponseEntity(
-                true, "Blog created successfully.", blogService.create(request));
+                true, "Blog created successfully.", blogService.create(request, lang));
     }
 
     @Operation(summary = "Update blog info", security = @SecurityRequirement(name = "jwtToken"))
     @ApiResponse(content = @Content(schema = @Schema(implementation = Blog.class)), responseCode = "200")
-//    @PreAuthorize("hasAuthority('BLOG_UPDATE')")
     @PutMapping(value = "/update")
-    public ResponseEntity<HttpResponse> updateBlog(@Valid @RequestBody UpdateBlogRequest request) {
+    public ResponseEntity<HttpResponse> updateBlog(@Valid @RequestBody UpdateBlogRequest request,
+                                                   @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
         return HttpResponse.getResponseEntity(
-                true, "Blog updated successfully.", blogService.update(request));
+                true, "Blog updated successfully.", blogService.update(request, lang));
     }
 
     @Operation(summary = "Delete blog", security = @SecurityRequirement(name = "jwtToken"))
     @ApiResponse(content = @Content(schema = @Schema(implementation = HttpResponse.class)), responseCode = "200")
-//    @PreAuthorize("hasAuthority('BLOG_DELETE')")
     @DeleteMapping(value = "/id/{blogId}/delete")
-    public ResponseEntity<HttpResponse> deleteBlog(@PathVariable Long blogId) {
-        blogService.delete(blogId);
+    public ResponseEntity<HttpResponse> deleteBlog(@PathVariable Long blogId,
+                                                   @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        blogService.delete(blogId, lang);
         return HttpResponse.getResponseEntity(true, "Blog deleted successfully.");
     }
 }

@@ -77,7 +77,7 @@ public class CategoryController {
 
     @Operation(summary = "Delete category", security = @SecurityRequirement(name = "jwtToken"))
     @ApiResponse(content = @Content(schema = @Schema(implementation = HttpResponse.class)), responseCode = "200")
-    @PreAuthorize("hasAuthority('BLOG_DELETE')")
+    @PreAuthorize("hasAuthority('CATEGORY_DELETE')")
     @DeleteMapping(value = "/id/{categoryId}/delete")
     public ResponseEntity<HttpResponse> deleteCategory(@PathVariable Long categoryId) {
         categoryService.delete(categoryId);
