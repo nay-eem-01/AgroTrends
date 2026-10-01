@@ -34,3 +34,7 @@ build/
 
 ### OpenCode Config ###
 opencode-config.json
+### Secrets ###
+.env
+application-local.properties
+*-local.properties
