@@ -26,6 +26,7 @@ public class CustomUserDetails implements UserDetails {
     private String password;
     private Set<Role> roles;
     private Collection<? extends GrantedAuthority> grantedAuthorities;
+    private boolean mustChangePassword;
 
     public static CustomUserDetails build(User user) {
         List<GrantedAuthority> authorities = new ArrayList<>();
@@ -44,7 +45,8 @@ public class CustomUserDetails implements UserDetails {
                 user.getEmail(),
                 user.getPassword(),
                 user.getRoles(),
-                authorities);
+                authorities,
+                Boolean.TRUE.equals(user.getMustChangePassword()));
     }
 
     @Override
