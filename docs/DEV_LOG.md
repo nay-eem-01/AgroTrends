@@ -37,6 +37,18 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-01 (roadmap 1.7)
+
+**Done**
+- `UserService.update` acts on the caller; e-mail/mobile uniqueness checked on change (was only on sign-up).
+- `POST /api/user/change-password` `{currentPassword,newPassword}`: wrong current -> 400 (5 tries/15 min then 429),
+  same password -> 400, policy via `CommonUtils.getInvalidPasswordMessage`; clears `mustChangePassword`;
+  revokes all sessions/refresh tokens, so the client must sign in again (verified live).
+- `UserService.revokeAllCredentials`, `setNewPassword`; `deleteUser` removes the user's sessions and refresh tokens.
+
+**Breaking API changes**
+- Removed `userId` from `UpdateUserRequest`; `PUT /api/user/update` is now validated (`@Valid`).
+
 ## 2026-10-01 (roadmap 1.6)
 
 **Done**
