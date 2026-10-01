@@ -37,6 +37,17 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-01 (roadmap 1.5)
+
+**Done**
+- Comments: author = caller; update/delete owner-or-admin (verified live: other user -> 403, owner -> 200).
+- `/api/comments/reply` now reads `?lang` (it read a non-standard `Accept-Language` request *parameter*).
+- `CommentServiceTest` grows to 4 (create as caller, refused non-owner delete).
+
+**Breaking API changes**
+- Removed `userId` from `CreateCommentRequest`, `ReplyCommentRequest`, `UpdateCommentRequest`.
+- `DELETE /api/comments/id/{id}` takes optional `?lang`.
+
 ## 2026-10-01 (roadmap 1.4)
 
 **Done**
