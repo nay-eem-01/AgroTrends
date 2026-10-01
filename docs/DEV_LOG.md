@@ -37,6 +37,18 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-01 (roadmap 1.4)
+
+**Done**
+- `AuthorizationService`: `currentPrincipal`, `currentUserId`, `isAdmin` (RoleType ADMIN/SUPER_ADMIN),
+  `assertOwnerOrAdmin` (403 `You do not have permission...`). Anonymous callers -> 401.
+- Questions/answers: author = caller; update/delete owner-or-admin. Verified live: another user's edit/delete -> 403.
+- `AuthorizationServiceTest` (4).
+
+**Breaking API changes**
+- Removed `userId` from `CreateQuestionRequest`, `CreateAnswerRequest`, `ReplyToAnswerRequest`, `UpdateAnswerRequest`.
+- `DELETE /api/answers/delete/id/{id}` now takes optional `?lang`. Request fields are `@NotNull/@NotBlank` (400 on missing).
+
 ## 2026-10-01 (roadmap 1.3)
 
 **Done**
