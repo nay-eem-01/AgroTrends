@@ -37,6 +37,13 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-01 (roadmap 1.1)
+
+**Done**
+- `CommentService.mapToCommentResponse`: root comments map `parentCommentId = null` instead of throwing.
+  Create and list of top-level comments worked for the first time (verified live: create, list, reply).
+- `CommentServiceTest` (2): root comment and reply map correctly.
+
 ## 2026-10-01 (roadmap 0.3)
 
 **Done**
