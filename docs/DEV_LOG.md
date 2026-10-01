@@ -37,6 +37,27 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-01 (roadmap 1.3)
+
+**Done**
+- Filter checks the session row; sign-out / password change / e-mail change really end a token's life
+  (verified live: a signed-out token that was valid for the rest of its hour now gets 401).
+- `POST /api/auth/refresh-token` `{refreshToken}`: rotating, single-use, atomic consume; reusing an old one -> 401.
+  `deleteByCredentialId` (deleted only expired tokens) replaced by `deleteAllByUserId`; the stray copy-paste
+  text in the expiry message is gone.
+- `AttemptLimiter` (in-memory fixed window); `AuthService.authenticate` shared by consumer and admin sign-in;
+  failures -> 401 `Invalid email or password.` (identical for unknown e-mail / wrong password / wrong portal);
+  lockout -> 429. Client IP is `request.getRemoteAddr()` — set `server.forward-headers-strategy` behind a proxy.
+- Tests: `AttemptLimiterTest` (3), `JwtAuthenticationFilterTest` (4).
+
+**Breaking API changes**
+- Sign-in failures are 401 with one message (were 404/401/403 with distinct messages).
+- Refresh endpoint is `/api/auth/refresh-token`; refresh tokens are single-use — store the new one each time.
+- Access token lifetime is 15 minutes, so clients must refresh.
+
+**Known limitation**
+- Limiter state is per instance and lost on restart (roadmap 4.8).
+
 ## 2026-10-01 (roadmap 1.2)
 
 **Done**

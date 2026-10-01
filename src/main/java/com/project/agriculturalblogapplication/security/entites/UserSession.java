@@ -15,7 +15,7 @@ import java.time.OffsetDateTime;
 @AllArgsConstructor
 @ToString
 @Entity
-@Table(name = UserSessionTable.TABLE_NAME)
+@Table(name = UserSessionTable.TABLE_NAME, indexes = @Index(name = "idx_user_session_token", columnList = UserSessionTable.TOKEN))
 public class UserSession extends AuditModel<String> {
 
     @Column(name = UserSessionTable.TOKEN, columnDefinition = AppConstants.DEFAULT_LARGE_TEXT_DATA_TYPE)

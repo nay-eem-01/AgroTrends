@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 5 of 42 steps done
+**Progress:** 6 of 42 steps done
 
 ---
 
@@ -31,7 +31,7 @@ Make the existing API trustworthy. Breaking API changes are recorded in the DEV_
 |---|---|---|
 | 1.1 | Fix the top-level comment NullPointerException (+ regression test) | ✅ |
 | 1.2 | Error handling: no exception detail in responses; 401/403 as JSON; advice ordering | ✅ |
-| 1.3 | Sessions and tokens: sign-out revokes, refresh-token rotation, hardened sign-in (generic 401, rate limit) | ⬜ |
+| 1.3 | Sessions and tokens: sign-out revokes, refresh-token rotation, hardened sign-in (generic 401, rate limit) | ✅ |
 | 1.4 | Identity from the token + owner-or-admin: questions and answers (`AuthorizationService`) | ⬜ |
 | 1.5 | Identity from the token + owner-or-admin: comments | ⬜ |
 | 1.6 | Identity from the token + owner-or-admin: blogs (author profile required), category-delete privilege | ⬜ |

@@ -45,11 +45,24 @@ public class AuthController {
     @Operation(summary = "Sign in")
     @ApiResponse(content = @Content(schema = @Schema(implementation = WebTokenResponse.class)), responseCode = "200")
     @PostMapping(value = "/sign-in")
-    public ResponseEntity<HttpResponse> signIn(@Valid @RequestBody SignInRequest request, @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) throws JsonProcessingException {
+    public ResponseEntity<HttpResponse> signIn(@Valid @RequestBody SignInRequest request,
+                                               @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang,
+                                               HttpServletRequest httpServletRequest) throws JsonProcessingException {
         return HttpResponse.getResponseEntity(
                 true,
                 "Sign-in successful.",
-                authService.signIn(request, lang));
+                authService.signIn(request, lang, httpServletRequest.getRemoteAddr()));
+    }
+
+    @Operation(summary = "Exchange a refresh token for a new access token (the refresh token is single-use and rotated)")
+    @ApiResponse(content = @Content(schema = @Schema(implementation = WebTokenResponse.class)), responseCode = "200")
+    @PostMapping(value = "/refresh-token")
+    public ResponseEntity<HttpResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest request,
+                                                     @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        return HttpResponse.getResponseEntity(
+                true,
+                "Token refreshed.",
+                authService.refreshToken(request, lang));
     }
 
     @Operation(summary = "Sign-out.", security = @SecurityRequirement(name = "jwtToken"))

@@ -1,10 +1,12 @@
 package com.project.agriculturalblogapplication.service;
 
+import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.repositories.RefreshTokenRepository;
 import com.project.agriculturalblogapplication.constatnt.SecurityConstants;
 import com.project.agriculturalblogapplication.entities.RefreshToken;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -30,19 +32,26 @@ public class RefreshTokenService {
         return refreshTokenRepository.save(refreshToken);
     }
 
-    public RefreshToken verifyExpiration(RefreshToken token) {
-        if (token.getExpiryDate().compareTo(Instant.now()) < 0) {
-            refreshTokenRepository.delete(token);
-            throw new ApplicationException(token.getToken() + " Refresh token was expired. Please make strigaCards new signin request");
+    public RefreshToken verifyExpiration(RefreshToken token, String lang) {
+        if (token.getExpiryDate().isBefore(Instant.now())) {
+            refreshTokenRepository.deleteByTokenValue(token.getToken());
+            throw new ApplicationException(HttpStatus.UNAUTHORIZED, ErrorCode.ERROR_REFRESH_TOKEN_EXPIRED, lang);
         }
 
         return token;
     }
 
-    public Boolean deleteByCredentialId(Long userId) {
-        List<RefreshToken> refreshTokens = this.refreshTokenRepository.findByUserIdAndExpiryDateIsBefore(userId,Instant.now());
-        this.refreshTokenRepository.deleteAll(refreshTokens);
-        return true;
+    /**
+     * Atomically consumes a refresh token (single use). Returns false if it was already used or never existed,
+     * so two concurrent refreshes with the same token cannot both succeed.
+     */
+    public boolean consume(RefreshToken token) {
+        return refreshTokenRepository.deleteByTokenValue(token.getToken()) > 0;
+    }
+
+    /** Revokes every refresh token of the user (sign-out, password change/reset, account deletion). */
+    public void deleteAllByUserId(Long userId) {
+        refreshTokenRepository.deleteAllByUserId(userId);
     }
 
     public Boolean deleteRefreshToken(RefreshToken refreshToken) {
