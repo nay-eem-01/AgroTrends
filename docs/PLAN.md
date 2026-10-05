@@ -47,7 +47,7 @@ foundation is trustworthy; the product features and the AI are still ahead.
 | Follow authors and topics, personalised feed | no | 2 |
 | Public author profile page | partial (`Author` entity, no endpoint) | 2 |
 | Responses (comments) | yes, threaded | — |
-| Notifications | no | later |
+| Notifications | no | 5 (Kafka events) |
 | **Agriculture-specific** (crop, season, region, soil) | no | 2 |
 | **AI answers with citations** | chatbot only | 3 |
 
@@ -66,6 +66,7 @@ Settled unless Nayeem reopens them. (Recorded 2026-10-01 while building Phase 0�
 | 7 | Seeded admin | Generated or env password, forced change on first sign-in; legacy `admin@gmail.com/123456` is auto-locked | Default credentials are a full takeover. |
 | 8 | Publishing rights | Only users with an `Author` profile can create blogs | Matches the existing sign-up flow (`userType` AUTHOR). |
 | 9 | API-breaking changes | Allowed during Phase 1; each recorded in the DEV_LOG | Identity moved from request body to token. |
+| 10 | Notifications | Domain events published to **Kafka** after the DB transaction commits; a consumer writes `Notification` rows; the API reads them for the caller only | Decouples notifying from the request path and lets more consumers (e-mail, push, analytics) subscribe later. Trade-off: publish-after-commit can drop an event if the broker is down — acceptable for notifications; move to an outbox table if delivery must be guaranteed. (2026-10-05) |
 
 ## 5. Phases (detail in ROADMAP)
 
@@ -76,6 +77,7 @@ Settled unless Nayeem reopens them. (Recorded 2026-10-01 while building Phase 0�
 | **2 — Medium core** | DTOs, real pagination, drafts/slugs, tags, search, images, claps, bookmarks, follows, feed, agri fields | A usable publishing platform |
 | **3 — AI that cites** | Fix embeddings, chunk + metadata, retrieval advisor, citations, quotas, AI helpers | The differentiator works |
 | **4 — Ship it** | Profiles, Flyway, Docker Compose, Testcontainers, CI + gitleaks, README, housekeeping | Deployable, regression-safe |
+| **5 — Notifications** | Kafka events for comments, replies, answers, followed authors; consumer; caller-only inbox API | Users hear about activity on their content |
 
 Phases 3 and 4 can overlap with the later part of Phase 2; Phase 2's DTO and pagination steps come first
 because everything after builds on them.
@@ -91,3 +93,4 @@ because everything after builds on them.
 | `Blog.content` is `@Lob` (stored as Postgres `oid`) — blocks SQL search | Convert to `TEXT` in a migration (2.5). |
 | In-memory rate limiter is per-instance | Move to a shared store before running replicas. |
 | Leaked keys/passwords remain in git history | 0.4 (Nayeem): rotate first, then `git filter-repo`/BFG + force-push. |
+| Kafka adds a broker to run locally and in production | Compose service for dev (5.1); app must start and work without notifications if the broker is down; managed Kafka for production. |

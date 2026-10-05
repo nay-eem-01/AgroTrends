@@ -12,21 +12,26 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Branch model (decided 2026-10-01):** `development` -> `staging` -> `production`, all created from `main`
   at `da19a32`. Feature work: base branch off `development`, serial step PRs into the base, base -> `development`
   (test) -> `staging` (test) -> `production`. `main` is frozen; no new work there. See the `git-workflow` skill.
+- **Notifications will use Kafka** (decided 2026-10-05): Phase 5 in the roadmap, decision 10 in the plan.
+- Old `dev` branch reviewed (2026-10-05): nothing to merge; the prompt fix was salvaged, timestamps became 2.1b.
 
 ## Next up
 
-1. **Nayeem:** GitHub settings — make `development` the default branch; protect `development`, `staging`,
+1. Merge `docs/branching-model`, then `fix/ai-prompt-language`, then `docs/notifications-plan` into `development`
+   (stacked in that order). Then delete the old `dev` branch (Nayeem's go-ahead).
+2. **Nayeem:** GitHub settings — make `development` the default branch; protect `development`, `staging`,
    `production` (PRs only, require review/CI once 4.5 lands).
-2. **Nayeem:** roadmap 0.4 — revoke keys, rotate the DB password, purge git history.
-3. Phase 2 starts (base `feat/medium-core-base` off `development`) with 2.1 (response DTOs) and 2.2 (real pagination): everything after builds on them.
-4. Phase 3.1 (replace the shut-down embedding model) is urgent for blog create/update — consider pulling it
+3. **Nayeem:** roadmap 0.4 — revoke keys, rotate the DB password, purge git history.
+4. Phase 2 starts (base `feat/medium-core-base` off `development`) with 2.1 (response DTOs) and 2.2 (real pagination): everything after builds on them.
+5. Phase 3.1 (replace the shut-down embedding model) is urgent for blog create/update — consider pulling it
    forward ahead of the rest of Phase 2.
 
 ## Open items
 
 | Item | Needs | Blocks |
 |---|---|---|
-| Leaked Gemini keys / DB password in git history | Nayeem (revoke, rotate, then purge) | roadmap 0.4 |
+| Leaked Gemini keys / DB password in git history — also on `origin/dev` (`f06f456`) and `origin/feature/kafka-impl`, so the purge must cover those branches | Nayeem (revoke, rotate, then purge) | roadmap 0.4 |
+| `feature/kafka-impl`: reference only for Phase 5; delete once Phase 5 is rebuilt | Nayeem | — |
 | Create a local `.env` from `.env.example` (DB_PASSWORD, GEMINI_API_KEY, JWT_SECRET) — the app no longer starts without them | Nayeem | running the app locally |
 | `text-embedding-004` shut down 2026-01-14: blog create/update likely fails at the embedding step | decision on the replacement model; test with a real key | roadmap 3.1 |
 | Frontend must stop sending `userId` / `authorUserId`, use `/api/auth/refresh-token`, and handle 401 vs 403 | frontend | frontend integration |
@@ -37,6 +42,20 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-05 (old `dev` review, AI prompt fix, notifications plan)
+
+**Done**
+- Reviewed the 3 commits on the old `dev` branch against `development`. Already covered: `@EnableJpaAuditing`,
+  `creationDate` default sort, top-level comment NPE. Dropped: `GET /api/user/get?email=` (any signed-in user
+  could fetch anyone's full `User` by e-mail) and the secrets it re-committed.
+- `fix(ai)`: the system prompt now answers English questions in English (salvaged from `dev`, with a test).
+
+**Decisions**
+- Notification events go through Kafka, published after commit; consumer writes `Notification` rows
+  (plan decision 10, roadmap Phase 5). `feature/kafka-impl` is reference only.
+- Timestamps on answer/comment/question responses become roadmap 2.1b: `createdAt`/`updatedAt` and the
+  author's display name, never `createdBy` (it holds the e-mail).
 
 ## 2026-10-01 (branching model)
 
