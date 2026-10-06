@@ -1,10 +1,10 @@
 package com.project.agriculturalblogapplication.controllers;
 
 import com.project.agriculturalblogapplication.config.CommonApiResponses;
-import com.project.agriculturalblogapplication.entities.Blog;
 import com.project.agriculturalblogapplication.enums.AscOrDescType;
 import com.project.agriculturalblogapplication.model.request.CreateBlogRequest;
 import com.project.agriculturalblogapplication.model.request.UpdateBlogRequest;
+import com.project.agriculturalblogapplication.model.response.BlogResponse;
 import com.project.agriculturalblogapplication.model.response.HttpResponse;
 import com.project.agriculturalblogapplication.model.response.RelatedBlogResponse;
 import com.project.agriculturalblogapplication.payloads.PaginationArgs;
@@ -33,7 +33,7 @@ public class BlogController {
     private final BlogService blogService;
 
     @Operation(summary = "Get all blogs - paginated")
-    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = Blog.class))), responseCode = "200")
+    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogResponse.class))), responseCode = "200")
     @GetMapping(value = "/all")
     public ResponseEntity<HttpResponse> getAll(@RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
                                                @RequestParam(name = PAGE_SIZE, defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
@@ -48,7 +48,7 @@ public class BlogController {
     }
 
     @Operation(summary = "Get all blogs by category - paginated", security = @SecurityRequirement(name = "jwtToken"))
-    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = Blog.class))), responseCode = "200")
+    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogResponse.class))), responseCode = "200")
     @GetMapping(value = "/all/category/{categoryId}")
     public ResponseEntity<HttpResponse> getAllByCategory(@RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
                                                          @RequestParam(name = PAGE_SIZE, defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
@@ -64,7 +64,7 @@ public class BlogController {
     }
 
     @Operation(summary = "Get all blogs - paginated", security = @SecurityRequirement(name = "jwtToken"))
-    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = Blog.class))), responseCode = "200")
+    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogResponse.class))), responseCode = "200")
     @GetMapping(value = "/all/author/{authorId}")
     public ResponseEntity<HttpResponse> getAllByAuthor(@RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
                                                        @RequestParam(name = PAGE_SIZE, defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
@@ -80,11 +80,11 @@ public class BlogController {
     }
 
     @Operation(summary = "Get blog info by id", security = @SecurityRequirement(name = "jwtToken"))
-    @ApiResponse(content = @Content(schema = @Schema(implementation = Blog.class)), responseCode = "200")
+    @ApiResponse(content = @Content(schema = @Schema(implementation = BlogResponse.class)), responseCode = "200")
     @GetMapping(value = "/id/{blogId}")
     public ResponseEntity<HttpResponse> findById(@PathVariable Long blogId) {
         return HttpResponse.getResponseEntity(
-                true, "Data loaded successfully.", blogService.findByIdWithException(blogId));
+                true, "Data loaded successfully.", blogService.getById(blogId));
     }
 
     @Operation(summary = "Other posts on similar topics, most similar first (found by meaning, not keywords)",
@@ -98,7 +98,7 @@ public class BlogController {
     }
 
     @Operation(summary = "New blog creation", security = @SecurityRequirement(name = "jwtToken"))
-    @ApiResponse(content = @Content(schema = @Schema(implementation = Blog.class)), responseCode = "200")
+    @ApiResponse(content = @Content(schema = @Schema(implementation = BlogResponse.class)), responseCode = "200")
     @PostMapping(value = "/create")
     public ResponseEntity<HttpResponse> createNewBlog(@Valid @RequestBody CreateBlogRequest request,
                                                       @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
@@ -107,7 +107,7 @@ public class BlogController {
     }
 
     @Operation(summary = "Update blog info", security = @SecurityRequirement(name = "jwtToken"))
-    @ApiResponse(content = @Content(schema = @Schema(implementation = Blog.class)), responseCode = "200")
+    @ApiResponse(content = @Content(schema = @Schema(implementation = BlogResponse.class)), responseCode = "200")
     @PutMapping(value = "/update")
     public ResponseEntity<HttpResponse> updateBlog(@Valid @RequestBody UpdateBlogRequest request,
                                                    @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {

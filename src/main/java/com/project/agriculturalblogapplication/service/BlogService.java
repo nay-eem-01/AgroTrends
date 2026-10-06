@@ -4,6 +4,7 @@ import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.request.CreateBlogRequest;
 import com.project.agriculturalblogapplication.model.request.UpdateBlogRequest;
+import com.project.agriculturalblogapplication.model.response.BlogResponse;
 import com.project.agriculturalblogapplication.model.response.RelatedBlogResponse;
 import com.project.agriculturalblogapplication.payloads.PaginationArgs;
 import com.project.agriculturalblogapplication.entities.Author;
@@ -45,7 +46,7 @@ public class BlogService {
 
     private final AuthorizationService authorizationService;
 
-    public Blog create(CreateBlogRequest request, String lang) {
+    public BlogResponse create(CreateBlogRequest request, String lang) {
         Category category = categoryService.findByIdWithException(request.getCategoryId());
 
         Author author = authorService.findByUserIdOrForbidden(authorizationService.currentUserId(lang), lang);
@@ -60,34 +61,34 @@ public class BlogService {
         blog = blogRepositories.save(blog);
         documentService.indexBlog(blog);
 
-        return blog;
+        return BlogResponse.from(blog);
     }
 
-    public Page<Blog> getAll(PaginationArgs paginationArgs) {
+    public Page<BlogResponse> getAll(PaginationArgs paginationArgs) {
         Pageable pageable = CommonUtils.getPageable(paginationArgs);
-        return blogRepositories.findAll(pageable);
+        return blogRepositories.findAll(pageable).map(BlogResponse::from);
     }
 
-    public Page<Blog> getAllByCategory(PaginationArgs paginationArgs, Long categoryId) {
+    public Page<BlogResponse> getAllByCategory(PaginationArgs paginationArgs, Long categoryId) {
         Pageable pageable = CommonUtils.getPageable(paginationArgs);
 
         Category category = categoryService.findByIdWithException(categoryId);
         List<Blog> blogs = blogRepositories.findAllByCategory((category));
 
-        return new PageImpl<>(blogs, pageable, blogs.size());
+        return new PageImpl<>(blogs.stream().map(BlogResponse::from).toList(), pageable, blogs.size());
     }
 
 
-    public Page<Blog> getAllByAuthor(PaginationArgs paginationArgs, Long authorUserId) {
+    public Page<BlogResponse> getAllByAuthor(PaginationArgs paginationArgs, Long authorUserId) {
         Pageable pageable = CommonUtils.getPageable(paginationArgs);
 
         Author author = authorService.findByUserIdWithException(authorUserId);
         List<Blog> blogs = blogRepositories.findAllByAuthor(author);
 
-        return new PageImpl<>(blogs, pageable, blogs.size());
+        return new PageImpl<>(blogs.stream().map(BlogResponse::from).toList(), pageable, blogs.size());
     }
 
-    public Blog update(UpdateBlogRequest request, String lang) {
+    public BlogResponse update(UpdateBlogRequest request, String lang) {
         Blog blog = findByIdWithException(request.getBlogId());
         authorizationService.assertOwnerOrAdmin(blog.getAuthor().getUser().getId(), lang);
 
@@ -100,7 +101,7 @@ public class BlogService {
         blog = blogRepositories.save(blog);
         documentService.reindexBlog(blog);
 
-        return blog;
+        return BlogResponse.from(blog);
     }
 
     public void delete(Long id, String lang) {
@@ -135,6 +136,10 @@ public class BlogService {
                 .filter(Objects::nonNull)
                 .map(related -> new RelatedBlogResponse(related.getId(), related.getTitle()))
                 .toList();
+    }
+
+    public BlogResponse getById(Long blogId) {
+        return BlogResponse.from(findByIdWithException(blogId));
     }
 
     public Blog findByIdWithException(Long blogId) {
