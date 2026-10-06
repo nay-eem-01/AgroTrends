@@ -39,9 +39,30 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | `contextLoads` fails without a local Postgres | roadmap 4.4 | CI |
 | No SMTP configured: reset links are written to the log (dev only) | an SMTP account | production password reset |
 | Hotfix path is not defined yet (proposal: branch off `production`, PR into `production`, then back-merge into `development`) | Nayeem to confirm | — |
+| Gemini chat calls fail with "API key not valid" since 2026-10-06 evening (embeddings still work); `.env` key is 53 chars (a key is 39) — check the line for quotes/comments | Nayeem | live checks of 3.6–3.8 |
+| Run once on existing DBs: `ALTER TABLE ai_answers ALTER COLUMN question TYPE text;` | whoever owns the DB | questions > 255 chars |
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-07 (roadmap 3.6)
+
+**Done**
+- `AiProperties` (`app.ai.*`): `daily-question-limit` (20, env `AI_DAILY_QUESTION_LIMIT`), `timeout` (60 s),
+  `rag.top-k`, `rag.similarity-threshold`. Own Gemini `Client` bean with an HTTP timeout; `spring.ai.retry.max-attempts=2`.
+- `AskQuestionRequest`: `@NotBlank`, `@Size(max = 1000)` (400). Quota: answered questions since local midnight;
+  the 21st is a 429 before Gemini is called. Gemini failures -> 503 `ERROR_AI_UNAVAILABLE`, cause logged.
+- `AiAnswer.promptTokens`/`completionTokens`; `ai_answers.question` mapped as `TEXT`. Unused `CreateAiResponseRequest` removed.
+- Verified live without a working chat key: blank -> 400, 1001 chars -> 400, 21st question -> 429 with no
+  Gemini call, failure -> 503 and nothing stored. Unit tests: `AiServiceTest` (quota, 503, token usage).
+
+**Known limitations**
+- Not verified live (chat key rejected since 2026-10-06 evening): the 60 s timeout actually applying (a 1 ms
+  override did not reach the app, and the client's key fingerprint differed from the configured one — check that
+  the chat model uses the `googleGenAiClient` bean) and token columns being filled.
+- Existing databases need `ALTER TABLE ai_answers ALTER COLUMN question TYPE text;` once (ddl-auto=update does
+  not change column types; Flyway arrives in 4.2).
+- The quota counts per server-local day and is not atomic: parallel requests can exceed it by a few.
 
 ## 2026-10-06 (roadmap 3.5)
 

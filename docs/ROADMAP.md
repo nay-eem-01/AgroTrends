@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 18 of 48 steps done
+**Progress:** 19 of 48 steps done
 
 ---
 
@@ -71,7 +71,7 @@ The differentiator. See `docs/research/rag-and-platform-findings.md`.
 | 3.3 | Replace vectors on blog update, delete them on blog delete; one-off re-index (`AI_REINDEX_ON_STARTUP`); unpublish is handled in 2.3 | ✅ |
 | 3.4 | Retrieval advisor on the chat client (`RetrievalAugmentationAdvisor`, top 5, similarity ≥ 0.7); PUBLISHED-only filter lands with 2.3 | ✅ |
 | 3.5 | Citations: `/api/ai/ask` returns `sources` (`blogId`, `title`) next to `answer` | ✅ |
-| 3.6 | Per-user daily quota, prompt length cap, timeout; token usage on `AiAnswer` | ⬜ |
+| 3.6 | Per-user daily quota (20), question cap (1000 chars), 60 s Gemini timeout, 503 on AI failure; token usage on `AiAnswer` | ✅ |
 | 3.7 | `GET /api/ai/history` (private to the caller) | ⬜ |
 | 3.8 | AI helpers: suggested tags, summary, related posts, labelled AI draft for unanswered questions | ⬜ |
 
