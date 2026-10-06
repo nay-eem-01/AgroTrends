@@ -46,6 +46,14 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-07 (roadmap 2.12b — Phase 2 code complete)
+
+**Done**
+- Questions: `agri` (`AgriMetadata`) on create/update (omitted on update = keep) and in `QuestionResponse`;
+  `GET /api/questions/all` takes optional `crop`, `season`, `region`, `soil` (`AgriSpecifications`).
+- Tests: `QuestionServiceTest`. Verified live: create with agri info, filters by crop, season + region, region
+  (no match), none.
+
 ## 2026-10-07 (roadmap 2.12a)
 
 **Done**
