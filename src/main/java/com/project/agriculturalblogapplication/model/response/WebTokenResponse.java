@@ -1,7 +1,6 @@
 package com.project.agriculturalblogapplication.model.response;
 
 
-import com.project.agriculturalblogapplication.entities.User;
 import lombok.*;
 
 @Getter
@@ -17,5 +16,5 @@ public class WebTokenResponse {
 
 	private String tokenType = "Bearer";
 
-	private User user;
+	private UserResponse user;
 }

@@ -1,5 +1,6 @@
 package com.project.agriculturalblogapplication.service;
 
+import com.project.agriculturalblogapplication.model.response.UserResponse;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.request.*;
 import com.project.agriculturalblogapplication.entities.RefreshToken;
@@ -54,7 +55,7 @@ public class AuthService {
 		userService.validateEmail(request.getEmail(), lang);
 	}
 
-	public User signUp(SignUpRequest request, String lang) {
+	public UserResponse signUp(SignUpRequest request, String lang) {
 		String email = request.getEmail();
 		String password = request.getPassword();
 		String mobileNumber = request.getCountryCode() + request.getMobileNumber();
@@ -76,7 +77,7 @@ public class AuthService {
                 .professionalInfoRequest(request.getProfessionalInfoRequest())
 				.build();
 
-		return userService.createUser(createUserRequest, lang);
+		return UserResponse.from(userService.createUser(createUserRequest, lang));
 	}
 
 	public WebTokenResponse signIn(SignInRequest request, String lang, String clientIp) {
@@ -160,7 +161,7 @@ public class AuthService {
 		userSessionService.createNewSession(createUserSessionRequest);
 
 		String refreshToken = refreshTokenService.createRefreshToken(user.getId()).getToken();
-		return new WebTokenResponse(jwt, refreshToken, "Bearer", user);
+		return new WebTokenResponse(jwt, refreshToken, "Bearer", UserResponse.from(user));
 	}
 
 	public Boolean isAdmin(User user) {
