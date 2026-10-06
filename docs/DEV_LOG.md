@@ -45,6 +45,21 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-07 (roadmap 2.11)
+
+**Done**
+- `GET /api/feed/latest` (published, `publishedAt` desc), `GET /api/feed/following` (published posts whose author
+  the caller follows **or** that carry a tag the caller follows; JPQL `EXISTS` subqueries, no duplicates; empty when
+  following nothing) and `GET /api/feed/trending` (published in the last 14 days, `clapCount` desc then newest).
+  All paged (`pageSize` clamped).
+- `SchemaPatches`: published blogs from before 2.3a get `published_at = creation_date` (feeds sort by it).
+- Tests: `BlogServiceTest` (sorts, 14-day window, caller-scoped following). Verified live: 6 old posts back-filled,
+  the three feeds, following via a tag only (one post), following nothing (empty).
+
+**Decisions**
+- Trending = most claps among recent posts, using the all-time `clapCount`. A time-decayed score needs clap
+  timestamps per day; revisit when there is real traffic.
+
 ## 2026-10-07 (roadmap 2.10)
 
 **Done**
