@@ -12,6 +12,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -71,6 +73,21 @@ class CommentServiceTest {
         when(commentRepository.findById(11L)).thenReturn(Optional.of(comment(11L, parent)));
 
         assertEquals(10L, commentService.findById(11L).getParentCommentId());
+    }
+
+    @Test
+    void commentShowsItsAuthorsNameAndIsoTimestamps() {
+        author.setName("Rahim");
+        author.setEmail("rahim@example.com");
+        Comment comment = comment(12L, null);
+        comment.setCreationDate(LocalDateTime.of(2026, 10, 7, 9, 0));
+        when(commentRepository.findById(12L)).thenReturn(Optional.of(comment));
+
+        CommentResponse response = commentService.findById(12L);
+
+        assertEquals("Rahim", response.getAuthorName());
+        assertEquals(LocalDateTime.of(2026, 10, 7, 9, 0).atZone(ZoneId.systemDefault()).toInstant(),
+                response.getCreatedAt());
     }
 
     @Test

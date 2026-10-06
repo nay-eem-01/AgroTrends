@@ -1,5 +1,6 @@
 package com.project.agriculturalblogapplication.service;
 
+import com.project.agriculturalblogapplication.util.CommonUtils;
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.entities.Blog;
@@ -117,6 +118,9 @@ public class CommentService {
         response.setBlogId(comment.getBlog().getId());
         response.setUserId(comment.getUser().getId());
         response.setContent(comment.getCommentContent());
+        response.setAuthorName(comment.getUser().getName());
+        response.setCreatedAt(CommonUtils.toInstant(comment.getCreationDate()));
+        response.setUpdatedAt(CommonUtils.toInstant(comment.getLastModifiedDate()));
 
         return response;
     }
