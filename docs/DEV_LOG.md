@@ -13,18 +13,15 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
   at `da19a32`. Feature work: base branch off `development`, serial step PRs into the base, base -> `development`
   (test) -> `staging` (test) -> `production`. `main` is frozen; no new work there. See the `git-workflow` skill.
 - **Notifications will use Kafka** (decided 2026-10-05): Phase 5 in the roadmap, decision 10 in the plan.
-- Old `dev` branch reviewed (2026-10-05): nothing to merge; the prompt fix was salvaged, timestamps became 2.1b.
+- Old `dev` branch reviewed and deleted (2026-10-06). Phase 3 started early (base `feat/ai-rag-base`): 3.1 done.
 
 ## Next up
 
-1. Merge `docs/branching-model`, then `fix/ai-prompt-language`, then `docs/notifications-plan` into `development`
-   (stacked in that order). Then delete the old `dev` branch (Nayeem's go-ahead).
+1. Merge `fix/embedding-model` into `feat/ai-rag-base` (Phase 3 base, off `development`).
 2. **Nayeem:** GitHub settings — make `development` the default branch; protect `development`, `staging`,
    `production` (PRs only, require review/CI once 4.5 lands).
 3. **Nayeem:** roadmap 0.4 — revoke keys, rotate the DB password, purge git history.
 4. Phase 2 starts (base `feat/medium-core-base` off `development`) with 2.1 (response DTOs) and 2.2 (real pagination): everything after builds on them.
-5. Phase 3.1 (replace the shut-down embedding model) is urgent for blog create/update — consider pulling it
-   forward ahead of the rest of Phase 2.
 
 ## Open items
 
@@ -33,7 +30,9 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | Leaked Gemini keys / DB password in git history — also on `origin/dev` (`f06f456`) and `origin/feature/kafka-impl`, so the purge must cover those branches | Nayeem (revoke, rotate, then purge) | roadmap 0.4 |
 | `feature/kafka-impl`: reference only for Phase 5; delete once Phase 5 is rebuilt | Nayeem | — |
 | Create a local `.env` from `.env.example` (DB_PASSWORD, GEMINI_API_KEY, JWT_SECRET) — the app no longer starts without them | Nayeem | running the app locally |
-| `text-embedding-004` shut down 2026-01-14: blog create/update likely fails at the embedding step | decision on the replacement model; test with a real key | roadmap 3.1 |
+| Blog update adds a second vector instead of replacing the old one | roadmap 3.3 | correct retrieval |
+| Any database that still holds `text-embedding-004` vectors must clear `vector_store` and re-embed (no backfill yet) | roadmap 3.3 | retrieval on old data |
+| Client errors (400/401) are logged at ERROR by `ExceptionHandlingController` — noisy | roadmap 4.7 | — |
 | Frontend must stop sending `userId` / `authorUserId`, use `/api/auth/refresh-token`, and handle 401 vs 403 | frontend | frontend integration |
 | `/api/user/id/{id}` still returns the full `User` entity (e-mail, mobile, roles) to any signed-in user | roadmap 2.1 | public profiles |
 | `contextLoads` fails without a local Postgres | roadmap 4.4 | CI |
@@ -42,6 +41,24 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-06 (roadmap 3.1)
+
+**Done**
+- Embeddings: `gemini-embedding-2` with `dimensions=768` (matches `vector(768)`); `text-embedding-004` was shut
+  down on 2026-01-14. `EmbeddingConfigTest` guards the model and the dimension match.
+- Verified live on a fresh pgvector DB: sign-up as author -> create blog -> one `vector_store` row,
+  `{"blogId": 1}`, 768 dims, norm 1.0 (gemini-embedding-2 normalises truncated vectors itself).
+- Old `dev` branch deleted (local and origin).
+
+**Decisions**
+- `gemini-embedding-2` over `gemini-embedding-001`: Google's named replacement, no shutdown date, and it
+  normalises at 768 dims (001 would need manual normalisation).
+- Local DB for testing: Docker `pgvector/pgvector:pg16` named `agrotrends-db`, volume `agrotrends-pgdata`,
+  bound to 127.0.0.1 with trust auth (dev only; becomes the compose service in 4.3).
+
+**Known limitations**
+- Re-embedding existing blogs is not automated (3.3). The local DB was empty, so nothing to re-embed.
 
 ## 2026-10-05 (old `dev` review, AI prompt fix, notifications plan)
 

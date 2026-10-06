@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 13 of 48 steps done
+**Progress:** 14 of 48 steps done
 
 ---
 
@@ -66,7 +66,7 @@ The differentiator. See `docs/research/rag-and-platform-findings.md`.
 
 | # | Step | Status |
 |---|---|---|
-| 3.1 | Replace the shut-down embedding model; set dimensions; re-embed all blogs; verify end to end | ⬜ |
+| 3.1 | Replace the shut-down embedding model (`gemini-embedding-2`, 768 dims); verify end to end | ✅ |
 | 3.2 | Index with metadata (`blogId`, author, category, status) + `TokenTextSplitter` chunking | ⬜ |
 | 3.3 | Delete/replace vectors on blog update, unpublish and delete; backfill script | ⬜ |
 | 3.4 | Retrieval advisor on the chat client (`QuestionAnswerAdvisor`), PUBLISHED only | ⬜ |
