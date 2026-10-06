@@ -1,5 +1,7 @@
 package com.project.agriculturalblogapplication.exceptionHandler;
 
+import com.project.agriculturalblogapplication.constatnt.ErrorCode;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import com.project.agriculturalblogapplication.model.response.CustomResponse;
 import com.project.agriculturalblogapplication.model.response.ErrorCodeResponse;
 import com.project.agriculturalblogapplication.model.response.HttpResponse;
@@ -102,6 +104,13 @@ public class ExceptionHandlingController extends ResponseEntityExceptionHandler 
 	}
 
 	@ResponseBody
+	// Uploads over spring.servlet.multipart.max-file-size never reach ImageService; answer like it would.
+	@Override
+	protected ResponseEntity<Object> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException ex, HttpHeaders headers,
+																		 HttpStatusCode status, WebRequest request) {
+		return handleResponseException(new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_IMAGE_TOO_LARGE));
+	}
+
 	@ExceptionHandler(ApplicationException.class)
 	public ResponseEntity<Object> handleResponseException(ApplicationException ex) {
 		HttpStatus httpStatus = ex.getHttpStatus();

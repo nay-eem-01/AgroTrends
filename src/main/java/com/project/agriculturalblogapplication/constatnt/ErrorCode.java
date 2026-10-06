@@ -197,4 +197,7 @@ public final class ErrorCode {
     public static final String ERROR_TOO_MANY_TAGS = "A blog can have at most 5 tags.";
     public static final String ERROR_TAG_TOO_LONG = "A tag can be at most 40 characters.";
     public static final String ERROR_SEARCH_QUERY_REQUIRED = "Please enter something to search for.";
+    public static final String ERROR_IMAGE_REQUIRED = "Please choose an image to upload.";
+    public static final String ERROR_IMAGE_TOO_LARGE = "Images can be at most 5 MB.";
+    public static final String ERROR_IMAGE_TYPE_NOT_ALLOWED = "Only JPEG, PNG and WebP images are allowed.";
 }
