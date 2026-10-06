@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 20 of 48 steps done
+**Progress:** 21 of 50 steps done
 
 ---
 
@@ -73,7 +73,9 @@ The differentiator. See `docs/research/rag-and-platform-findings.md`.
 | 3.5 | Citations: `/api/ai/ask` returns `sources` (`blogId`, `title`) next to `answer` | ✅ |
 | 3.6 | Per-user daily quota (20), question cap (1000 chars), 60 s Gemini timeout, 503 on AI failure; token usage on `AiAnswer` | ✅ |
 | 3.7 | `GET /api/ai/history` (private to the caller, newest first, paged) | ✅ |
-| 3.8 | AI helpers: suggested tags, summary, related posts, labelled AI draft for unanswered questions | ⬜ |
+| 3.8a | AI helpers: related posts for a blog (`GET /api/blogs/id/{blogId}/related`) | ✅ |
+| 3.8b | AI helpers: summary and suggested tags for an author's draft | ⬜ |
+| 3.8c | AI helpers: labelled AI draft answer for an unanswered question | ⬜ |
 
 ## Phase 4 — Ship it
 
