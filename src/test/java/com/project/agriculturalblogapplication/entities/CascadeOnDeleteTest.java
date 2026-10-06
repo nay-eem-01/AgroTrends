@@ -20,4 +20,11 @@ class CascadeOnDeleteTest {
         assertEquals(OnDeleteAction.CASCADE, Bookmark.class.getDeclaredField("blog").getAnnotation(OnDelete.class).action());
         assertEquals(OnDeleteAction.CASCADE, Bookmark.class.getDeclaredField("user").getAnnotation(OnDelete.class).action());
     }
+
+    @Test
+    void commentsAndTheirRepliesGoWithTheirBlog() throws Exception {
+        // Regression: deleting a blog with comments failed on comment.blog_id (answered as a vague 400).
+        assertEquals(OnDeleteAction.CASCADE, Comment.class.getDeclaredField("blog").getAnnotation(OnDelete.class).action());
+        assertEquals(OnDeleteAction.CASCADE, Comment.class.getDeclaredField("parentComment").getAnnotation(OnDelete.class).action());
+    }
 }

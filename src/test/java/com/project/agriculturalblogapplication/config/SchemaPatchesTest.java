@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
@@ -53,5 +54,20 @@ class SchemaPatchesTest {
         patches.convertColumns();
 
         verify(jdbc).execute("ALTER TABLE ai_answers ALTER COLUMN question TYPE text");
+    }
+
+    @Test
+    void aForeignKeyWithoutCascadeIsRecreatedAndACascadingOneIsLeftAlone() {
+        when(jdbc.queryForList(anyString(), eq("comment"), eq("blog_id")))
+                .thenReturn(List.of(Map.of("conname", "fk_comment_blog", "action", "a")));
+        when(jdbc.queryForList(anyString(), eq("comment"), eq("parent_comment_id")))
+                .thenReturn(List.of(Map.of("conname", "fk_comment_parent", "action", "c")));
+
+        patches.cascadeOnDelete("comment", "blog_id", "blogs");
+        patches.cascadeOnDelete("comment", "parent_comment_id", "comment");
+
+        verify(jdbc).execute("ALTER TABLE comment DROP CONSTRAINT fk_comment_blog, ADD CONSTRAINT fk_comment_blog"
+                + " FOREIGN KEY (blog_id) REFERENCES blogs(id) ON DELETE CASCADE");
+        verify(jdbc, never()).execute(contains("fk_comment_parent"));
     }
 }
