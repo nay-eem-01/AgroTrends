@@ -7,22 +7,33 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ## Where we are
 
-- Vision: a Medium for agricultural knowledge with AI (`docs/PLAN.md`). Estimated 30–35 % there.
-- Phase 0 (except 0.4) and Phase 1 are **merged** (PR #19 into `main`, 2026-10-01).
-- **Branch model (decided 2026-10-01):** `development` -> `staging` -> `production`, all created from `main`
-  at `da19a32`. Feature work: base branch off `development`, serial step PRs into the base, base -> `development`
-  (test) -> `staging` (test) -> `production`. `main` is frozen; no new work there. See the `git-workflow` skill.
-- **Notifications will use Kafka** (decided 2026-10-05): Phase 5 in the roadmap, decision 10 in the plan.
-- Old `dev` branch reviewed and deleted (2026-10-06). Phase 3 started early (base `feat/ai-rag-base`): 3.1–3.5 done; `/api/ai/ask` answers from the platform's posts and returns them as sources.
+- Vision: a Medium for agricultural knowledge with AI (`docs/PLAN.md`). Roughly 60–65 % there: the publishing core
+  (Phase 2) and the citing AI (Phase 3) are written; shipping (Phase 4) and notifications (Phase 5) remain.
+- **Branch model:** `development` -> `staging` -> `production`; feature base off `development`, serial step PRs into
+  the base. `main` is frozen. See the `git-workflow` skill.
+- Phase 0 (except 0.4) and Phase 1 merged. Phase 3 (3.1–3.5 merged into `feat/ai-rag-base`; 3.6–3.8c pushed) and
+  Phase 2 (2.1a–2.12b plus one fix, pushed on `feat/medium-core-base`) are **code complete, awaiting PRs**.
+- Live-tested on a local pgvector DB except the Gemini **chat** calls (key rejected since 2026-10-06): 3.4–3.8 chat
+  paths, the 3.6 timeout and token counts still need a check with a working key.
+- Notifications will use Kafka (Phase 5, plan decision 10).
 
 ## Next up
 
-1. Merge `feat/rag-citations` into `feat/ai-rag-base` (Phase 3 base, off `development`).
-   Next step: 3.6 (quota, prompt length cap, timeout; token usage) — answers take up to 91 s.
-2. **Nayeem:** GitHub settings — make `development` the default branch; protect `development`, `staging`,
-   `production` (PRs only, require review/CI once 4.5 lands).
-3. **Nayeem:** roadmap 0.4 — revoke keys, rotate the DB password, purge git history.
-4. Phase 2 starts (base `feat/medium-core-base` off `development`) with 2.1 (response DTOs) and 2.2 (real pagination): everything after builds on them.
+1. **Nayeem: open and merge the PRs in this order** (merge commits, not squash; each PR shows only its own step once
+   the previous one is merged):
+   - Phase 3, into `feat/ai-rag-base`: `feat/ai-limits` (3.6), `feat/ai-history` (3.7), `feat/ai-related-posts`
+     (3.8a), `feat/ai-blog-assist` (3.8b), `feat/ai-draft-answer` (3.8c); then `feat/ai-rag-base` -> `development`.
+   - Phase 2, into `feat/medium-core-base`: `feat/blog-category-dtos` (2.1a), `feat/user-dtos` (2.1b),
+     `feat/qa-comment-timestamps` (2.1c), `feat/real-pagination` (2.2), `feat/blog-status` (2.3a),
+     `feat/blog-slug-reading-time` (2.3b), `feat/blog-tags` (2.4), `feat/blog-search` (2.5), `feat/image-upload` (2.6),
+     `feat/claps` (2.7), `feat/bookmarks` (2.8), `fix/delete-commented-blog`, `feat/follows` (2.9),
+     `feat/author-profile` (2.10), `feat/home-feed` (2.11), `feat/agri-metadata-blogs` (2.12a),
+     `feat/agri-metadata-questions` (2.12b); then `feat/medium-core-base` -> `development` (after Phase 3 is in).
+2. Test on `development` (with a working Gemini key; start once with `AI_REINDEX_ON_STARTUP=true`), then
+   `development` -> `staging`.
+3. **Nayeem:** roadmap 0.4 (rotate keys, purge history); make `development` the default branch and protect it.
+4. Phase 4 next: 4.2 Flyway must start from the schema the startup `SchemaPatches` leaves behind; then 4.4
+   Testcontainers so `contextLoads` and query tests run in CI.
 
 ## Open items
 
