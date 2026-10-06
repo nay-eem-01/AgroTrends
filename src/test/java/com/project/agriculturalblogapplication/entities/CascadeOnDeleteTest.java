@@ -14,4 +14,10 @@ class CascadeOnDeleteTest {
         assertEquals(OnDeleteAction.CASCADE, Clap.class.getDeclaredField("blog").getAnnotation(OnDelete.class).action());
         assertEquals(OnDeleteAction.CASCADE, Clap.class.getDeclaredField("user").getAnnotation(OnDelete.class).action());
     }
+
+    @Test
+    void bookmarksGoWithTheirBlogAndUser() throws Exception {
+        assertEquals(OnDeleteAction.CASCADE, Bookmark.class.getDeclaredField("blog").getAnnotation(OnDelete.class).action());
+        assertEquals(OnDeleteAction.CASCADE, Bookmark.class.getDeclaredField("user").getAnnotation(OnDelete.class).action());
+    }
 }

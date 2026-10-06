@@ -257,7 +257,7 @@ public class BlogService {
     }
 
     /** Published posts for everyone; a draft only for its author and admins, and a 404 for anyone else. */
-    private Blog findVisibleBlog(Long blogId, String lang) {
+    public Blog findVisibleBlog(Long blogId, String lang) {
         Blog blog = findByIdWithException(blogId);
         if (blog.getStatus() != BlogStatus.PUBLISHED
                 && !authorizationService.isOwnerOrAdmin(blog.getAuthor().getUser().getId(), lang)) {
