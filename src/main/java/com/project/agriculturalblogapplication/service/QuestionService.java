@@ -17,9 +17,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+
+import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class QuestionService {
+
+    static final Set<String> SORTABLE_FIELDS = Set.of("creationDate", "lastModifiedDate", "title");
 
     private final QuestionRepository questionRepository;
 
@@ -39,14 +43,14 @@ public class QuestionService {
         return mapToQuestionResponse(question);
     }
 
-    public Page<QuestionResponse> getAll(PaginationArgs paginationArgs) {
-        Pageable pageable = CommonUtils.getPageable(paginationArgs);
+    public Page<QuestionResponse> getAll(PaginationArgs paginationArgs, String lang) {
+        Pageable pageable = CommonUtils.getPageable(paginationArgs, SORTABLE_FIELDS, lang);
         Page<Question> questions = questionRepository.findAll(pageable);
         return questions.map(this::mapToQuestionResponse);
     }
 
     public Page<QuestionResponse> getAllByUser(PaginationArgs paginationArgs, Long userId, String lang) {
-        Pageable pageable = CommonUtils.getPageable(paginationArgs);
+        Pageable pageable = CommonUtils.getPageable(paginationArgs, SORTABLE_FIELDS, lang);
         User user = userService.findByIdWithException(userId, lang);
         Page<Question> questions = questionRepository.findAllByUser(user, pageable);
         return questions.map(this::mapToQuestionResponse);

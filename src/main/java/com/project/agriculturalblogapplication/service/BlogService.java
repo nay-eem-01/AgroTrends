@@ -15,7 +15,6 @@ import com.project.agriculturalblogapplication.util.CommonUtils;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -25,6 +24,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -35,6 +35,8 @@ public class BlogService {
     private static final int REINDEX_PAGE_SIZE = 50;
 
     private static final int MAX_RELATED = 10;
+
+    static final Set<String> SORTABLE_FIELDS = Set.of("creationDate", "lastModifiedDate", "title");
 
     private final BlogRepositories blogRepositories;
 
@@ -64,28 +66,22 @@ public class BlogService {
         return BlogResponse.from(blog);
     }
 
-    public Page<BlogResponse> getAll(PaginationArgs paginationArgs) {
-        Pageable pageable = CommonUtils.getPageable(paginationArgs);
+    public Page<BlogResponse> getAll(PaginationArgs paginationArgs, String lang) {
+        Pageable pageable = CommonUtils.getPageable(paginationArgs, SORTABLE_FIELDS, lang);
         return blogRepositories.findAll(pageable).map(BlogResponse::from);
     }
 
-    public Page<BlogResponse> getAllByCategory(PaginationArgs paginationArgs, Long categoryId) {
-        Pageable pageable = CommonUtils.getPageable(paginationArgs);
-
+    public Page<BlogResponse> getAllByCategory(PaginationArgs paginationArgs, Long categoryId, String lang) {
+        Pageable pageable = CommonUtils.getPageable(paginationArgs, SORTABLE_FIELDS, lang);
         Category category = categoryService.findByIdWithException(categoryId);
-        List<Blog> blogs = blogRepositories.findAllByCategory((category));
-
-        return new PageImpl<>(blogs.stream().map(BlogResponse::from).toList(), pageable, blogs.size());
+        return blogRepositories.findAllByCategory(category, pageable).map(BlogResponse::from);
     }
 
-
-    public Page<BlogResponse> getAllByAuthor(PaginationArgs paginationArgs, Long authorUserId) {
-        Pageable pageable = CommonUtils.getPageable(paginationArgs);
-
-        Author author = authorService.findByUserIdWithException(authorUserId);
-        List<Blog> blogs = blogRepositories.findAllByAuthor(author);
-
-        return new PageImpl<>(blogs.stream().map(BlogResponse::from).toList(), pageable, blogs.size());
+    /** {@code authorId} is the Author id, the same id a blog response shows as {@code author.authorId}. */
+    public Page<BlogResponse> getAllByAuthor(PaginationArgs paginationArgs, Long authorId, String lang) {
+        Pageable pageable = CommonUtils.getPageable(paginationArgs, SORTABLE_FIELDS, lang);
+        Author author = authorService.findByIdWithException(authorId);
+        return blogRepositories.findAllByAuthor(author, pageable).map(BlogResponse::from);
     }
 
     public BlogResponse update(UpdateBlogRequest request, String lang) {

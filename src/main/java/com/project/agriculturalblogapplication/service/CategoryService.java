@@ -13,6 +13,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.util.Set;
+
 
 
 @Service
@@ -32,8 +34,8 @@ public class CategoryService {
         return CategoryResponse.from(categoryRepositories.save(category));
     }
 
-    public Page<CategoryResponse> getAll(PaginationArgs paginationArgs) {
-        Pageable pageable = CommonUtils.getPageable(paginationArgs);
+    public Page<CategoryResponse> getAll(PaginationArgs paginationArgs, String lang) {
+        Pageable pageable = CommonUtils.getPageable(paginationArgs, Set.of("creationDate", "categoryName"), lang);
         return categoryRepositories.findAll(pageable).map(CategoryResponse::from);
     }
 

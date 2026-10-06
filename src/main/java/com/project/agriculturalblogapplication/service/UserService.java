@@ -148,8 +148,8 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public Page<UserResponse> getAllPaginatedUser(PaginationArgs paginationArgs){
-        Pageable pageable = CommonUtils.getPageable(paginationArgs);
+    public Page<UserResponse> getAllPaginatedUser(PaginationArgs paginationArgs, String lang){
+        Pageable pageable = CommonUtils.getPageable(paginationArgs, Set.of("creationDate", "name", "email"), lang);
         return userRepository.findAll(pageable).map(UserResponse::from);
     }
 
