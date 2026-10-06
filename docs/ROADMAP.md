@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 22 of 50 steps done
+**Progress:** 23 of 50 steps done
 
 ---
 
@@ -75,7 +75,7 @@ The differentiator. See `docs/research/rag-and-platform-findings.md`.
 | 3.7 | `GET /api/ai/history` (private to the caller, newest first, paged) | ✅ |
 | 3.8a | AI helpers: related posts for a blog (`GET /api/blogs/id/{blogId}/related`) | ✅ |
 | 3.8b | AI helpers: summary and suggested tags for an author's draft (`POST /api/ai/blog-assist`) | ✅ |
-| 3.8c | AI helpers: labelled AI draft answer for an unanswered question | ⬜ |
+| 3.8c | AI helpers: labelled AI draft answer for an unanswered question (`POST /api/questions/id/{questionId}/ai-draft`) | ✅ |
 
 ## Phase 4 — Ship it
 
