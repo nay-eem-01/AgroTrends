@@ -44,6 +44,20 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-07 (roadmap 2.7)
+
+**Done**
+- `Clap` (`claps`, unique per blog + user, `clap_count` 1..50) and `Blog.clapCount` (default 0) kept in step by an
+  atomic `UPDATE ... SET clap_count = clap_count + :delta`. `BlogResponse.clapCount`.
+- `GET /api/blogs/id/{blogId}/claps` -> `{totalClaps, myClaps}`; `POST ...?count=1..50` adds (claps over the cap
+  of 50 per reader are ignored, not refused); `DELETE` takes the caller's claps back. Own blog -> 403, draft -> 404,
+  count outside 1..50 -> 400.
+- Tests: `ClapServiceTest`. Verified live: 30 + 30 -> capped at 50, author -> 403, undo -> 0.
+
+**Known limitations**
+- Two first claps by the same reader at the same instant can hit the unique constraint (one gets a 400/500);
+  acceptable for now.
+
 ## 2026-10-07 (roadmap 2.6)
 
 **Done**
