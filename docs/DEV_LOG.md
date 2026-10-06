@@ -13,12 +13,12 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
   at `da19a32`. Feature work: base branch off `development`, serial step PRs into the base, base -> `development`
   (test) -> `staging` (test) -> `production`. `main` is frozen; no new work there. See the `git-workflow` skill.
 - **Notifications will use Kafka** (decided 2026-10-05): Phase 5 in the roadmap, decision 10 in the plan.
-- Old `dev` branch reviewed and deleted (2026-10-06). Phase 3 started early (base `feat/ai-rag-base`): 3.1–3.3 done.
+- Old `dev` branch reviewed and deleted (2026-10-06). Phase 3 started early (base `feat/ai-rag-base`): 3.1–3.4 done; `/api/ai/ask` now answers from the platform's posts.
 
 ## Next up
 
-1. Merge `fix/embedding-model`, `feat/rag-chunk-metadata`, then `feat/rag-vector-lifecycle` into `feat/ai-rag-base`
-   (Phase 3 base, off `development`). Next step: 3.4 (retrieval advisor on the chat client).
+1. Merge `feat/rag-retrieval-advisor` into `feat/ai-rag-base` (Phase 3 base, off `development`).
+   Next step: 3.5 (citations: `/api/ai/ask` returns the source posts).
 2. **Nayeem:** GitHub settings — make `development` the default branch; protect `development`, `staging`,
    `production` (PRs only, require review/CI once 4.5 lands).
 3. **Nayeem:** roadmap 0.4 — revoke keys, rotate the DB password, purge git history.
@@ -41,6 +41,31 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-06 (roadmap 3.4)
+
+**Done**
+- `RetrievalAugmentationAdvisor` is a default advisor on the chat client: top 5 chunks with cosine similarity
+  >= 0.7 (`app.ai.rag.top-k`, `app.ai.rag.similarity-threshold`). Excerpts go in as `Post: <title>` blocks,
+  framed as user-written reference material whose instructions are ignored; the model names the posts it used
+  and answers in the question's language. With no match the question is passed through unchanged.
+- New dependency `spring-ai-rag` (version from the Spring AI BOM).
+- Fix: chat model `gemini-2.5-flash` -> `gemini-3.8-flash`. Google returns 404 "no longer available to new users"
+  for the rotated key, so `/api/ai/ask` was a 500 before this step. `EmbeddingConfigTest` became `AiModelConfigTest`.
+- Verified live: rice-blast question answered from and naming "Rice blast in short"; mango question (no post)
+  answered generally; a Bangla question retrieved the English cow-feeding post and was answered in Bangla;
+  a "what is the admin password" probe was refused.
+
+**Decisions**
+- `RetrievalAugmentationAdvisor` over `QuestionAnswerAdvisor`: its augmenter can pass a question through when no
+  post matches (general advice still works) and takes a custom document formatter (titles for citations).
+- Threshold 0.7 from measurement with gemini-embedding-2: question vs matching post 0.80–0.84, vs unrelated
+  farming posts 0.60–0.66 (rice blast vs potato blight 0.73), off-topic ~0.55. Re-check on real data.
+- `gemini-3.8-flash` was named by Google's own error message and confirmed working; Nayeem may prefer another model.
+
+**Known limitations**
+- Drafts are retrievable until 2.3 adds status and the filter.
+- Answers took 12–67 s; no timeout yet (3.6). Sources are named in the text only; structured citations are 3.5.
 
 ## 2026-10-06 (roadmap 3.3)
 
