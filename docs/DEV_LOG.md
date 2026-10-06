@@ -13,12 +13,12 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
   at `da19a32`. Feature work: base branch off `development`, serial step PRs into the base, base -> `development`
   (test) -> `staging` (test) -> `production`. `main` is frozen; no new work there. See the `git-workflow` skill.
 - **Notifications will use Kafka** (decided 2026-10-05): Phase 5 in the roadmap, decision 10 in the plan.
-- Old `dev` branch reviewed and deleted (2026-10-06). Phase 3 started early (base `feat/ai-rag-base`): 3.1 and 3.2 done.
+- Old `dev` branch reviewed and deleted (2026-10-06). Phase 3 started early (base `feat/ai-rag-base`): 3.1–3.3 done.
 
 ## Next up
 
-1. Merge `fix/embedding-model`, then `feat/rag-chunk-metadata`, into `feat/ai-rag-base` (Phase 3 base, off `development`).
-   Next step: 3.3 (replace vectors on update, delete them on delete, backfill).
+1. Merge `fix/embedding-model`, `feat/rag-chunk-metadata`, then `feat/rag-vector-lifecycle` into `feat/ai-rag-base`
+   (Phase 3 base, off `development`). Next step: 3.4 (retrieval advisor on the chat client).
 2. **Nayeem:** GitHub settings — make `development` the default branch; protect `development`, `staging`,
    `production` (PRs only, require review/CI once 4.5 lands).
 3. **Nayeem:** roadmap 0.4 — revoke keys, rotate the DB password, purge git history.
@@ -31,8 +31,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | Leaked Gemini keys / DB password in git history — also on `origin/dev` (`f06f456`) and `origin/feature/kafka-impl`, so the purge must cover those branches | Nayeem (revoke, rotate, then purge) | roadmap 0.4 |
 | `feature/kafka-impl`: reference only for Phase 5; delete once Phase 5 is rebuilt | Nayeem | — |
 | Create a local `.env` from `.env.example` (DB_PASSWORD, GEMINI_API_KEY, JWT_SECRET) — the app no longer starts without them | Nayeem | running the app locally |
-| Blog update adds a second vector instead of replacing the old one | roadmap 3.3 | correct retrieval |
-| Any database that still holds `text-embedding-004` vectors must clear `vector_store` and re-embed (no backfill yet) | roadmap 3.3 | retrieval on old data |
+| Any database that still holds `text-embedding-004` vectors: start once with `AI_REINDEX_ON_STARTUP=true` | whoever owns that DB | retrieval on old data |
 | Client errors (400/401) are logged at ERROR by `ExceptionHandlingController` — noisy | roadmap 4.7 | — |
 | Frontend must stop sending `userId` / `authorUserId`, use `/api/auth/refresh-token`, and handle 401 vs 403 | frontend | frontend integration |
 | `/api/user/id/{id}` still returns the full `User` entity (e-mail, mobile, roles) to any signed-in user | roadmap 2.1 | public profiles |
@@ -42,6 +41,28 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-06 (roadmap 3.3)
+
+**Done**
+- `DocumentService.reindexBlog` deletes a blog's chunks (filter `blogId == id`) before indexing it again;
+  `deleteBlog` runs after the blog row is deleted. `BlogService.update`/`delete` use them.
+- One-off backfill: `AI_REINDEX_ON_STARTUP=true` (`app.ai.reindex-on-startup`) makes `BlogReindexRunner`
+  re-embed every blog, 50 per page, then log the count. Off by default; documented in `.env.example`.
+- Tests: `BlogServiceTest` (update replaces, delete order, a stranger's delete keeps vectors, re-index walks
+  every page); `DocumentServiceTest` (delete-before-add, delete by filter).
+- Verified live: re-index gave the 3.1 test blog full metadata; updating a 4-chunk blog left 1 new chunk;
+  deleting a blog removed its chunks.
+
+**Decisions**
+- Backfill is a start-up switch, not an HTTP endpoint: no new API surface or privilege to secure, and it is
+  rarely needed (only after a model change).
+- Unpublish needs a blog status, so it moved into 2.3.
+
+**Known limitations**
+- Replace is delete-then-add, not atomic: if embedding fails mid-update, the blog has no vectors until the
+  next update or a re-index. The re-index also runs while the app already serves requests.
+- Vectors of blogs deleted before this change stay in `vector_store` (none in the fresh local DB).
 
 ## 2026-10-06 (roadmap 3.2)
 

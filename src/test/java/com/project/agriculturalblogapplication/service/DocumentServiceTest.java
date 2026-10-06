@@ -6,14 +6,20 @@ import com.project.agriculturalblogapplication.entities.Blog;
 import com.project.agriculturalblogapplication.entities.Category;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 class DocumentServiceTest {
@@ -43,13 +49,24 @@ class DocumentServiceTest {
     }
 
     @Test
-    void indexAllBlogsKeepsEachBlogsOwnMetadata() {
-        documentService.indexAllBlogs(List.of(blog(3L, "First post."), blog(4L, "Second post.")));
+    void reindexDeletesTheBlogsOldChunksBeforeAddingNewOnes() {
+        documentService.reindexBlog(blog(3L, "Updated advice."));
 
-        List<Document> chunks = indexedChunks();
-        assertEquals(2, chunks.size());
-        assertMetadata(chunks.get(0), 3L);
-        assertMetadata(chunks.get(1), 4L);
+        InOrder inOrder = inOrder(vectorStore);
+        inOrder.verify(vectorStore).delete(blogFilter(3L));
+        inOrder.verify(vectorStore).add(anyList());
+    }
+
+    @Test
+    void deleteRemovesOnlyThatBlogsChunks() {
+        documentService.deleteBlog(4L);
+
+        verify(vectorStore).delete(blogFilter(4L));
+        verify(vectorStore, never()).add(anyList());
+    }
+
+    private static Filter.Expression blogFilter(Long blogId) {
+        return new FilterExpressionBuilder().eq(DocumentService.BLOG_ID, blogId).build();
     }
 
     @SuppressWarnings("unchecked")
