@@ -21,6 +21,9 @@ public class AuthorService {
         author.setOccupation(authorCreateRequest.getProfessionalInfoRequest().getOccupation());
         author.setWorkPlaceOrInstitution(authorCreateRequest.getProfessionalInfoRequest().getInstitution());
         author.setSpecialities(authorCreateRequest.getProfessionalInfoRequest().getSpecialities());
+        // Both were accepted at sign-up and silently dropped before.
+        author.setBio(authorCreateRequest.getProfessionalInfoRequest().getProfessionalStatement());
+        author.setProfileImageUrl(authorCreateRequest.getProfessionalInfoRequest().getProfileImageUrl());
         author.setUser(authorCreateRequest.getUser());
 
         authorRepository.save(author);
@@ -35,6 +38,10 @@ public class AuthorService {
     public Author findByUserIdOrForbidden(Long userId, String lang){
         return authorRepository.findByUserId(userId).orElseThrow(()->
                 new ApplicationException(HttpStatus.FORBIDDEN, ErrorCode.ERROR_AUTHOR_PROFILE_REQUIRED, lang));
+    }
+
+    public Author save(Author author) {
+        return authorRepository.save(author);
     }
 
     public Author findByIdWithException(Long userId){

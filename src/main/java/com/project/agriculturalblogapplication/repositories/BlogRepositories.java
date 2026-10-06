@@ -30,6 +30,8 @@ public interface BlogRepositories extends JpaRepository<Blog, Long> {
 
     Page<Blog> findAllByStatus(BlogStatus status, Pageable pageable);
 
+    long countByAuthorIdAndStatus(Long authorId, BlogStatus status);
+
     /** Atomic, so two readers clapping at once cannot overwrite each other's count. */
     @Modifying
     @Transactional

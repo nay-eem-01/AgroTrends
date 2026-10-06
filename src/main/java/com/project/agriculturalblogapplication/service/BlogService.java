@@ -219,6 +219,10 @@ public class BlogService {
                 .toList();
     }
 
+    public long countPublishedByAuthor(Long authorId) {
+        return blogRepositories.countByAuthorIdAndStatus(authorId, BlogStatus.PUBLISHED);
+    }
+
     /** Adjusts a blog's clap total atomically (negative to take claps back). */
     public void addClaps(Long blogId, long delta) {
         blogRepositories.addClaps(blogId, delta);

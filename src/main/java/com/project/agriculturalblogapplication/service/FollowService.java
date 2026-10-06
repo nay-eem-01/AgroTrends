@@ -82,6 +82,10 @@ public class FollowService {
                 .map(follow -> follow.getTag().getName());
     }
 
+    public boolean isFollowingAuthor(Long userId, Long authorId) {
+        return authorFollowRepository.existsByUserIdAndAuthorId(userId, authorId);
+    }
+
     public long followerCount(Long authorId) {
         return authorFollowRepository.countByAuthorId(authorId);
     }
