@@ -44,6 +44,23 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-07 (roadmap 2.2)
+
+**Done**
+- `BlogRepositories.findAllByCategory/findAllByAuthor(…, Pageable)`: real database paging (was load-all + `PageImpl`).
+- `CommonUtils.getPageable(args, sortableFields, lang)`: `sortBy` outside the allowlist -> 400
+  `ERROR_INVALID_SORT_FIELD`. Allowlists: blogs and questions `creationDate, lastModifiedDate, title`;
+  categories `creationDate, categoryName`; admin user list `creationDate, name, email`. List endpoints take `lang`.
+- Tests: `CommonUtilsTest` (400, allowed, empty), `BlogServiceTest` (author paging by Author id).
+
+**Breaking API changes**
+- `GET /api/blogs/all/author/{authorId}` takes the **Author** id (`author.authorId` in blog responses); it used to
+  take the author's user id.
+- An unknown `sortBy` is a 400 (was a 500).
+
+**Known limitations**
+- Admin-only lists (roles, languages, error codes) still accept any `sortBy`; they are admin-only and out of scope.
+
 ## 2026-10-07 (roadmap 2.1c)
 
 **Done**
