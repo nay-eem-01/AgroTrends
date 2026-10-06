@@ -35,7 +35,6 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | Client errors (400/401) are logged at ERROR by `ExceptionHandlingController` — noisy | roadmap 4.7 | — |
 | Frontend can show `sources` from `/api/ai/ask` as links to `/api/blogs/id/{blogId}` | frontend | — |
 | Frontend must stop sending `userId` / `authorUserId`, use `/api/auth/refresh-token`, and handle 401 vs 403 | frontend | frontend integration |
-| `/api/user/id/{id}` still returns the full `User` entity (e-mail, mobile, roles) to any signed-in user | roadmap 2.1 | public profiles |
 | `contextLoads` fails without a local Postgres | roadmap 4.4 | CI |
 | No SMTP configured: reset links are written to the log (dev only) | an SMTP account | production password reset |
 | Hotfix path is not defined yet (proposal: branch off `production`, PR into `production`, then back-merge into `development`) | Nayeem to confirm | — |
@@ -44,6 +43,19 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-07 (roadmap 2.1b)
+
+**Done**
+- `UserResponse {id, name, email, mobileNumber, userTypes, roles (names), mustChangePassword, createdAt}` for the
+  caller's own account: `/api/user/me`, `/api/auth/sign-up`, `sign-in`/`refresh-token` (`payload.user`), and the
+  admin list `/api/user/paginated`.
+- `/api/user/id/{id}` returns `PublicUserResponse {id, name}`. Closes the open item "returns the full User entity".
+- Tests: `UserResponseTest`.
+
+**Breaking API changes**
+- `payload.user` in sign-in/refresh and the sign-up payload: roles are role-name strings (were role objects with
+  privileges); audit fields replaced by `createdAt`. `/api/user/id/{id}` is now `{id, name}` only.
 
 ## 2026-10-07 (roadmap 2.1a — Phase 2 starts)
 
