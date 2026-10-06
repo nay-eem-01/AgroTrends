@@ -45,6 +45,18 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-07 (roadmap 2.9)
+
+**Done**
+- `AuthorFollow` (`author_follows`) and `TagFollow` (`tag_follows`), unique per pair, all foreign keys
+  `ON DELETE CASCADE`.
+- `PUT`/`DELETE /api/authors/{authorId}/follow` (Author id as in `author.authorId`; yourself -> 400) and
+  `PUT`/`DELETE /api/tags/{tagName}/follow` (normalised name; unknown -> 404). Idempotent.
+- `GET /api/me/following/authors` (`AuthorSummaryResponse`) and `GET /api/me/following/tags` (names), newest first,
+  paged. `FollowService.followerCount` for 2.10. `TagService.findByNameWithException`.
+- Tests: `FollowServiceTest`, `CascadeOnDeleteTest`. Verified live: follow twice = one row, self-follow -> 400,
+  tag by display name, unknown tag -> 404, both lists.
+
 ## 2026-10-07 (fix: deleting a commented blog)
 
 **Done**
