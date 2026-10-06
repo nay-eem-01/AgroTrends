@@ -4,6 +4,7 @@ import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import com.project.agriculturalblogapplication.entities.Category;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import com.project.agriculturalblogapplication.enums.BlogStatus;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -23,4 +24,6 @@ public class CreateBlogRequest {
     private String content;
 
     private String imageUrl;
+    /** DRAFT keeps the post private; omitted means PUBLISHED, as before drafts existed. */
+    private BlogStatus status;
 }

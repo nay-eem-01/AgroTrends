@@ -2,11 +2,13 @@ package com.project.agriculturalblogapplication.service;
 
 import com.project.agriculturalblogapplication.config.AiProperties;
 import com.project.agriculturalblogapplication.entities.Blog;
+import com.project.agriculturalblogapplication.enums.BlogStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.transformer.splitter.TextSplitter;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +23,7 @@ public class DocumentService {
     public static final String AUTHOR_ID = "authorId";
     public static final String CATEGORY_ID = "categoryId";
     public static final String TITLE = "title";
+    public static final String STATUS = "status";
 
     // A post's opening is enough to find its neighbours and keeps the query embedding cheap.
     private static final int RELATED_QUERY_MAX_CHARS = 2000;
@@ -55,7 +58,7 @@ public class DocumentService {
                 .query(query.length() > RELATED_QUERY_MAX_CHARS ? query.substring(0, RELATED_QUERY_MAX_CHARS) : query)
                 .topK(limit * CHUNKS_PER_RELATED_POST)
                 .similarityThreshold(aiProperties.getRelatedSimilarityThreshold())
-                .filterExpression(new FilterExpressionBuilder().ne(BLOG_ID, blog.getId()).build())
+                .filterExpression(relatedFilter(blog.getId()))
                 .build());
         return chunks.stream()
                 .map(chunk -> chunk.getMetadata().get(BLOG_ID))
@@ -66,11 +69,22 @@ public class DocumentService {
                 .toList();
     }
 
+    /** Retrieval only ever sees published posts, even if a stale draft chunk were left behind. */
+    public static Filter.Expression publishedOnly() {
+        return new FilterExpressionBuilder().eq(STATUS, BlogStatus.PUBLISHED.name()).build();
+    }
+
+    private static Filter.Expression relatedFilter(Long blogId) {
+        FilterExpressionBuilder b = new FilterExpressionBuilder();
+        return b.and(b.ne(BLOG_ID, blogId), b.eq(STATUS, BlogStatus.PUBLISHED.name())).build();
+    }
+
     private static Document toDocument(Blog blog) {
         return new Document(blog.getTitle() + "\n\n" + blog.getContent(), Map.of(
                 BLOG_ID, blog.getId(),
                 AUTHOR_ID, blog.getAuthor().getId(),
                 CATEGORY_ID, blog.getCategory().getId(),
-                TITLE, blog.getTitle()));
+                TITLE, blog.getTitle(),
+                STATUS, blog.getStatus().name()));
     }
 }

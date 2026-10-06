@@ -192,4 +192,6 @@ public final class ErrorCode {
     public static final String ERROR_AI_UNAVAILABLE = "The AI advisor is not available right now. Please try again later.";
     public static final String ERROR_QUESTION_ALREADY_ANSWERED = "This question already has answers; AI drafts are only for unanswered questions.";
     public static final String ERROR_INVALID_SORT_FIELD = "This list cannot be sorted by that field.";
+    public static final String ERROR_BLOG_ALREADY_PUBLISHED = "This blog is already published.";
+    public static final String ERROR_BLOG_NOT_PUBLISHED = "This blog is not published.";
 }

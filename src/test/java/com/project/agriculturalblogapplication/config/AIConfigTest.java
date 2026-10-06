@@ -7,6 +7,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 
 import java.util.List;
 import java.util.Map;
@@ -60,5 +61,10 @@ class AIConfigTest {
         String prompt = AIConfig.blogQueryAugmenter().augment(new Query("What is crop rotation?"), List.of()).text();
 
         assertEquals("What is crop rotation?", prompt);
+    }
+
+    @Test
+    void retrievalOnlySearchesPublishedPosts() {
+        assertEquals(new FilterExpressionBuilder().eq(DocumentService.STATUS, "PUBLISHED").build(), DocumentService.publishedOnly());
     }
 }
