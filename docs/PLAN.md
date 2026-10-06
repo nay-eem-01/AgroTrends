@@ -89,7 +89,7 @@ because everything after builds on them.
 | Embedding model `text-embedding-004` is shut down; Spring AI 1.1.2's model enum does not list the replacement | Phase 3.1: set `gemini-embedding-001`/`-2` as a plain string, set dimensions explicitly (768 recommended truncation), verify end to end, re-embed every blog. Research file has the sources. |
 | Vector-space change breaks stored vectors; `initialize-schema` will not alter `vector(768)` | Re-embed script; keep dimensions constant or migrate the table. |
 | Chat model availability: Google closed `gemini-2.5-flash` to new API keys (found 2026-10-06) | Chat model is one property (`spring.ai.google.genai.chat.options.model`, now `gemini-3.8-flash`); `AiModelConfigTest` blocks the closed id. |
-| Slow AI answers (12–67 s measured) | Timeout and limits in 3.6. |
+| Slow AI answers (12–91 s measured) | Timeout and limits in 3.6. |
 | Unmetered LLM calls | Per-user daily quota + prompt cap (3.5). |
 | Prompt injection through blog text in the shared corpus | Only `PUBLISHED` content retrievable; treat retrieved text as untrusted; cite sources so users can check. |
 | `Blog.content` is `@Lob` (stored as Postgres `oid`) — blocks SQL search | Convert to `TEXT` in a migration (2.5). |
