@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 23 of 50 steps done
+**Progress:** 24 of 51 steps done
 
 ---
 
@@ -46,8 +46,9 @@ Everything that makes it a publishing platform. Each step one small PR.
 
 | # | Step | Status |
 |---|---|---|
-| 2.1 | Response DTOs for User, Blog, Category (and a clamped `pageSize`); stop returning entities | ⬜ |
-| 2.1b | Answer / Comment / Question responses: `createdAt`, `updatedAt` and the author's display name (never `createdBy`, which holds the e-mail); one date format | ⬜ |
+| 2.1a | Response DTOs for Blog and Category (author shown as `{authorId, name}`); clamped `pageSize` | ✅ |
+| 2.1b | Response DTOs for User: private `/me`, public profile for `/id/{id}`, admin list; sign-up/sign-in payloads | ⬜ |
+| 2.1c | Answer / Comment / Question responses: `createdAt`, `updatedAt` and the author's display name (never `createdBy`, which holds the e-mail); one date format | ⬜ |
 | 2.2 | Real database pagination for blogs by category/author/user; `sortBy` allowlist -> 400 | ⬜ |
 | 2.3 | Blog `status` (DRAFT/PUBLISHED), slug, reading time, `published_at`; public lists show PUBLISHED only; `status` in the vector metadata and the retrieval filter; unpublish removes the vectors | ⬜ |
 | 2.4 | Tags/topics (many-to-many) and filtering by tag | ⬜ |
