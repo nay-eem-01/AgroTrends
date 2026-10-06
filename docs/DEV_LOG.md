@@ -45,6 +45,19 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-07 (roadmap 3.8b)
+
+**Done**
+- `POST /api/ai/blog-assist` `{title, content}` -> `{summary, suggestedTags}` for the writing screen. Authors only
+  (same rule as publishing: 403 without an `Author` profile), content cut at 12 000 characters, structured output
+  via `ChatClient.entity(BlogAssistResponse.class)`, 503 when Gemini fails.
+- `BlogAssistService` builds its own chat client (system prompt, no retrieval advisor) from the prototype
+  `ChatClient.Builder`. `BlogAssistServiceTest` covers author-only, truncation, 503 and pass-through.
+
+**Known limitations**
+- Not verified live (chat key rejected). No per-user quota on this endpoint yet (author-only limits who can call it).
+- Tags are suggestions only; they become real tags with 2.4.
+
 ## 2026-10-07 (roadmap 3.8a)
 
 **Done**
