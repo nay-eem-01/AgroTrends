@@ -14,7 +14,9 @@ import com.project.agriculturalblogapplication.security.service.AuthorizationSer
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +25,8 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class BlogService {
+
+    private static final int REINDEX_PAGE_SIZE = 50;
 
     private final BlogRepositories blogRepositories;
 
@@ -99,6 +103,18 @@ public class BlogService {
         documentService.deleteBlog(blog.getId());
     }
 
+    /** Re-embeds every blog, page by page. Used after an embedding model change; returns the number of blogs. */
+    public long reindexAll() {
+        long count = 0;
+        Page<Blog> page;
+        int pageNo = 0;
+        do {
+            page = blogRepositories.findAll(PageRequest.of(pageNo++, REINDEX_PAGE_SIZE, Sort.by("id")));
+            page.forEach(documentService::reindexBlog);
+            count += page.getNumberOfElements();
+        } while (page.hasNext());
+        return count;
+    }
 
     public Blog findByIdWithException(Long blogId) {
         return blogRepositories.findById(blogId).orElseThrow(()->
