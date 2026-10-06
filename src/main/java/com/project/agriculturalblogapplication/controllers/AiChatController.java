@@ -2,10 +2,13 @@ package com.project.agriculturalblogapplication.controllers;
 
 import com.project.agriculturalblogapplication.config.CommonApiResponses;
 import com.project.agriculturalblogapplication.model.request.AskQuestionRequest;
+import com.project.agriculturalblogapplication.model.request.BlogAssistRequest;
 import com.project.agriculturalblogapplication.model.response.AiAnswerResponse;
 import com.project.agriculturalblogapplication.model.response.AiHistoryItemResponse;
+import com.project.agriculturalblogapplication.model.response.BlogAssistResponse;
 import com.project.agriculturalblogapplication.model.response.HttpResponse;
 import com.project.agriculturalblogapplication.service.AiService;
+import com.project.agriculturalblogapplication.service.BlogAssistService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -32,6 +35,8 @@ public class AiChatController {
 
     private final AiService aiService;
 
+    private final BlogAssistService blogAssistService;
+
     @Operation(summary = "Ask the AI advisor; the answer is grounded in matching AgroTrends posts, which are returned as sources",
             security = @SecurityRequirement(name = "jwtToken"))
     @ApiResponse(content = @Content(schema = @Schema(implementation = AiAnswerResponse.class)), responseCode = "200")
@@ -55,5 +60,17 @@ public class AiChatController {
                 true,
                 "Data loaded successfully.",
                 aiService.history(pageNo, pageSize, lang));
+    }
+
+    @Operation(summary = "Authors only: a short summary and suggested topic tags for a draft post",
+            security = @SecurityRequirement(name = "jwtToken"))
+    @ApiResponse(content = @Content(schema = @Schema(implementation = BlogAssistResponse.class)), responseCode = "200")
+    @PostMapping(value = "/blog-assist")
+    public ResponseEntity<HttpResponse> blogAssist(@Valid @RequestBody BlogAssistRequest request,
+                                                   @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        return HttpResponse.getResponseEntity(
+                true,
+                "Data loaded successfully.",
+                blogAssistService.assist(request.title(), request.content(), lang));
     }
 }
