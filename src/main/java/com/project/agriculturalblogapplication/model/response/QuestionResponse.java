@@ -1,5 +1,6 @@
 package com.project.agriculturalblogapplication.model.response;
 
+import com.project.agriculturalblogapplication.model.AgriInfo;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -21,4 +22,6 @@ public class QuestionResponse {
     private Instant createdAt;
 
     private Instant updatedAt;
+
+    private AgriInfo agri;
 }

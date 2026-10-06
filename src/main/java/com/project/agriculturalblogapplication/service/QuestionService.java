@@ -8,6 +8,8 @@ import com.project.agriculturalblogapplication.model.response.QuestionResponse;
 import com.project.agriculturalblogapplication.payloads.PaginationArgs;
 import com.project.agriculturalblogapplication.entities.Question;
 import com.project.agriculturalblogapplication.entities.User;
+import com.project.agriculturalblogapplication.model.AgriInfo;
+import com.project.agriculturalblogapplication.repositories.AgriSpecifications;
 import com.project.agriculturalblogapplication.repositories.QuestionRepository;
 import com.project.agriculturalblogapplication.util.CommonUtils;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
@@ -38,14 +40,18 @@ public class QuestionService {
         question.setTitle(request.getTitle());
         question.setContent(request.getContent());
         question.setUser(user);
+        if (request.getAgri() != null) {
+            question.setAgri(request.getAgri().toMetadata());
+        }
         question = questionRepository.save(question);
 
         return mapToQuestionResponse(question);
     }
 
-    public Page<QuestionResponse> getAll(PaginationArgs paginationArgs, String lang) {
+    /** All questions, optionally filtered by crop, season, region and soil. */
+    public Page<QuestionResponse> getAll(PaginationArgs paginationArgs, AgriInfo filter, String lang) {
         Pageable pageable = CommonUtils.getPageable(paginationArgs, SORTABLE_FIELDS, lang);
-        Page<Question> questions = questionRepository.findAll(pageable);
+        Page<Question> questions = questionRepository.findAll(AgriSpecifications.matches(filter), pageable);
         return questions.map(this::mapToQuestionResponse);
     }
 
@@ -62,6 +68,10 @@ public class QuestionService {
 
         question.setTitle(request.getTitle());
         question.setContent(request.getContent());
+        // Omitted agri info keeps the current values.
+        if (request.getAgri() != null) {
+            question.setAgri(request.getAgri().toMetadata());
+        }
         question = questionRepository.save(question);
 
         return mapToQuestionResponse(question);
@@ -89,6 +99,7 @@ public class QuestionService {
         response.setTitle(question.getTitle());
         response.setContent(question.getContent());
         response.setAuthorName(question.getUser().getName());
+        response.setAgri(AgriInfo.from(question.getAgri()));
         response.setCreatedAt(CommonUtils.toInstant(question.getCreationDate()));
         response.setUpdatedAt(CommonUtils.toInstant(question.getLastModifiedDate()));
 
