@@ -219,6 +219,11 @@ public class BlogService {
                 .toList();
     }
 
+    /** Adjusts a blog's clap total atomically (negative to take claps back). */
+    public void addClaps(Long blogId, long delta) {
+        blogRepositories.addClaps(blogId, delta);
+    }
+
     public BlogResponse getById(Long blogId, String lang) {
         return BlogResponse.from(findVisibleBlog(blogId, lang));
     }

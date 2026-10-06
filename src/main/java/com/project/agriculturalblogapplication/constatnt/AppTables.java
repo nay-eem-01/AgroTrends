@@ -46,6 +46,8 @@ public final class AppTables {
 
         public static final String SLUG = "slug";
 
+        public static final String CLAP_COUNT = "clap_count";
+
         public static final String NAME = "blogs";
     }
 
@@ -60,6 +62,17 @@ public final class AppTables {
         public static final String PASSWORD = "user_password";
 
         public static final String MOBILE_NUMBER = "mobile_number";
+    }
+
+    public static final class ClapTable {
+
+        public static final String NAME = "claps";
+
+        public static final String BLOG_ID = "blog_id";
+
+        public static final String USER_ID = "user_id";
+
+        public static final String CLAP_COUNT = "clap_count";
     }
 
     public static final class TagTable {
