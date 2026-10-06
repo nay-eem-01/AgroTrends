@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 13 of 42 steps done
+**Progress:** 13 of 48 steps done
 
 ---
 
@@ -47,6 +47,7 @@ Everything that makes it a publishing platform. Each step one small PR.
 | # | Step | Status |
 |---|---|---|
 | 2.1 | Response DTOs for User, Blog, Category (and a clamped `pageSize`); stop returning entities | ⬜ |
+| 2.1b | Answer / Comment / Question responses: `createdAt`, `updatedAt` and the author's display name (never `createdBy`, which holds the e-mail); one date format | ⬜ |
 | 2.2 | Real database pagination for blogs by category/author/user; `sortBy` allowlist -> 400 | ⬜ |
 | 2.3 | Blog `status` (DRAFT/PUBLISHED), slug, reading time, `published_at`; public lists show PUBLISHED only | ⬜ |
 | 2.4 | Tags/topics (many-to-many) and filtering by tag | ⬜ |
@@ -88,3 +89,19 @@ Operability and regression safety.
 | 4.6 | README: prerequisites, env vars, run, endpoint table | ⬜ |
 | 4.7 | Housekeeping: rename `constatnt`, delete dead Thymeleaf templates and orphan OTP DTOs, fix `AuditModel` date format, unify `TranslationService` injection | ⬜ |
 | 4.8 | Rate-limit store: move `AttemptLimiter` to a shared store if running more than one instance | ⬜ |
+
+## Phase 5 — Notifications (Kafka)
+
+Notification events go through Kafka (decision 10 in `docs/PLAN.md`). Rebuilt on `development`; the old
+`feature/kafka-impl` branch is reference only (it was built on the stale `dev` branch, takes `userId` from
+the path, publishes inside the transaction and trusts every package for JSON).
+Needs 2.9 (follows) for the "new post from an author you follow" event.
+
+| # | Step | Status |
+|---|---|---|
+| 5.1 | Kafka in `docker-compose.yml` (KRaft, no ZooKeeper); `spring-kafka`; topics declared in code; bootstrap servers from env; JSON trusted packages limited to our event package | ⬜ |
+| 5.2 | Notification events (records with ids only): comment on your blog, reply to your comment, answer on your question, new post from a followed author; published **after commit** | ⬜ |
+| 5.3 | Consumer: `Notification` entity, idempotent on event id, no self-notifications, retries + dead-letter topic | ⬜ |
+| 5.4 | `/api/notifications` for the caller only (identity from the token, 404 for others'): list, unread count, mark one / all read | ⬜ |
+| 5.5 | Tests: unit tests for event -> notification rules; Testcontainers Kafka integration test (after 4.4) | ⬜ |
+| 5.6 | Delivery beyond the inbox (e-mail digest / push / WebSocket) | ⏸ |
