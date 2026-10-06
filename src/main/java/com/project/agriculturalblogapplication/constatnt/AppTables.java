@@ -64,6 +64,19 @@ public final class AppTables {
         public static final String MOBILE_NUMBER = "mobile_number";
     }
 
+    public static final class FollowTable {
+
+        public static final String AUTHOR_FOLLOWS = "author_follows";
+
+        public static final String TAG_FOLLOWS = "tag_follows";
+
+        public static final String USER_ID = "user_id";
+
+        public static final String AUTHOR_ID = "author_id";
+
+        public static final String TAG_ID = "tag_id";
+    }
+
     public static final class BookmarkTable {
 
         public static final String NAME = "bookmarks";
