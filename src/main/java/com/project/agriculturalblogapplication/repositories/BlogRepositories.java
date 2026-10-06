@@ -13,9 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
-// Blog.content is a @Lob (Postgres large object), which can only be read inside a transaction. Derived queries
-// are not transactional by default, so reads failed with "Large Objects may not be used in auto-commit mode".
-// Roadmap 2.5 moves the column to TEXT.
+// Read-only transaction for every query method: one consistent snapshot per call. (It was added when
+// Blog.content was a large object that could only be read inside a transaction; 2.5 made it TEXT.)
 @Repository
 @Transactional(readOnly = true)
 public interface BlogRepositories extends JpaRepository<Blog, Long> {
