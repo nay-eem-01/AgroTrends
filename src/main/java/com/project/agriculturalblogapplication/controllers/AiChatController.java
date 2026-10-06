@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -30,7 +31,7 @@ public class AiChatController {
             security = @SecurityRequirement(name = "jwtToken"))
     @ApiResponse(content = @Content(schema = @Schema(implementation = AiAnswerResponse.class)), responseCode = "200")
     @PostMapping(value = "/ask")
-    public ResponseEntity<HttpResponse> ask(@RequestBody AskQuestionRequest request,
+    public ResponseEntity<HttpResponse> ask(@Valid @RequestBody AskQuestionRequest request,
                                             @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang
     ) {
         return HttpResponse.getResponseEntity(

@@ -222,6 +222,10 @@ public final class AppTables {
 
         public static final String QUESTION = "question";
 
+        public static final String PROMPT_TOKENS = "prompt_tokens";
+
+        public static final String COMPLETION_TOKENS = "completion_tokens";
+
         public static final String AI_ANSWER = "ai_answer";
     }
 }
