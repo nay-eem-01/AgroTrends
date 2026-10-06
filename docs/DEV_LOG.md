@@ -40,9 +40,35 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | Hotfix path is not defined yet (proposal: branch off `production`, PR into `production`, then back-merge into `development`) | Nayeem to confirm | — |
 | Gemini chat calls fail with "API key not valid" since 2026-10-06 evening (embeddings still work); `.env` key is 53 chars (a key is 39) — check the line for quotes/comments | Nayeem | live checks of 3.6–3.8 |
 | Run once on existing DBs: `ALTER TABLE ai_answers ALTER COLUMN question TYPE text;` | whoever owns the DB | questions > 255 chars |
+| After deploying 2.3a: start once with `AI_REINDEX_ON_STARTUP=true` (old chunks have no `status`, so retrieval ignores them) | whoever deploys | AI answers on existing posts |
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-07 (roadmap 2.3a)
+
+**Done**
+- Roadmap 2.3 split into 2.3a (status) and 2.3b (slug, reading time).
+- `Blog.status` (`BlogStatus` DRAFT/PUBLISHED, column default `'PUBLISHED'` so existing rows stay public) and
+  `publishedAt` (first publish). `CreateBlogRequest.status` optional, default PUBLISHED (as before drafts existed).
+- `POST /api/blogs/id/{id}/publish` and `/unpublish` (owner or admin; 409 if already in that state);
+  `GET /api/blogs/me/drafts` (authors). Lists show PUBLISHED only; `GET /api/blogs/id/{id}` and `/related` give 404
+  for someone else's draft (`AuthorizationService.isOwnerOrAdmin`).
+- Vectors: only published posts are embedded (create/update/publish index; unpublish deletes; re-index deletes
+  drafts' chunks). Chunks carry `status`; RAG retrieval and related posts filter on `status == 'PUBLISHED'`.
+- Fix: `BlogRepositories` is `@Transactional(readOnly = true)`. Paged derived queries failed with "Large Objects
+  may not be used in auto-commit mode" (`Blog.content` is a `@Lob`) — this hit the 2.2 category/author lists too.
+- Verified live on the test DB: existing rows PUBLISHED; draft has no vectors and is missing from the public list;
+  publish -> 1 chunk with `status: PUBLISHED`, publishing again -> 409; unpublish -> chunks gone; lists by
+  category/author work.
+
+**Breaking API changes**
+- Blog payloads gain `status` and `publishedAt`. Lists exclude drafts; someone else's draft is a 404.
+
+**Known limitations**
+- Chunks embedded before this step have no `status` and are now invisible to retrieval: start once with
+  `AI_REINDEX_ON_STARTUP=true` after deploying.
+- Comments can still be posted on a draft by anyone who knows its id (comments are reworked later).
 
 ## 2026-10-07 (roadmap 2.2)
 
