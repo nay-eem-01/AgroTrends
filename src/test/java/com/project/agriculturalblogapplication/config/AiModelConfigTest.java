@@ -10,8 +10,9 @@ import java.util.Properties;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-class EmbeddingConfigTest {
+class AiModelConfigTest {
 
+    private static final String CHAT_MODEL = "spring.ai.google.genai.chat.options.model";
     private static final String MODEL = "spring.ai.google.genai.embedding.text.options.model";
     private static final String EMBEDDING_DIMENSIONS = "spring.ai.google.genai.embedding.text.options.dimensions";
     private static final String VECTOR_DIMENSIONS = "spring.ai.vectorstore.pgvector.dimensions";
@@ -22,6 +23,12 @@ class EmbeddingConfigTest {
     void doesNotUseTheShutDownEmbeddingModel() {
         // Regression: text-embedding-004 was shut down on 2026-01-14, so every blog create/update failed.
         assertNotEquals("text-embedding-004", properties.getProperty(MODEL));
+    }
+
+    @Test
+    void doesNotUseTheChatModelClosedToNewKeys() {
+        // Regression: gemini-2.5-flash returns 404 for new API keys, so /api/ai/ask failed with a 500.
+        assertNotEquals("gemini-2.5-flash", properties.getProperty(CHAT_MODEL));
     }
 
     @Test
