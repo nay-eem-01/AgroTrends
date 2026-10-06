@@ -65,6 +65,20 @@ public class BlogController {
                 blogService.getAllByCategory(paginationArgs, categoryId, lang));
     }
 
+    @Operation(summary = "Published blogs with a tag (case-insensitive) - paginated", security = @SecurityRequirement(name = "jwtToken"))
+    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogResponse.class))), responseCode = "200")
+    @GetMapping(value = "/all/tag/{tagName}")
+    public ResponseEntity<HttpResponse> getAllByTag(@RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
+                                                    @RequestParam(name = PAGE_SIZE, defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
+                                                    @RequestParam(name = SORT_BY, defaultValue = SORT_BY_VALUE) String sortBy,
+                                                    @RequestParam(name = ASC_OR_DESC, defaultValue = ASC_OR_DESC_VALUE) AscOrDescType ascOrDesc,
+                                                    @RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang,
+                                                    @PathVariable String tagName) {
+        PaginationArgs paginationArgs = new PaginationArgs(pageNo, pageSize, sortBy, ascOrDesc);
+        return HttpResponse.getResponseEntity(
+                true, "Data loaded successfully.", blogService.getAllByTag(paginationArgs, tagName, lang));
+    }
+
     @Operation(summary = "Get all blogs by an author (the author.authorId shown on a blog) - paginated", security = @SecurityRequirement(name = "jwtToken"))
     @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogResponse.class))), responseCode = "200")
     @GetMapping(value = "/all/author/{authorId}")

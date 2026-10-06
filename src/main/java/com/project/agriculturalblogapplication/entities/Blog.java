@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.project.agriculturalblogapplication.constatnt.AppTables.CategoryTable;
 import com.project.agriculturalblogapplication.constatnt.AppTables.BlogTable;
 import com.project.agriculturalblogapplication.constatnt.AppTables.AuthorTable;
+import com.project.agriculturalblogapplication.constatnt.AppTables.TagTable;
 import com.project.agriculturalblogapplication.enums.BlogStatus;
 import com.project.agriculturalblogapplication.model.AuditModel;
 import jakarta.persistence.*;
@@ -11,7 +12,9 @@ import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @NoArgsConstructor
@@ -52,6 +55,13 @@ public class Blog extends AuditModel<String> {
     @ManyToOne
     @JoinColumn(name = AuthorTable.AUTHOR_ID, nullable = false)
     private Author author;
+
+    // Eager: a post has at most five tags and every response shows them, including outside a web request.
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = TagTable.BLOG_TAGS,
+            joinColumns = @JoinColumn(name = TagTable.BLOG_ID),
+            inverseJoinColumns = @JoinColumn(name = TagTable.TAG_ID))
+    private Set<Tag> tags = new LinkedHashSet<>();
 
     @JsonIgnore
     @OneToMany(mappedBy = "blog", cascade = CascadeType.PERSIST,fetch = FetchType.LAZY)

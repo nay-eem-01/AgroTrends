@@ -21,6 +21,8 @@ public final class AppConstants {
     public static final String PARAMETERS = "parameters";
     public static final String LANG = "lang";
     public static final int AI_MAX_QUESTION_LENGTH = 1000;
+    public static final int MAX_TAGS_PER_BLOG = 5;
+    public static final int MAX_TAG_LENGTH = 40;
 
     public static final String INITIAL_MOBILE_NUMBER = "+01833849973";
 
