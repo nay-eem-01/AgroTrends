@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 // Blog.content is a @Lob (Postgres large object), which can only be read inside a transaction. Derived queries
 // are not transactional by default, so reads failed with "Large Objects may not be used in auto-commit mode".
@@ -26,4 +27,10 @@ public interface BlogRepositories extends JpaRepository<Blog, Long> {
     Page<Blog> findAllByCategoryAndStatus(Category category, BlogStatus status, Pageable pageable);
 
     Page<Blog> findAllByStatus(BlogStatus status, Pageable pageable);
+
+    Optional<Blog> findBySlug(String slug);
+
+    boolean existsBySlug(String slug);
+
+    List<Blog> findAllBySlugIsNull();
 }
