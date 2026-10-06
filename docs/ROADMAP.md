@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 35 of 52 steps done
+**Progress:** 36 of 52 steps done
 
 ---
 
@@ -58,7 +58,7 @@ Everything that makes it a publishing platform. Each step one small PR.
 | 2.7 | Claps on published blogs (max 50 per reader, not own), `clapCount` on blogs; `/api/blogs/id/{blogId}/claps` | ✅ |
 | 2.8 | Bookmarks: private reading list (`PUT`/`DELETE /api/blogs/id/{blogId}/bookmark`, `GET /api/bookmarks`) | ✅ |
 | 2.9 | Follow authors and topic tags (`/api/authors/{authorId}/follow`, `/api/tags/{tagName}/follow`, `/api/me/following/*`) | ✅ |
-| 2.10 | Public author profile endpoint (bio, specialities, posts, counts) | ⬜ |
+| 2.10 | Public author profile `GET /api/authors/{authorId}` (bio, specialities, post/follower counts) and `PUT /api/authors/me` | ✅ |
 | 2.11 | Home feed: following, trending, latest | ⬜ |
 | 2.12 | Agriculture metadata on blogs and questions (crop, season, region, soil) + filters | ⬜ |
 

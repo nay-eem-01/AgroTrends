@@ -45,6 +45,18 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-07 (roadmap 2.10)
+
+**Done**
+- `GET /api/authors/{authorId}` -> `AuthorProfileResponse {authorId, name, designation, occupation,
+  workPlaceOrInstitution, specialities, bio, profileImageUrl, publishedPostCount, followerCount, followedByMe}` (no
+  contact details). The author's posts stay at `GET /api/blogs/all/author/{authorId}`.
+- `PUT /api/authors/me` (`UpdateAuthorProfileRequest`, bio <= 2000 chars): authors edit their own profile; others 403.
+- `Author.bio` (TEXT) and `Author.profileImageUrl`: sign-up's `professionalStatement` and `profileImageUrl` were
+  accepted and silently dropped; now stored.
+- `AuthorProfileService` (avoids an `AuthorService` <-> `FollowService` cycle). Tests: `AuthorProfileServiceTest`.
+  Verified live: edit own profile, counts (7 posts, 1 follower), `followedByMe` per caller, consumer edit -> 403.
+
 ## 2026-10-07 (roadmap 2.9)
 
 **Done**
