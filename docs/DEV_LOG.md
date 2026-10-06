@@ -41,9 +41,26 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | Gemini chat calls fail with "API key not valid" since 2026-10-06 evening (embeddings still work); `.env` key is 53 chars (a key is 39) — check the line for quotes/comments | Nayeem | live checks of 3.6–3.8 |
 | After deploying 2.3a: start once with `AI_REINDEX_ON_STARTUP=true` (old chunks have no `status`, so retrieval ignores them) | whoever deploys | AI answers on existing posts |
 | Deleting a user with comments/questions/answers fails on foreign keys: decide delete vs anonymise | Nayeem | account deletion |
+| A bad enum query parameter (`season=WINTER`, `ascOrDesc=up`) is a 400 with the message "Server Error Occurred." (`ExceptionHandlingController.handleExceptionInternal`) | small fix | clear client errors |
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-07 (roadmap 2.12a)
+
+**Done**
+- Roadmap 2.12 split into 2.12a (blogs) and 2.12b (questions).
+- `@Embeddable AgriMetadata` (`agri_crop`, `agri_season`, `agri_region`, `agri_soil`); enums `CropSeason`
+  (RABI, KHARIF_1, KHARIF_2, YEAR_ROUND — Bangladesh's seasons) and `SoilType`. `AgriInfo` record for requests,
+  responses and filters (crop/region trimmed + lowercase, <= 60 chars).
+- Blogs: `agri` on create/update (omitted on update = keep) and in `BlogResponse`. `GET /api/blogs/all` takes
+  optional `crop`, `season`, `region`, `soil` (Spring Data `Specification`, `AgriSpecifications`).
+- Tests: `AgriInfoTest`, `BlogServiceTest`. Verified live: create with agri info, filters by crop (any case),
+  season + region, soil (no match), none (all 8).
+
+**Decisions**
+- Crop and region are free text (any crop, any district/upazila); season and soil are fixed lists so filters and
+  the UI can offer them as choices.
 
 ## 2026-10-07 (roadmap 2.11)
 

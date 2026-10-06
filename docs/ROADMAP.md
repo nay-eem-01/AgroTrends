@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 37 of 52 steps done
+**Progress:** 38 of 53 steps done
 
 ---
 
@@ -60,7 +60,8 @@ Everything that makes it a publishing platform. Each step one small PR.
 | 2.9 | Follow authors and topic tags (`/api/authors/{authorId}/follow`, `/api/tags/{tagName}/follow`, `/api/me/following/*`) | ✅ |
 | 2.10 | Public author profile `GET /api/authors/{authorId}` (bio, specialities, post/follower counts) and `PUT /api/authors/me` | ✅ |
 | 2.11 | Home feed: `/api/feed/latest`, `/api/feed/following` (authors + tags), `/api/feed/trending` (14 days, most clapped) | ✅ |
-| 2.12 | Agriculture metadata on blogs and questions (crop, season, region, soil) + filters | ⬜ |
+| 2.12a | Agriculture metadata on blogs (crop, season, region, soil) + filters on `/api/blogs/all` | ✅ |
+| 2.12b | Agriculture metadata on questions + filters on `/api/questions/all` | ⬜ |
 
 ## Phase 3 — AI that cites
 
