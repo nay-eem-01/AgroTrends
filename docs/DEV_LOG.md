@@ -45,6 +45,17 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-07 (roadmap 3.7)
+
+**Done**
+- `GET /api/ai/history?pageNo&pageSize`: the caller's own `{id, question, answer, askedAt}` (`askedAt` is an ISO
+  `Instant`), newest first, Spring `Page` in `payload`. Identity from the token; no user id in the URL.
+- `CommonUtils.clampedPageable` + `AppConstants.MAX_PAGE_SIZE = 100` (2.2 reuses them). The unused
+  `AiService.getAllByUserId(…, userId)` and its unpaged repository method are gone.
+
+**Known limitations**
+- History does not include the sources of each answer (they are not stored).
+
 ## 2026-10-07 (roadmap 3.6)
 
 **Done**
