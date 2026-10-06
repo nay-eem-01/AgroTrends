@@ -1,5 +1,7 @@
 package com.project.agriculturalblogapplication.config;
 
+import com.google.genai.Client;
+import com.google.genai.types.HttpOptions;
 import com.project.agriculturalblogapplication.service.DocumentService;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -42,6 +44,17 @@ public class AIConfig {
             Question: {query}
             """;
 
+    /** Replaces Spring AI's default Gemini client, which has no timeout: a stuck call would hold a request thread. */
+    @Bean
+    public Client googleGenAiClient(@Value("${spring.ai.google.genai.api-key}") String apiKey, AiProperties aiProperties) {
+        return Client.builder()
+            .apiKey(apiKey)
+            .httpOptions(HttpOptions.builder()
+                .timeout(Math.toIntExact(aiProperties.getTimeout().toMillis()))
+                .build())
+            .build();
+    }
+
     @Bean
     public ChatClient chatClient(ChatClient.Builder builder, RetrievalAugmentationAdvisor blogRetrievalAdvisor) {
         return builder
@@ -52,14 +65,12 @@ public class AIConfig {
 
     /** Adds the most similar blog chunks to every question before it reaches the model. */
     @Bean
-    public RetrievalAugmentationAdvisor blogRetrievalAdvisor(VectorStore vectorStore,
-                                                             @Value("${app.ai.rag.top-k}") int topK,
-                                                             @Value("${app.ai.rag.similarity-threshold}") double similarityThreshold) {
+    public RetrievalAugmentationAdvisor blogRetrievalAdvisor(VectorStore vectorStore, AiProperties aiProperties) {
         return RetrievalAugmentationAdvisor.builder()
             .documentRetriever(VectorStoreDocumentRetriever.builder()
                 .vectorStore(vectorStore)
-                .topK(topK)
-                .similarityThreshold(similarityThreshold)
+                .topK(aiProperties.getRag().getTopK())
+                .similarityThreshold(aiProperties.getRag().getSimilarityThreshold())
                 .build())
             .queryAugmenter(blogQueryAugmenter())
             .build();

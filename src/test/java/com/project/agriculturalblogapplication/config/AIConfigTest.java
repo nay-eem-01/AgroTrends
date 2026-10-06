@@ -24,7 +24,7 @@ class AIConfigTest {
     void chatClientUsesTheSystemPromptAndRetrieval() {
         ChatClient.Builder builder = mock(ChatClient.Builder.class);
         ChatClient client = mock(ChatClient.class);
-        RetrievalAugmentationAdvisor advisor = new AIConfig().blogRetrievalAdvisor(mock(VectorStore.class), 5, 0.5);
+        RetrievalAugmentationAdvisor advisor = new AIConfig().blogRetrievalAdvisor(mock(VectorStore.class), new AiProperties());
         when(builder.defaultSystem(AIConfig.SYSTEM_PROMPT)).thenReturn(builder);
         when(builder.defaultAdvisors(advisor)).thenReturn(builder);
         when(builder.build()).thenReturn(client);
