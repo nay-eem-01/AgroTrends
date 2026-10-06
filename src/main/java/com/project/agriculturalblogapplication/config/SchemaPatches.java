@@ -37,6 +37,9 @@ public class SchemaPatches implements ApplicationRunner {
             new String[]{"comment", "blog_id", "blogs"},
             new String[]{"comment", "parent_comment_id", "comment"});
 
+    static final String PUBLISHED_AT_BACKFILL =
+            "UPDATE blogs SET published_at = creation_date WHERE status = 'PUBLISHED' AND published_at IS NULL";
+
     static final String BLOG_SEARCH_INDEX = """
             CREATE INDEX IF NOT EXISTS blogs_search_idx ON blogs
             USING gin (to_tsvector('simple', coalesce(title, '') || ' ' || coalesce(content, '')))""";
@@ -63,6 +66,11 @@ public class SchemaPatches implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         jdbcTemplate.execute(BLOG_SEARCH_INDEX);
         CASCADE_ON_DELETE.forEach(fk -> cascadeOnDelete(fk[0], fk[1], fk[2]));
+        // Posts published before drafts existed have no published_at; feeds sort by it.
+        int stamped = jdbcTemplate.update(PUBLISHED_AT_BACKFILL);
+        if (stamped > 0) {
+            log.warn("Schema patch: {} published blogs got published_at = creation_date", stamped);
+        }
     }
 
     /** Recreates a foreign key with ON DELETE CASCADE unless it already has it (confdeltype 'c'). */

@@ -13,6 +13,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,6 +32,17 @@ public interface BlogRepositories extends JpaRepository<Blog, Long> {
     Page<Blog> findAllByStatus(BlogStatus status, Pageable pageable);
 
     long countByAuthorIdAndStatus(Long authorId, BlogStatus status);
+
+    /** Published blogs by authors the user follows or carrying a tag the user follows. */
+    @Query("""
+            SELECT b FROM Blog b
+            WHERE b.status = com.project.agriculturalblogapplication.enums.BlogStatus.PUBLISHED
+              AND (EXISTS (SELECT f FROM AuthorFollow f WHERE f.user.id = :userId AND f.author = b.author)
+                   OR EXISTS (SELECT tf FROM TagFollow tf WHERE tf.user.id = :userId AND tf.tag MEMBER OF b.tags))
+            """)
+    Page<Blog> findFollowingFeed(@Param("userId") Long userId, Pageable pageable);
+
+    Page<Blog> findAllByStatusAndPublishedAtAfter(BlogStatus status, LocalDateTime since, Pageable pageable);
 
     /** Atomic, so two readers clapping at once cannot overwrite each other's count. */
     @Modifying

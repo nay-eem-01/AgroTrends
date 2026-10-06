@@ -42,6 +42,10 @@ public class BlogService {
 
     private static final int SLUG_ATTEMPTS = 5;
 
+    static final int TRENDING_DAYS = 14;
+
+    private static final Sort NEWEST = Sort.by(Sort.Direction.DESC, "publishedAt").and(Sort.by(Sort.Direction.DESC, "id"));
+
     private static final SecureRandom SLUG_RANDOM = new SecureRandom();
 
     static final Set<String> SORTABLE_FIELDS = Set.of("creationDate", "lastModifiedDate", "title");
@@ -217,6 +221,27 @@ public class BlogService {
                 .filter(Objects::nonNull)
                 .map(related -> new RelatedBlogResponse(related.getId(), related.getTitle()))
                 .toList();
+    }
+
+    /** Newest published posts. */
+    public Page<BlogResponse> latestFeed(int pageNo, int pageSize) {
+        return blogRepositories.findAllByStatus(BlogStatus.PUBLISHED, CommonUtils.clampedPageable(pageNo, pageSize, NEWEST))
+                .map(BlogResponse::from);
+    }
+
+    /** Newest posts from followed authors and followed tags; empty when the caller follows nothing. */
+    public Page<BlogResponse> followingFeed(int pageNo, int pageSize, String lang) {
+        Long userId = authorizationService.currentUserId(lang);
+        return blogRepositories.findFollowingFeed(userId, CommonUtils.clampedPageable(pageNo, pageSize, NEWEST))
+                .map(BlogResponse::from);
+    }
+
+    /** Posts published in the last {@value #TRENDING_DAYS} days, most clapped first. */
+    public Page<BlogResponse> trendingFeed(int pageNo, int pageSize) {
+        Sort mostClapped = Sort.by(Sort.Direction.DESC, "clapCount").and(NEWEST);
+        return blogRepositories.findAllByStatusAndPublishedAtAfter(BlogStatus.PUBLISHED,
+                        LocalDateTime.now().minusDays(TRENDING_DAYS), CommonUtils.clampedPageable(pageNo, pageSize, mostClapped))
+                .map(BlogResponse::from);
     }
 
     public long countPublishedByAuthor(Long authorId) {

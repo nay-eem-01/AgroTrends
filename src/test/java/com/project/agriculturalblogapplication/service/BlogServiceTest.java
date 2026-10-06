@@ -25,6 +25,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
@@ -267,6 +269,28 @@ class BlogServiceTest {
         ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
         verify(blogRepositories).search(eq("rice blast"), pageable.capture());
         assertEquals(100, pageable.getValue().getPageSize());
+    }
+
+    @Test
+    void feedsSortNewestOrMostClappedAndFollowingIsTheCallers() {
+        when(authorization.currentUserId(LANG)).thenReturn(7L);
+        when(blogRepositories.findFollowingFeed(eq(7L), any(Pageable.class))).thenReturn(Page.empty());
+        when(blogRepositories.findAllByStatusAndPublishedAtAfter(eq(BlogStatus.PUBLISHED), any(), any(Pageable.class)))
+                .thenReturn(Page.empty());
+
+        blogService.followingFeed(0, 20, LANG);
+        blogService.trendingFeed(0, 20);
+
+        ArgumentCaptor<Pageable> following = ArgumentCaptor.forClass(Pageable.class);
+        verify(blogRepositories).findFollowingFeed(eq(7L), following.capture());
+        assertEquals(Sort.by(Sort.Direction.DESC, "publishedAt").and(Sort.by(Sort.Direction.DESC, "id")), following.getValue().getSort());
+
+        ArgumentCaptor<LocalDateTime> since = ArgumentCaptor.forClass(LocalDateTime.class);
+        ArgumentCaptor<Pageable> trending = ArgumentCaptor.forClass(Pageable.class);
+        verify(blogRepositories).findAllByStatusAndPublishedAtAfter(eq(BlogStatus.PUBLISHED), since.capture(), trending.capture());
+        assertEquals("clapCount", trending.getValue().getSort().iterator().next().getProperty());
+        long days = Duration.between(since.getValue(), LocalDateTime.now()).toDays();
+        assertEquals(BlogService.TRENDING_DAYS, days);
     }
 
     private static UpdateBlogRequest updateRequest(Long blogId) {
