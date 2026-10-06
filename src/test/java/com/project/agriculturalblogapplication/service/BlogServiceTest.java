@@ -7,6 +7,8 @@ import com.project.agriculturalblogapplication.entities.Tag;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.enums.BlogStatus;
+import com.project.agriculturalblogapplication.enums.CropSeason;
+import com.project.agriculturalblogapplication.model.AgriInfo;
 import com.project.agriculturalblogapplication.model.request.CreateBlogRequest;
 import com.project.agriculturalblogapplication.model.request.UpdateBlogRequest;
 import com.project.agriculturalblogapplication.model.response.BlogResponse;
@@ -291,6 +293,21 @@ class BlogServiceTest {
         assertEquals("clapCount", trending.getValue().getSort().iterator().next().getProperty());
         long days = Duration.between(since.getValue(), LocalDateTime.now()).toDays();
         assertEquals(BlogService.TRENDING_DAYS, days);
+    }
+
+    @Test
+    void agriInfoIsKeptWhenAnUpdateLeavesItOut() {
+        Blog blog = blog(5L);
+        blog.setAgri(new AgriInfo("rice", CropSeason.RABI, "rangpur", null).toMetadata());
+        when(blogRepositories.findById(5L)).thenReturn(Optional.of(blog));
+        when(categoryService.findByIdWithException(30L)).thenReturn(blog.getCategory());
+        when(blogRepositories.save(blog)).thenReturn(blog);
+
+        assertEquals("rangpur", blogService.update(updateRequest(5L), LANG).agri().region());
+
+        UpdateBlogRequest change = updateRequest(5L);
+        change.setAgri(new AgriInfo("Jute", CropSeason.KHARIF_1, null, null));
+        assertEquals(new AgriInfo("jute", CropSeason.KHARIF_1, null, null), blogService.update(change, LANG).agri());
     }
 
     private static UpdateBlogRequest updateRequest(Long blogId) {

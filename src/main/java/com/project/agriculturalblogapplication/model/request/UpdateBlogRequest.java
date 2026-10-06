@@ -1,5 +1,7 @@
 package com.project.agriculturalblogapplication.model.request;
 
+import jakarta.validation.Valid;
+import com.project.agriculturalblogapplication.model.AgriInfo;
 import java.util.List;
 import jakarta.validation.constraints.Size;
 import com.project.agriculturalblogapplication.constatnt.AppConstants;
@@ -33,4 +35,7 @@ public class UpdateBlogRequest {
     /** Up to five topic tags, e.g. "rice blast"; new names are created. */
     @Size(max = AppConstants.MAX_TAGS_PER_BLOG, message = ErrorCode.ERROR_TOO_MANY_TAGS)
     private List<@NotBlank @Size(max = AppConstants.MAX_TAG_LENGTH, message = ErrorCode.ERROR_TAG_TOO_LONG) String> tags;
+    /** Optional crop, season, region and soil the post is about. */
+    @Valid
+    private AgriInfo agri;
 }

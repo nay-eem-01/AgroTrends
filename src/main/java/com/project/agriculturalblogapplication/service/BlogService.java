@@ -2,6 +2,7 @@ package com.project.agriculturalblogapplication.service;
 
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
+import com.project.agriculturalblogapplication.model.AgriInfo;
 import com.project.agriculturalblogapplication.model.request.CreateBlogRequest;
 import com.project.agriculturalblogapplication.model.request.UpdateBlogRequest;
 import com.project.agriculturalblogapplication.model.response.BlogResponse;
@@ -11,6 +12,7 @@ import com.project.agriculturalblogapplication.entities.Author;
 import com.project.agriculturalblogapplication.entities.Blog;
 import com.project.agriculturalblogapplication.entities.Category;
 import com.project.agriculturalblogapplication.enums.BlogStatus;
+import com.project.agriculturalblogapplication.repositories.AgriSpecifications;
 import com.project.agriculturalblogapplication.repositories.BlogRepositories;
 import com.project.agriculturalblogapplication.util.CommonUtils;
 import com.project.agriculturalblogapplication.util.Slugs;
@@ -20,6 +22,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -74,6 +77,9 @@ public class BlogService {
         blog.setContent(request.getContent());
         blog.setImageUrl(request.getImageUrl());
         blog.setSlug(uniqueSlug(request.getTitle()));
+        if (request.getAgri() != null) {
+            blog.setAgri(request.getAgri().toMetadata());
+        }
         if (request.getTags() != null) {
             blog.setTags(tagService.resolve(request.getTags()));
         }
@@ -90,9 +96,11 @@ public class BlogService {
         return BlogResponse.from(blog);
     }
 
-    public Page<BlogResponse> getAll(PaginationArgs paginationArgs, String lang) {
+    /** Published blogs, optionally filtered by crop, season, region and soil. */
+    public Page<BlogResponse> getAll(PaginationArgs paginationArgs, AgriInfo filter, String lang) {
         Pageable pageable = CommonUtils.getPageable(paginationArgs, SORTABLE_FIELDS, lang);
-        return blogRepositories.findAllByStatus(BlogStatus.PUBLISHED, pageable).map(BlogResponse::from);
+        Specification<Blog> published = (root, query, cb) -> cb.equal(root.get("status"), BlogStatus.PUBLISHED);
+        return blogRepositories.findAll(published.and(AgriSpecifications.matches(filter)), pageable).map(BlogResponse::from);
     }
 
     public Page<BlogResponse> getAllByCategory(PaginationArgs paginationArgs, Long categoryId, String lang) {
@@ -170,7 +178,10 @@ public class BlogService {
         blog.setContent(request.getContent());
         blog.setCategory(category);
         blog.setImageUrl(request.getImageUrl());
-        // Omitted tags keep the current ones, so clients that do not send tags do not wipe them.
+        // Omitted tags or agri info keep the current values, so clients that do not send them do not wipe them.
+        if (request.getAgri() != null) {
+            blog.setAgri(request.getAgri().toMetadata());
+        }
         if (request.getTags() != null) {
             blog.setTags(tagService.resolve(request.getTags()));
         }
