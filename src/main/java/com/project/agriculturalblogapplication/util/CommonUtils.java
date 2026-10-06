@@ -235,6 +235,11 @@ public final class CommonUtils {
 				.toArray(String[]::new);
 	}
 
+	/** A page request with a non-negative page number and a page size clamped to 1..MAX_PAGE_SIZE. */
+	public static Pageable clampedPageable(int pageNo, int pageSize, Sort sort) {
+		return PageRequest.of(Math.max(pageNo, 0), Math.min(Math.max(pageSize, 1), AppConstants.MAX_PAGE_SIZE), sort);
+	}
+
 	public static Pageable getPageable(PaginationArgs paginationArgs) {
 		Pageable pageable;
 		String sortBy = paginationArgs.getSortBy();

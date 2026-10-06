@@ -4,6 +4,7 @@ import com.project.agriculturalblogapplication.config.AiProperties;
 import com.project.agriculturalblogapplication.entities.AiAnswer;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.response.AiAnswerResponse;
+import com.project.agriculturalblogapplication.model.response.AiHistoryItemResponse;
 import com.project.agriculturalblogapplication.model.response.AiSourceResponse;
 import com.project.agriculturalblogapplication.repositories.AiRepositories;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
@@ -18,15 +19,22 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -98,6 +106,29 @@ class AiServiceTest {
         assertEquals(List.of(), AiService.sourcesOf(null));
         assertEquals(List.of(), AiService.sourcesOf(List.of()));
         assertEquals(List.of(), AiService.sourcesOf(List.of(new Document("chunk without a blog id"))));
+    }
+
+    @Test
+    void historyIsTheCallersOwnNewestFirstWithAClampedPageSize() {
+        when(authorization.currentUserId("en")).thenReturn(7L);
+        AiAnswer stored = new AiAnswer();
+        stored.setId(3L);
+        stored.setQuestion("How do I stop rice blast?");
+        stored.setAiAnswer("Use resistant varieties.");
+        stored.setCreationDate(LocalDateTime.of(2026, 10, 6, 12, 0));
+        when(aiRepositories.findAllByUserId(eq(7L), any(Pageable.class)))
+                .thenAnswer(call -> new PageImpl<>(List.of(stored), call.getArgument(1), 1));
+
+        Page<AiHistoryItemResponse> page = aiService.history(-1, 500, "en");
+
+        ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
+        verify(aiRepositories).findAllByUserId(eq(7L), pageable.capture());
+        assertEquals(0, pageable.getValue().getPageNumber());
+        assertEquals(100, pageable.getValue().getPageSize());
+        assertEquals(Sort.by(Sort.Direction.DESC, "creationDate"), pageable.getValue().getSort());
+        AiHistoryItemResponse item = page.getContent().get(0);
+        assertEquals("Use resistant varieties.", item.answer());
+        assertEquals(LocalDateTime.of(2026, 10, 6, 12, 0).atZone(ZoneId.systemDefault()).toInstant(), item.askedAt());
     }
 
     // Metadata read back from pgvector JSON holds Integers, so ids are taken as any Number.

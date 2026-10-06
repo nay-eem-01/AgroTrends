@@ -5,8 +5,8 @@ import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import com.project.agriculturalblogapplication.entities.AiAnswer;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.response.AiAnswerResponse;
+import com.project.agriculturalblogapplication.model.response.AiHistoryItemResponse;
 import com.project.agriculturalblogapplication.model.response.AiSourceResponse;
-import com.project.agriculturalblogapplication.payloads.PaginationArgs;
 import com.project.agriculturalblogapplication.repositories.AiRepositories;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import com.project.agriculturalblogapplication.util.CommonUtils;
@@ -19,12 +19,13 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -83,12 +84,16 @@ public class AiService {
         }
     }
 
-    public Page<AiAnswer> getAllByUserId(PaginationArgs paginationArgs, Long userId){
-        Pageable pageable = CommonUtils.getPageable(paginationArgs);
+    /** The caller's own questions and answers, newest first. */
+    public Page<AiHistoryItemResponse> history(int pageNo, int pageSize, String lang) {
+        Long userId = authorizationService.currentUserId(lang);
+        Pageable pageable = CommonUtils.clampedPageable(pageNo, pageSize, Sort.by(Sort.Direction.DESC, "creationDate"));
+        return aiRepositories.findAllByUserId(userId, pageable).map(AiService::toHistoryItem);
+    }
 
-        List<AiAnswer> aiAnswers = aiRepositories.findAllByUserId(userId);
-
-        return new PageImpl<>(aiAnswers, pageable, aiAnswers.size());
+    private static AiHistoryItemResponse toHistoryItem(AiAnswer aiAnswer) {
+        return new AiHistoryItemResponse(aiAnswer.getId(), aiAnswer.getQuestion(), aiAnswer.getAiAnswer(),
+                aiAnswer.getCreationDate().atZone(ZoneId.systemDefault()).toInstant());
     }
 
     /** One source per post, in retrieval order: several chunks of the same post collapse into one citation. */
