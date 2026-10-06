@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.transformer.splitter.TextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -24,16 +25,18 @@ public class DocumentService {
     private final TextSplitter blogTextSplitter;
 
     public void indexBlog(Blog blog) {
-        indexAllBlogs(List.of(blog));
+        // The splitter copies the blog's metadata onto every chunk, so any chunk can be traced back to its post.
+        vectorStore.add(blogTextSplitter.apply(List.of(toDocument(blog))));
     }
 
-    public void indexAllBlogs(List<Blog> blogs) {
-        List<Document> documents = blogs.stream()
-                .map(DocumentService::toDocument)
-                .toList();
+    /** Drops the blog's old chunks before indexing it again, so retrieval never sees an outdated version. */
+    public void reindexBlog(Blog blog) {
+        deleteBlog(blog.getId());
+        indexBlog(blog);
+    }
 
-        // The splitter copies each blog's metadata onto every chunk, so any chunk can be traced back to its post.
-        vectorStore.add(blogTextSplitter.apply(documents));
+    public void deleteBlog(Long blogId) {
+        vectorStore.delete(new FilterExpressionBuilder().eq(BLOG_ID, blogId).build());
     }
 
     private static Document toDocument(Blog blog) {

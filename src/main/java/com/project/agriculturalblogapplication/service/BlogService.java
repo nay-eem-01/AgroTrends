@@ -87,7 +87,7 @@ public class BlogService {
         blog.setImageUrl(request.getImageUrl());
 
         blog = blogRepositories.save(blog);
-        documentService.indexBlog(blog);
+        documentService.reindexBlog(blog);
 
         return blog;
     }
@@ -96,7 +96,9 @@ public class BlogService {
         Blog blog = findByIdWithException(id);
         authorizationService.assertOwnerOrAdmin(blog.getAuthor().getUser().getId(), lang);
         blogRepositories.delete(blog);
+        documentService.deleteBlog(blog.getId());
     }
+
 
     public Blog findByIdWithException(Long blogId) {
         return blogRepositories.findById(blogId).orElseThrow(()->
