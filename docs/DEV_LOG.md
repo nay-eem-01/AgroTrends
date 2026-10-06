@@ -40,10 +40,23 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | Hotfix path is not defined yet (proposal: branch off `production`, PR into `production`, then back-merge into `development`) | Nayeem to confirm | — |
 | Gemini chat calls fail with "API key not valid" since 2026-10-06 evening (embeddings still work); `.env` key is 53 chars (a key is 39) — check the line for quotes/comments | Nayeem | live checks of 3.6–3.8 |
 | After deploying 2.3a: start once with `AI_REINDEX_ON_STARTUP=true` (old chunks have no `status`, so retrieval ignores them) | whoever deploys | AI answers on existing posts |
-| Deleting a blog that has comments fails: `comment.blog_id` has no `ON DELETE` and `Blog.comments` only cascades PERSIST (found 2026-10-07) | a fix step (cascade or explicit delete) | deleting commented blogs |
+| Deleting a user with comments/questions/answers fails on foreign keys: decide delete vs anonymise | Nayeem | account deletion |
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-07 (fix: deleting a commented blog)
+
+**Done**
+- Deleting a blog with comments failed (`comment.blog_id` had no `ON DELETE`; surfaced as a vague 400 from the SQL
+  handler). `Comment.blog` and `Comment.parentComment` are `@OnDelete(CASCADE)`; `SchemaPatches.cascadeOnDelete`
+  rewrites the existing constraints once at startup (idempotent).
+- Tests: `CascadeOnDeleteTest`, `SchemaPatchesTest`. Verified live: constraints patched, blog with a comment deleted,
+  comments gone, second start is a no-op.
+
+**Known limitations**
+- Deleting a *user* who has comments, questions or answers still fails on those foreign keys (account deletion
+  needs its own decision: delete or anonymise their content).
 
 ## 2026-10-07 (roadmap 2.8)
 
