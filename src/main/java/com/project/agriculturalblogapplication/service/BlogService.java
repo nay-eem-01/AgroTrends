@@ -110,6 +110,18 @@ public class BlogService {
                 .map(BlogResponse::from);
     }
 
+    /**
+     * Full-text search over published titles and content, best match first. Uses the 'simple' text configuration:
+     * no stemming, so it works the same for Bangla and English ("disease" does not match "diseases").
+     */
+    public Page<BlogResponse> search(String query, int pageNo, int pageSize, String lang) {
+        if (query == null || query.isBlank()) {
+            throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_SEARCH_QUERY_REQUIRED, lang);
+        }
+        return blogRepositories.search(query.trim(), CommonUtils.clampedPageable(pageNo, pageSize, Sort.unsorted()))
+                .map(BlogResponse::from);
+    }
+
     /** The caller's own drafts; 403 for users without an author profile. */
     public Page<BlogResponse> getMyDrafts(PaginationArgs paginationArgs, String lang) {
         Pageable pageable = CommonUtils.getPageable(paginationArgs, SORTABLE_FIELDS, lang);

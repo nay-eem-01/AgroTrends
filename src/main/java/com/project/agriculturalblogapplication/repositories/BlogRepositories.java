@@ -7,6 +7,8 @@ import com.project.agriculturalblogapplication.entities.Category;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,4 +36,22 @@ public interface BlogRepositories extends JpaRepository<Blog, Long> {
     boolean existsBySlug(String slug);
 
     List<Blog> findAllBySlugIsNull();
+
+    /** Published blogs matching a web-style query ("rice blast" -wheat), best match first. */
+    @Query(value = """
+            SELECT b.* FROM blogs b
+            WHERE b.status = 'PUBLISHED'
+              AND to_tsvector('simple', coalesce(b.title, '') || ' ' || coalesce(b.content, ''))
+                  @@ websearch_to_tsquery('simple', :query)
+            ORDER BY ts_rank(to_tsvector('simple', coalesce(b.title, '') || ' ' || coalesce(b.content, '')),
+                             websearch_to_tsquery('simple', :query)) DESC, b.id DESC
+            """,
+            countQuery = """
+            SELECT count(*) FROM blogs b
+            WHERE b.status = 'PUBLISHED'
+              AND to_tsvector('simple', coalesce(b.title, '') || ' ' || coalesce(b.content, ''))
+                  @@ websearch_to_tsquery('simple', :query)
+            """,
+            nativeQuery = true)
+    Page<Blog> search(@Param("query") String query, Pageable pageable);
 }
