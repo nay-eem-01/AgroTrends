@@ -13,12 +13,12 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
   at `da19a32`. Feature work: base branch off `development`, serial step PRs into the base, base -> `development`
   (test) -> `staging` (test) -> `production`. `main` is frozen; no new work there. See the `git-workflow` skill.
 - **Notifications will use Kafka** (decided 2026-10-05): Phase 5 in the roadmap, decision 10 in the plan.
-- Old `dev` branch reviewed and deleted (2026-10-06). Phase 3 started early (base `feat/ai-rag-base`): 3.1–3.4 done; `/api/ai/ask` now answers from the platform's posts.
+- Old `dev` branch reviewed and deleted (2026-10-06). Phase 3 started early (base `feat/ai-rag-base`): 3.1–3.5 done; `/api/ai/ask` answers from the platform's posts and returns them as sources.
 
 ## Next up
 
-1. Merge `feat/rag-retrieval-advisor` into `feat/ai-rag-base` (Phase 3 base, off `development`).
-   Next step: 3.5 (citations: `/api/ai/ask` returns the source posts).
+1. Merge `feat/rag-citations` into `feat/ai-rag-base` (Phase 3 base, off `development`).
+   Next step: 3.6 (quota, prompt length cap, timeout; token usage) — answers take up to 91 s.
 2. **Nayeem:** GitHub settings — make `development` the default branch; protect `development`, `staging`,
    `production` (PRs only, require review/CI once 4.5 lands).
 3. **Nayeem:** roadmap 0.4 — revoke keys, rotate the DB password, purge git history.
@@ -33,6 +33,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | Create a local `.env` from `.env.example` (DB_PASSWORD, GEMINI_API_KEY, JWT_SECRET) — the app no longer starts without them | Nayeem | running the app locally |
 | Any database that still holds `text-embedding-004` vectors: start once with `AI_REINDEX_ON_STARTUP=true` | whoever owns that DB | retrieval on old data |
 | Client errors (400/401) are logged at ERROR by `ExceptionHandlingController` — noisy | roadmap 4.7 | — |
+| Frontend can show `sources` from `/api/ai/ask` as links to `/api/blogs/id/{blogId}` | frontend | — |
 | Frontend must stop sending `userId` / `authorUserId`, use `/api/auth/refresh-token`, and handle 401 vs 403 | frontend | frontend integration |
 | `/api/user/id/{id}` still returns the full `User` entity (e-mail, mobile, roles) to any signed-in user | roadmap 2.1 | public profiles |
 | `contextLoads` fails without a local Postgres | roadmap 4.4 | CI |
@@ -41,6 +42,26 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-06 (roadmap 3.5)
+
+**Done**
+- `/api/ai/ask` payload is now `AiAnswerResponse {answer, sources: [{blogId, title}]}`: one source per retrieved
+  post (chunks of the same post collapse), in relevance order; `[]` when nothing matched.
+- The chat call moved from `AiChatController` into `AiService.ask`; the caller id comes from
+  `AuthorizationService.currentUserId` (token). `AiServiceTest` covers sources, de-duplication and storing the answer.
+- Verified live: a rice + potato question returned both posts as sources; the mango question returned `[]`.
+
+**API changes (additive)**
+- `payload.sources` is new; `payload.answer` is unchanged.
+
+**Decisions**
+- `sources` lists the posts given to the model as context (what the answer was grounded on), not a parse of the
+  titles the model happened to mention.
+
+**Known limitations**
+- `AskQuestionRequest.question` has no validation (blank/huge prompts reach Gemini) — 3.6.
+- Latency up to 91 s measured; no timeout yet (3.6).
 
 ## 2026-10-06 (roadmap 3.4)
 
