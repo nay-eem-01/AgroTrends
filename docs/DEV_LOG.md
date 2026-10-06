@@ -13,11 +13,12 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
   at `da19a32`. Feature work: base branch off `development`, serial step PRs into the base, base -> `development`
   (test) -> `staging` (test) -> `production`. `main` is frozen; no new work there. See the `git-workflow` skill.
 - **Notifications will use Kafka** (decided 2026-10-05): Phase 5 in the roadmap, decision 10 in the plan.
-- Old `dev` branch reviewed and deleted (2026-10-06). Phase 3 started early (base `feat/ai-rag-base`): 3.1 done.
+- Old `dev` branch reviewed and deleted (2026-10-06). Phase 3 started early (base `feat/ai-rag-base`): 3.1 and 3.2 done.
 
 ## Next up
 
-1. Merge `fix/embedding-model` into `feat/ai-rag-base` (Phase 3 base, off `development`).
+1. Merge `fix/embedding-model`, then `feat/rag-chunk-metadata`, into `feat/ai-rag-base` (Phase 3 base, off `development`).
+   Next step: 3.3 (replace vectors on update, delete them on delete, backfill).
 2. **Nayeem:** GitHub settings — make `development` the default branch; protect `development`, `staging`,
    `production` (PRs only, require review/CI once 4.5 lands).
 3. **Nayeem:** roadmap 0.4 — revoke keys, rotate the DB password, purge git history.
@@ -41,6 +42,22 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-06 (roadmap 3.2)
+
+**Done**
+- `DocumentService` splits each blog (title + content) with a `TokenTextSplitter` bean (`AIConfig.blogTextSplitter`,
+  ~800 tokens) and stores `blogId`, `authorId`, `categoryId`, `title` on every chunk. `DocumentServiceTest` covers
+  short posts, long posts and batches.
+- Verified live: a ~13 kB post became 4 chunks, each with the metadata plus Spring AI's own `chunk_index`,
+  `total_chunks` and `parent_document_id`.
+
+**Decisions**
+- `authorId` is the `Author` id (not the user id), matching `/api/blogs/all/author/...` and the future public profile.
+- `status` metadata waits for 2.3 (blogs have no status yet); retrieval filters on it from then on.
+
+**Known limitations**
+- The blog indexed during the 3.1 check has only `blogId`; 3.3's backfill re-indexes it.
 
 ## 2026-10-06 (roadmap 3.1)
 
