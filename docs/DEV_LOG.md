@@ -44,6 +44,28 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-07 (roadmap 2.6)
+
+**Done**
+- `POST /api/images` (multipart `file`) -> `{url}`: authors only (403), JPEG/PNG/WebP detected by magic bytes
+  (`ImageType`), max 5 MB (`ImageService.MAX_IMAGE_BYTES`; multipart limit 6 MB so the service answers; larger
+  requests also get the 400 via `handleMaxUploadSizeExceededException`).
+- Port `ImageStorage`; `LocalDiskImageStorage` writes `<uuid>.<ext>` under `app.storage.local-dir`
+  (`STORAGE_DIR`, default `uploads`, git-ignored) and returns `app.storage.public-base-url` + name
+  (`UPLOADS_PUBLIC_BASE_URL`, default `{backendUrl}/uploads`). `/uploads/**` is served read-only and public.
+- Tests: `ImageStorageTest` (detection, storage), `ImageServiceTest` (author-only, SVG disguised as PNG, empty,
+  oversized). Verified live: upload + public download (bytes identical, `nosniff`), SVG -> 400, 7 MB -> 400,
+  consumer -> 403, `..%2f` traversal -> 400.
+
+**Found and fixed while testing**
+- A second `@ExceptionHandler(MaxUploadSizeExceededException)` made startup fail (ambiguous with
+  `ResponseEntityExceptionHandler`); the shipped code overrides its hook instead.
+
+**Known limitations**
+- Local disk only works on one server; behind a load balancer use an object store (new `ImageStorage` impl).
+- Images are stored as uploaded: no resizing and no EXIF/GPS stripping yet (a phone photo can reveal a farm's location).
+- Unused uploads are never deleted.
+
 ## 2026-10-07 (roadmap 2.5)
 
 **Done**
