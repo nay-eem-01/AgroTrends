@@ -44,6 +44,16 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-07 (roadmap 2.1c)
+
+**Done**
+- `QuestionResponse`, `AnswerResponse`, `CommentResponse` gain `authorName` (the user's display name, never
+  `createdBy`, which holds the e-mail), `createdAt`, `updatedAt` as ISO-8601 `Instant`s.
+- Tests: `QuestionServiceTest` (name + 24-hour-safe timestamp), `CommentServiceTest` (name + timestamp).
+
+**Breaking API changes**
+- Question `createdAt`/`updatedAt` change from `"dd-MM-yyyy hh:mm:ss"` strings to ISO-8601 UTC.
+
 ## 2026-10-07 (roadmap 2.1b)
 
 **Done**
