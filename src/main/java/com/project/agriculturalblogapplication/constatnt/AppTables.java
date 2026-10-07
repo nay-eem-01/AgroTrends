@@ -40,6 +40,10 @@ public final class AppTables {
 
         public static final String IMAGE_URL = "image_url";
 
+        public static final String STATUS = "status";
+
+        public static final String PUBLISHED_AT = "published_at";
+
         public static final String NAME = "blogs";
     }
 

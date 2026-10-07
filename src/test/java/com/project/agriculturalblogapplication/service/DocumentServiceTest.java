@@ -79,7 +79,9 @@ class DocumentServiceTest {
         assertEquals(List.of(9L, 4L), related);
         ArgumentCaptor<SearchRequest> request = ArgumentCaptor.forClass(SearchRequest.class);
         verify(vectorStore).similaritySearch(request.capture());
-        assertEquals(new FilterExpressionBuilder().ne(DocumentService.BLOG_ID, 2L).build(), request.getValue().getFilterExpression());
+        FilterExpressionBuilder b = new FilterExpressionBuilder();
+        assertEquals(b.and(b.ne(DocumentService.BLOG_ID, 2L), b.eq(DocumentService.STATUS, "PUBLISHED")).build(),
+                request.getValue().getFilterExpression());
         assertEquals(0.75, request.getValue().getSimilarityThreshold());
         assertEquals(8, request.getValue().getTopK());
     }
@@ -105,6 +107,7 @@ class DocumentServiceTest {
         assertEquals(20L, chunk.getMetadata().get(DocumentService.AUTHOR_ID));
         assertEquals(30L, chunk.getMetadata().get(DocumentService.CATEGORY_ID));
         assertEquals("Managing rice blast", chunk.getMetadata().get(DocumentService.TITLE));
+        assertEquals("PUBLISHED", chunk.getMetadata().get(DocumentService.STATUS));
     }
 
     private static Blog blog(Long id, String content) {

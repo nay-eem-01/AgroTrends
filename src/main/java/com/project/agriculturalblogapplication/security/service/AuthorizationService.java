@@ -44,12 +44,15 @@ public class AuthorizationService {
         return false;
     }
 
+    public boolean isOwnerOrAdmin(Long ownerUserId, String lang) {
+        CustomUserDetails principal = currentPrincipal(lang);
+        return isAdmin(principal) || (ownerUserId != null && ownerUserId.equals(principal.getId()));
+    }
+
     /** Passes for the owner of a resource or any admin; otherwise 403. */
     public void assertOwnerOrAdmin(Long ownerUserId, String lang) {
-        CustomUserDetails principal = currentPrincipal(lang);
-        if (isAdmin(principal) || (ownerUserId != null && ownerUserId.equals(principal.getId()))) {
-            return;
+        if (!isOwnerOrAdmin(ownerUserId, lang)) {
+            throw new ApplicationException(HttpStatus.FORBIDDEN, ErrorCode.ERROR_FORBIDDEN, lang);
         }
-        throw new ApplicationException(HttpStatus.FORBIDDEN, ErrorCode.ERROR_FORBIDDEN, lang);
     }
 }

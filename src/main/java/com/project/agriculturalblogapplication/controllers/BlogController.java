@@ -85,9 +85,10 @@ public class BlogController {
     @Operation(summary = "Get blog info by id", security = @SecurityRequirement(name = "jwtToken"))
     @ApiResponse(content = @Content(schema = @Schema(implementation = BlogResponse.class)), responseCode = "200")
     @GetMapping(value = "/id/{blogId}")
-    public ResponseEntity<HttpResponse> findById(@PathVariable Long blogId) {
+    public ResponseEntity<HttpResponse> findById(@PathVariable Long blogId,
+                                                 @RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
         return HttpResponse.getResponseEntity(
-                true, "Data loaded successfully.", blogService.getById(blogId));
+                true, "Data loaded successfully.", blogService.getById(blogId, lang));
     }
 
     @Operation(summary = "Other posts on similar topics, most similar first (found by meaning, not keywords)",
@@ -95,9 +96,42 @@ public class BlogController {
     @ApiResponse(content = @Content(schema = @Schema(implementation = RelatedBlogResponse.class)), responseCode = "200")
     @GetMapping(value = "/id/{blogId}/related")
     public ResponseEntity<HttpResponse> related(@PathVariable Long blogId,
-                                                @RequestParam(name = "limit", defaultValue = "5") int limit) {
+                                                @RequestParam(name = "limit", defaultValue = "5") int limit,
+                                                @RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
         return HttpResponse.getResponseEntity(
-                true, "Data loaded successfully.", blogService.related(blogId, limit));
+                true, "Data loaded successfully.", blogService.related(blogId, limit, lang));
+    }
+
+    @Operation(summary = "Your own drafts - paginated (authors only)", security = @SecurityRequirement(name = "jwtToken"))
+    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogResponse.class))), responseCode = "200")
+    @GetMapping(value = "/me/drafts")
+    public ResponseEntity<HttpResponse> getMyDrafts(@RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
+                                                    @RequestParam(name = PAGE_SIZE, defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
+                                                    @RequestParam(name = SORT_BY, defaultValue = SORT_BY_VALUE) String sortBy,
+                                                    @RequestParam(name = ASC_OR_DESC, defaultValue = ASC_OR_DESC_VALUE) AscOrDescType ascOrDesc,
+                                                    @RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        PaginationArgs paginationArgs = new PaginationArgs(pageNo, pageSize, sortBy, ascOrDesc);
+        return HttpResponse.getResponseEntity(
+                true, "Data loaded successfully.", blogService.getMyDrafts(paginationArgs, lang));
+    }
+
+    @Operation(summary = "Publish a draft (owner or admin): it appears in lists, search and AI answers",
+            security = @SecurityRequirement(name = "jwtToken"))
+    @ApiResponse(content = @Content(schema = @Schema(implementation = BlogResponse.class)), responseCode = "200")
+    @PostMapping(value = "/id/{blogId}/publish")
+    public ResponseEntity<HttpResponse> publish(@PathVariable Long blogId,
+                                                @RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        return HttpResponse.getResponseEntity(
+                true, "Blog published successfully.", blogService.publish(blogId, lang));
+    }
+
+    @Operation(summary = "Turn a published blog back into a draft (owner or admin)", security = @SecurityRequirement(name = "jwtToken"))
+    @ApiResponse(content = @Content(schema = @Schema(implementation = BlogResponse.class)), responseCode = "200")
+    @PostMapping(value = "/id/{blogId}/unpublish")
+    public ResponseEntity<HttpResponse> unpublish(@PathVariable Long blogId,
+                                                  @RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        return HttpResponse.getResponseEntity(
+                true, "Blog unpublished successfully.", blogService.unpublish(blogId, lang));
     }
 
     @Operation(summary = "New blog creation", security = @SecurityRequirement(name = "jwtToken"))
