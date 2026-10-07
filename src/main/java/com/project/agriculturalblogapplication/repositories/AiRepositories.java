@@ -1,15 +1,16 @@
 package com.project.agriculturalblogapplication.repositories;
 
 import com.project.agriculturalblogapplication.entities.AiAnswer;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Repository
 public interface AiRepositories extends JpaRepository<AiAnswer, Long> {
-    List<AiAnswer> findAllByUserId(Long userId);
+    Page<AiAnswer> findAllByUserId(Long userId, Pageable pageable);
 
     long countByUserIdAndCreationDateGreaterThanEqual(Long userId, LocalDateTime from);
 }
