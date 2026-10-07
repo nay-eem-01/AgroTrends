@@ -46,6 +46,7 @@ public class UserController {
             @RequestParam(name = PAGE_SIZE, defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
             @RequestParam(name = SORT_BY, defaultValue = SORT_BY_VALUE) String sortBy,
             @RequestParam(name = ASC_OR_DESC, defaultValue = ASC_OR_DESC_VALUE) AscOrDescType ascOrDesc,
+            @RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang,
             @RequestParam(required = false) Map<String, Object> parameters
     ) {
         PaginationArgs paginationArgs = new PaginationArgs(
@@ -54,7 +55,7 @@ public class UserController {
         return HttpResponse.getResponseEntity(
                 true,
                 "All paginated users loaded",
-                userService.getAllPaginatedUser(paginationArgs)
+                userService.getAllPaginatedUser(paginationArgs, lang)
         );
     }
 

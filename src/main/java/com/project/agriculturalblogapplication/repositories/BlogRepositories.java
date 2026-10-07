@@ -3,6 +3,8 @@ package com.project.agriculturalblogapplication.repositories;
 import com.project.agriculturalblogapplication.entities.Author;
 import com.project.agriculturalblogapplication.entities.Blog;
 import com.project.agriculturalblogapplication.entities.Category;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -13,7 +15,7 @@ public interface BlogRepositories extends JpaRepository<Blog, Long> {
 
     Blog findBlogsById(Long blogId);
 
-    List<Blog> findAllByAuthor(Author author);
+    Page<Blog> findAllByAuthor(Author author, Pageable pageable);
 
-    List<Blog> findAllByCategory(Category category);
+    Page<Blog> findAllByCategory(Category category, Pageable pageable);
 }

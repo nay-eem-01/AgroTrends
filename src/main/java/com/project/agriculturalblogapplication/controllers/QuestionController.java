@@ -42,12 +42,13 @@ public class QuestionController {
             @RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
             @RequestParam(name = PAGE_SIZE, defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
             @RequestParam(name = SORT_BY, defaultValue = SORT_BY_VALUE) String sortBy,
-            @RequestParam(name = ASC_OR_DESC, defaultValue = ASC_OR_DESC_VALUE) AscOrDescType ascOrDesc) {
+            @RequestParam(name = ASC_OR_DESC, defaultValue = ASC_OR_DESC_VALUE) AscOrDescType ascOrDesc,
+            @RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
         PaginationArgs paginationArgs = new PaginationArgs(pageNo, pageSize, sortBy, ascOrDesc);
         return HttpResponse.getResponseEntity(
                 true,
                 "Data loaded successfully.",
-                questionService.getAll(paginationArgs));
+                questionService.getAll(paginationArgs, lang));
     }
 
     @Operation(summary = "Get all questions by user - paginated", security = @SecurityRequirement(name = "jwtToken"))

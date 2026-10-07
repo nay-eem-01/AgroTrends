@@ -1,5 +1,7 @@
 package com.project.agriculturalblogapplication.util;
 
+import org.springframework.http.HttpStatus;
+import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.project.agriculturalblogapplication.constatnt.AppConstants;
@@ -244,6 +246,18 @@ public final class CommonUtils {
 	/** Audit timestamps are server-local LocalDateTime; the API speaks Instant (ISO-8601 UTC). */
 	public static Instant toInstant(LocalDateTime dateTime) {
 		return dateTime == null ? null : dateTime.atZone(ZoneId.systemDefault()).toInstant();
+	}
+
+	/**
+	 * Like {@link #getPageable(PaginationArgs)}, but only sorts by fields on the endpoint's allowlist: an unknown
+	 * field is a 400 instead of a 500, and nobody can sort by a nested field such as author.user.password.
+	 */
+	public static Pageable getPageable(PaginationArgs paginationArgs, Set<String> sortableFields, String lang) {
+		String sortBy = paginationArgs.getSortBy();
+		if (sortBy != null && !sortBy.isBlank() && !sortableFields.contains(sortBy)) {
+			throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_INVALID_SORT_FIELD, lang);
+		}
+		return getPageable(paginationArgs);
 	}
 
 	public static Pageable getPageable(PaginationArgs paginationArgs) {

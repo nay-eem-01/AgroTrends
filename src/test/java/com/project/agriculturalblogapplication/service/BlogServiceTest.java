@@ -11,6 +11,8 @@ import com.project.agriculturalblogapplication.repositories.BlogRepositories;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
+import com.project.agriculturalblogapplication.enums.AscOrDescType;
+import com.project.agriculturalblogapplication.payloads.PaginationArgs;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -25,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -107,6 +110,20 @@ class BlogServiceTest {
         List<RelatedBlogResponse> related = blogService.related(1L, 50);
 
         assertEquals(List.of(new RelatedBlogResponse(8L, "Title 8"), new RelatedBlogResponse(3L, "Title 3")), related);
+    }
+
+    @Test
+    void blogsByAuthorUseTheAuthorIdAndDatabasePaging() {
+        Blog blog = blog(1L);
+        when(authorService.findByIdWithException(20L)).thenReturn(blog.getAuthor());
+        when(blogRepositories.findAllByAuthor(eq(blog.getAuthor()), any(Pageable.class)))
+                .thenAnswer(call -> new PageImpl<>(List.of(blog), call.getArgument(1), 41));
+
+        var page = blogService.getAllByAuthor(new PaginationArgs(2, 20, "creationDate", AscOrDescType.desc), 20L, LANG);
+
+        assertEquals(41, page.getTotalElements());
+        assertEquals(2, page.getNumber());
+        verify(authorService, never()).findByUserIdWithException(anyLong());
     }
 
     private static UpdateBlogRequest updateRequest(Long blogId) {

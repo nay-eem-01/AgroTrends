@@ -38,13 +38,14 @@ public class BlogController {
     public ResponseEntity<HttpResponse> getAll(@RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
                                                @RequestParam(name = PAGE_SIZE, defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
                                                @RequestParam(name = SORT_BY, defaultValue = SORT_BY_VALUE) String sortBy,
-                                               @RequestParam(name = ASC_OR_DESC, defaultValue = ASC_OR_DESC_VALUE) AscOrDescType ascOrDesc
+                                               @RequestParam(name = ASC_OR_DESC, defaultValue = ASC_OR_DESC_VALUE) AscOrDescType ascOrDesc,
+                                               @RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang
     ) {
         PaginationArgs paginationArgs = new PaginationArgs(pageNo, pageSize, sortBy, ascOrDesc);
         return HttpResponse.getResponseEntity(
                 true,
                 "Data loaded successfully.",
-                blogService.getAll(paginationArgs));
+                blogService.getAll(paginationArgs, lang));
     }
 
     @Operation(summary = "Get all blogs by category - paginated", security = @SecurityRequirement(name = "jwtToken"))
@@ -54,29 +55,31 @@ public class BlogController {
                                                          @RequestParam(name = PAGE_SIZE, defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
                                                          @RequestParam(name = SORT_BY, defaultValue = SORT_BY_VALUE) String sortBy,
                                                          @RequestParam(name = ASC_OR_DESC, defaultValue = ASC_OR_DESC_VALUE) AscOrDescType ascOrDesc,
+                                                         @RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang,
                                                          @PathVariable Long categoryId
     ) {
         PaginationArgs paginationArgs = new PaginationArgs(pageNo, pageSize, sortBy, ascOrDesc);
         return HttpResponse.getResponseEntity(
                 true,
                 "Data loaded successfully.",
-                blogService.getAllByCategory(paginationArgs, categoryId));
+                blogService.getAllByCategory(paginationArgs, categoryId, lang));
     }
 
-    @Operation(summary = "Get all blogs - paginated", security = @SecurityRequirement(name = "jwtToken"))
+    @Operation(summary = "Get all blogs by an author (the author.authorId shown on a blog) - paginated", security = @SecurityRequirement(name = "jwtToken"))
     @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogResponse.class))), responseCode = "200")
     @GetMapping(value = "/all/author/{authorId}")
     public ResponseEntity<HttpResponse> getAllByAuthor(@RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
                                                        @RequestParam(name = PAGE_SIZE, defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
                                                        @RequestParam(name = SORT_BY, defaultValue = SORT_BY_VALUE) String sortBy,
                                                        @RequestParam(name = ASC_OR_DESC, defaultValue = ASC_OR_DESC_VALUE) AscOrDescType ascOrDesc,
+                                                       @RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang,
                                                        @PathVariable Long authorId
     ) {
         PaginationArgs paginationArgs = new PaginationArgs(pageNo, pageSize, sortBy, ascOrDesc);
         return HttpResponse.getResponseEntity(
                 true,
                 "Data loaded successfully.",
-                blogService.getAllByAuthor(paginationArgs, authorId));
+                blogService.getAllByAuthor(paginationArgs, authorId, lang));
     }
 
     @Operation(summary = "Get blog info by id", security = @SecurityRequirement(name = "jwtToken"))
