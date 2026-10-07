@@ -8,6 +8,8 @@ import com.project.agriculturalblogapplication.model.response.QuestionResponse;
 import com.project.agriculturalblogapplication.payloads.PaginationArgs;
 import com.project.agriculturalblogapplication.entities.Question;
 import com.project.agriculturalblogapplication.entities.User;
+import com.project.agriculturalblogapplication.model.AgriInfo;
+import com.project.agriculturalblogapplication.repositories.AgriSpecifications;
 import com.project.agriculturalblogapplication.repositories.QuestionRepository;
 import com.project.agriculturalblogapplication.util.CommonUtils;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
@@ -17,9 +19,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+
+import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class QuestionService {
+
+    static final Set<String> SORTABLE_FIELDS = Set.of("creationDate", "lastModifiedDate", "title");
 
     private final QuestionRepository questionRepository;
 
@@ -34,19 +40,23 @@ public class QuestionService {
         question.setTitle(request.getTitle());
         question.setContent(request.getContent());
         question.setUser(user);
+        if (request.getAgri() != null) {
+            question.setAgri(request.getAgri().toMetadata());
+        }
         question = questionRepository.save(question);
 
         return mapToQuestionResponse(question);
     }
 
-    public Page<QuestionResponse> getAll(PaginationArgs paginationArgs) {
-        Pageable pageable = CommonUtils.getPageable(paginationArgs);
-        Page<Question> questions = questionRepository.findAll(pageable);
+    /** All questions, optionally filtered by crop, season, region and soil. */
+    public Page<QuestionResponse> getAll(PaginationArgs paginationArgs, AgriInfo filter, String lang) {
+        Pageable pageable = CommonUtils.getPageable(paginationArgs, SORTABLE_FIELDS, lang);
+        Page<Question> questions = questionRepository.findAll(AgriSpecifications.matches(filter), pageable);
         return questions.map(this::mapToQuestionResponse);
     }
 
     public Page<QuestionResponse> getAllByUser(PaginationArgs paginationArgs, Long userId, String lang) {
-        Pageable pageable = CommonUtils.getPageable(paginationArgs);
+        Pageable pageable = CommonUtils.getPageable(paginationArgs, SORTABLE_FIELDS, lang);
         User user = userService.findByIdWithException(userId, lang);
         Page<Question> questions = questionRepository.findAllByUser(user, pageable);
         return questions.map(this::mapToQuestionResponse);
@@ -58,6 +68,10 @@ public class QuestionService {
 
         question.setTitle(request.getTitle());
         question.setContent(request.getContent());
+        // Omitted agri info keeps the current values.
+        if (request.getAgri() != null) {
+            question.setAgri(request.getAgri().toMetadata());
+        }
         question = questionRepository.save(question);
 
         return mapToQuestionResponse(question);
@@ -84,8 +98,10 @@ public class QuestionService {
         response.setUserId(question.getUser().getId());
         response.setTitle(question.getTitle());
         response.setContent(question.getContent());
-        response.setCreatedAt(question.getCreationDate());
-        response.setUpdatedAt(question.getLastModifiedDate());
+        response.setAuthorName(question.getUser().getName());
+        response.setAgri(AgriInfo.from(question.getAgri()));
+        response.setCreatedAt(CommonUtils.toInstant(question.getCreationDate()));
+        response.setUpdatedAt(CommonUtils.toInstant(question.getLastModifiedDate()));
 
         return response;
     }

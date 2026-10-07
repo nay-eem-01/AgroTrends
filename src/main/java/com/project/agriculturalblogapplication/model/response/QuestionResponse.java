@@ -1,11 +1,11 @@
 package com.project.agriculturalblogapplication.model.response;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
+import com.project.agriculturalblogapplication.model.AgriInfo;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Getter
 @Setter
@@ -16,9 +16,12 @@ public class QuestionResponse {
     private String title;
     private String content;
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm:ss")
-    private LocalDateTime createdAt;
+    /** The author's display name (never their e-mail). */
+    private String authorName;
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm:ss")
-    private LocalDateTime updatedAt;
+    private Instant createdAt;
+
+    private Instant updatedAt;
+
+    private AgriInfo agri;
 }

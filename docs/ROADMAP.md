@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 23 of 50 steps done
+**Progress:** 39 of 53 steps done
 
 ---
 
@@ -46,19 +46,22 @@ Everything that makes it a publishing platform. Each step one small PR.
 
 | # | Step | Status |
 |---|---|---|
-| 2.1 | Response DTOs for User, Blog, Category (and a clamped `pageSize`); stop returning entities | ⬜ |
-| 2.1b | Answer / Comment / Question responses: `createdAt`, `updatedAt` and the author's display name (never `createdBy`, which holds the e-mail); one date format | ⬜ |
-| 2.2 | Real database pagination for blogs by category/author/user; `sortBy` allowlist -> 400 | ⬜ |
-| 2.3 | Blog `status` (DRAFT/PUBLISHED), slug, reading time, `published_at`; public lists show PUBLISHED only; `status` in the vector metadata and the retrieval filter; unpublish removes the vectors | ⬜ |
-| 2.4 | Tags/topics (many-to-many) and filtering by tag | ⬜ |
-| 2.5 | `Blog.content` `@Lob` -> `TEXT`; full-text search endpoint | ⬜ |
-| 2.6 | Image upload (cover + inline) behind a storage port; size/type limits | ⬜ |
-| 2.7 | Claps on blogs (one user, many claps capped) and counts | ⬜ |
-| 2.8 | Bookmarks / reading lists (private; 404 for others) | ⬜ |
-| 2.9 | Follow authors and topics | ⬜ |
-| 2.10 | Public author profile endpoint (bio, specialities, posts, counts) | ⬜ |
-| 2.11 | Home feed: following, trending, latest | ⬜ |
-| 2.12 | Agriculture metadata on blogs and questions (crop, season, region, soil) + filters | ⬜ |
+| 2.1a | Response DTOs for Blog and Category (author shown as `{authorId, name}`); clamped `pageSize` | ✅ |
+| 2.1b | Response DTOs for User: private `/me` and auth payloads (`UserResponse`), public `/id/{id}` (`{id, name}`), admin list | ✅ |
+| 2.1c | Answer / Comment / Question responses: `authorName`, `createdAt`, `updatedAt` (ISO `Instant`; never `createdBy`, which holds the e-mail) | ✅ |
+| 2.2 | Real database pagination for blogs by category/author; `sortBy` allowlist -> 400; author lists by Author id | ✅ |
+| 2.3a | Blog `status` (DRAFT/PUBLISHED), `publishedAt`, publish/unpublish, drafts list; public lists PUBLISHED only; `status` in vector metadata + retrieval filter | ✅ |
+| 2.3b | Blog slug (stable, Unicode-friendly) and reading time; `GET /api/blogs/slug/{slug}` | ✅ |
+| 2.4 | Tags (many-to-many, normalised, max 5 per blog), `GET /api/blogs/all/tag/{tagName}`, `GET /api/tags?q=` | ✅ |
+| 2.5 | `Blog.content` / `AiAnswer.aiAnswer` `@Lob` -> `TEXT` (startup patch before Hibernate); full-text search `GET /api/blogs/search?q=` | ✅ |
+| 2.6 | Image upload (`POST /api/images`, authors, JPEG/PNG/WebP by magic bytes, 5 MB) behind an `ImageStorage` port; local disk served at `/uploads/**` | ✅ |
+| 2.7 | Claps on published blogs (max 50 per reader, not own), `clapCount` on blogs; `/api/blogs/id/{blogId}/claps` | ✅ |
+| 2.8 | Bookmarks: private reading list (`PUT`/`DELETE /api/blogs/id/{blogId}/bookmark`, `GET /api/bookmarks`) | ✅ |
+| 2.9 | Follow authors and topic tags (`/api/authors/{authorId}/follow`, `/api/tags/{tagName}/follow`, `/api/me/following/*`) | ✅ |
+| 2.10 | Public author profile `GET /api/authors/{authorId}` (bio, specialities, post/follower counts) and `PUT /api/authors/me` | ✅ |
+| 2.11 | Home feed: `/api/feed/latest`, `/api/feed/following` (authors + tags), `/api/feed/trending` (14 days, most clapped) | ✅ |
+| 2.12a | Agriculture metadata on blogs (crop, season, region, soil) + filters on `/api/blogs/all` | ✅ |
+| 2.12b | Agriculture metadata on questions + filters on `/api/questions/all` | ✅ |
 
 ## Phase 3 — AI that cites
 

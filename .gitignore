@@ -38,3 +38,6 @@ opencode-config.json
 .env
 application-local.properties
 *-local.properties
+
+# Uploaded images (local storage)
+/uploads/

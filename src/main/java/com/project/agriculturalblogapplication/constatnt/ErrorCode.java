@@ -191,4 +191,19 @@ public final class ErrorCode {
     public static final String ERROR_AI_DAILY_LIMIT_REACHED = "You have reached today's limit of AI questions. Please try again tomorrow.";
     public static final String ERROR_AI_UNAVAILABLE = "The AI advisor is not available right now. Please try again later.";
     public static final String ERROR_QUESTION_ALREADY_ANSWERED = "This question already has answers; AI drafts are only for unanswered questions.";
+    public static final String ERROR_INVALID_SORT_FIELD = "This list cannot be sorted by that field.";
+    public static final String ERROR_BLOG_ALREADY_PUBLISHED = "This blog is already published.";
+    public static final String ERROR_BLOG_NOT_PUBLISHED = "This blog is not published.";
+    public static final String ERROR_TOO_MANY_TAGS = "A blog can have at most 5 tags.";
+    public static final String ERROR_TAG_TOO_LONG = "A tag can be at most 40 characters.";
+    public static final String ERROR_SEARCH_QUERY_REQUIRED = "Please enter something to search for.";
+    public static final String ERROR_IMAGE_REQUIRED = "Please choose an image to upload.";
+    public static final String ERROR_IMAGE_TOO_LARGE = "Images can be at most 5 MB.";
+    public static final String ERROR_IMAGE_TYPE_NOT_ALLOWED = "Only JPEG, PNG and WebP images are allowed.";
+    public static final String ERROR_CANNOT_CLAP_OWN_BLOG = "You cannot clap for your own blog.";
+    public static final String ERROR_INVALID_CLAP_COUNT = "Clap between 1 and 50 times.";
+    public static final String ERROR_CANNOT_FOLLOW_YOURSELF = "You cannot follow yourself.";
+    public static final String ERROR_TAG_NOT_FOUND = "Tag not found.";
+    public static final String ERROR_BIO_TOO_LONG = "A bio can be at most 2000 characters.";
+    public static final String ERROR_AGRI_FIELD_TOO_LONG = "Crop and region can be at most 60 characters.";
 }

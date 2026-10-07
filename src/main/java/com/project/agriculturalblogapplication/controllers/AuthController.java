@@ -2,9 +2,9 @@ package com.project.agriculturalblogapplication.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.project.agriculturalblogapplication.config.CommonApiResponses;
-import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.model.request.*;
 import com.project.agriculturalblogapplication.model.response.HttpResponse;
+import com.project.agriculturalblogapplication.model.response.UserResponse;
 import com.project.agriculturalblogapplication.model.response.WebTokenResponse;
 import com.project.agriculturalblogapplication.service.AuthService;
 import com.project.agriculturalblogapplication.service.PasswordResetService;
@@ -35,7 +35,7 @@ public class AuthController {
     private final PasswordResetService passwordResetService;
 
     @Operation(summary = "Sign up")
-    @ApiResponse(content = @Content(schema = @Schema(implementation = User.class)), responseCode = "200")
+    @ApiResponse(content = @Content(schema = @Schema(implementation = UserResponse.class)), responseCode = "200")
     @PostMapping(value = "/sign-up")
     public ResponseEntity<HttpResponse> signUp(@Valid @RequestBody SignUpRequest request,
                                                @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {

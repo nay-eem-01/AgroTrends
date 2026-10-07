@@ -2,28 +2,36 @@ package com.project.agriculturalblogapplication.service;
 
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
+import com.project.agriculturalblogapplication.model.AgriInfo;
 import com.project.agriculturalblogapplication.model.request.CreateBlogRequest;
 import com.project.agriculturalblogapplication.model.request.UpdateBlogRequest;
+import com.project.agriculturalblogapplication.model.response.BlogResponse;
 import com.project.agriculturalblogapplication.model.response.RelatedBlogResponse;
 import com.project.agriculturalblogapplication.payloads.PaginationArgs;
 import com.project.agriculturalblogapplication.entities.Author;
 import com.project.agriculturalblogapplication.entities.Blog;
 import com.project.agriculturalblogapplication.entities.Category;
+import com.project.agriculturalblogapplication.enums.BlogStatus;
+import com.project.agriculturalblogapplication.repositories.AgriSpecifications;
 import com.project.agriculturalblogapplication.repositories.BlogRepositories;
 import com.project.agriculturalblogapplication.util.CommonUtils;
+import com.project.agriculturalblogapplication.util.Slugs;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -35,6 +43,16 @@ public class BlogService {
 
     private static final int MAX_RELATED = 10;
 
+    private static final int SLUG_ATTEMPTS = 5;
+
+    static final int TRENDING_DAYS = 14;
+
+    private static final Sort NEWEST = Sort.by(Sort.Direction.DESC, "publishedAt").and(Sort.by(Sort.Direction.DESC, "id"));
+
+    private static final SecureRandom SLUG_RANDOM = new SecureRandom();
+
+    static final Set<String> SORTABLE_FIELDS = Set.of("creationDate", "lastModifiedDate", "title");
+
     private final BlogRepositories blogRepositories;
 
     private final CategoryService categoryService;
@@ -45,7 +63,9 @@ public class BlogService {
 
     private final AuthorizationService authorizationService;
 
-    public Blog create(CreateBlogRequest request, String lang) {
+    private final TagService tagService;
+
+    public BlogResponse create(CreateBlogRequest request, String lang) {
         Category category = categoryService.findByIdWithException(request.getCategoryId());
 
         Author author = authorService.findByUserIdOrForbidden(authorizationService.currentUserId(lang), lang);
@@ -56,38 +76,100 @@ public class BlogService {
         blog.setTitle(request.getTitle());
         blog.setContent(request.getContent());
         blog.setImageUrl(request.getImageUrl());
+        blog.setSlug(uniqueSlug(request.getTitle()));
+        if (request.getAgri() != null) {
+            blog.setAgri(request.getAgri().toMetadata());
+        }
+        if (request.getTags() != null) {
+            blog.setTags(tagService.resolve(request.getTags()));
+        }
+        blog.setStatus(request.getStatus() == null ? BlogStatus.PUBLISHED : request.getStatus());
+        if (blog.getStatus() == BlogStatus.PUBLISHED) {
+            blog.setPublishedAt(LocalDateTime.now());
+        }
 
         blog = blogRepositories.save(blog);
-        documentService.indexBlog(blog);
+        if (blog.getStatus() == BlogStatus.PUBLISHED) {
+            documentService.indexBlog(blog);
+        }
 
-        return blog;
+        return BlogResponse.from(blog);
     }
 
-    public Page<Blog> getAll(PaginationArgs paginationArgs) {
-        Pageable pageable = CommonUtils.getPageable(paginationArgs);
-        return blogRepositories.findAll(pageable);
+    /** Published blogs, optionally filtered by crop, season, region and soil. */
+    public Page<BlogResponse> getAll(PaginationArgs paginationArgs, AgriInfo filter, String lang) {
+        Pageable pageable = CommonUtils.getPageable(paginationArgs, SORTABLE_FIELDS, lang);
+        Specification<Blog> published = (root, query, cb) -> cb.equal(root.get("status"), BlogStatus.PUBLISHED);
+        return blogRepositories.findAll(published.and(AgriSpecifications.matches(filter)), pageable).map(BlogResponse::from);
     }
 
-    public Page<Blog> getAllByCategory(PaginationArgs paginationArgs, Long categoryId) {
-        Pageable pageable = CommonUtils.getPageable(paginationArgs);
-
+    public Page<BlogResponse> getAllByCategory(PaginationArgs paginationArgs, Long categoryId, String lang) {
+        Pageable pageable = CommonUtils.getPageable(paginationArgs, SORTABLE_FIELDS, lang);
         Category category = categoryService.findByIdWithException(categoryId);
-        List<Blog> blogs = blogRepositories.findAllByCategory((category));
-
-        return new PageImpl<>(blogs, pageable, blogs.size());
+        return blogRepositories.findAllByCategoryAndStatus(category, BlogStatus.PUBLISHED, pageable).map(BlogResponse::from);
     }
 
-
-    public Page<Blog> getAllByAuthor(PaginationArgs paginationArgs, Long authorUserId) {
-        Pageable pageable = CommonUtils.getPageable(paginationArgs);
-
-        Author author = authorService.findByUserIdWithException(authorUserId);
-        List<Blog> blogs = blogRepositories.findAllByAuthor(author);
-
-        return new PageImpl<>(blogs, pageable, blogs.size());
+    /** {@code authorId} is the Author id, the same id a blog response shows as {@code author.authorId}. */
+    public Page<BlogResponse> getAllByAuthor(PaginationArgs paginationArgs, Long authorId, String lang) {
+        Pageable pageable = CommonUtils.getPageable(paginationArgs, SORTABLE_FIELDS, lang);
+        Author author = authorService.findByIdWithException(authorId);
+        return blogRepositories.findAllByAuthorAndStatus(author, BlogStatus.PUBLISHED, pageable).map(BlogResponse::from);
     }
 
-    public Blog update(UpdateBlogRequest request, String lang) {
+    public Page<BlogResponse> getAllByTag(PaginationArgs paginationArgs, String tagName, String lang) {
+        Pageable pageable = CommonUtils.getPageable(paginationArgs, SORTABLE_FIELDS, lang);
+        return blogRepositories.findAllByTagsNameAndStatus(TagService.normalize(tagName), BlogStatus.PUBLISHED, pageable)
+                .map(BlogResponse::from);
+    }
+
+    /**
+     * Full-text search over published titles and content, best match first. Uses the 'simple' text configuration:
+     * no stemming, so it works the same for Bangla and English ("disease" does not match "diseases").
+     */
+    public Page<BlogResponse> search(String query, int pageNo, int pageSize, String lang) {
+        if (query == null || query.isBlank()) {
+            throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_SEARCH_QUERY_REQUIRED, lang);
+        }
+        return blogRepositories.search(query.trim(), CommonUtils.clampedPageable(pageNo, pageSize, Sort.unsorted()))
+                .map(BlogResponse::from);
+    }
+
+    /** The caller's own drafts; 403 for users without an author profile. */
+    public Page<BlogResponse> getMyDrafts(PaginationArgs paginationArgs, String lang) {
+        Pageable pageable = CommonUtils.getPageable(paginationArgs, SORTABLE_FIELDS, lang);
+        Author author = authorService.findByUserIdOrForbidden(authorizationService.currentUserId(lang), lang);
+        return blogRepositories.findAllByAuthorAndStatus(author, BlogStatus.DRAFT, pageable).map(BlogResponse::from);
+    }
+
+    public BlogResponse publish(Long blogId, String lang) {
+        Blog blog = findByIdWithException(blogId);
+        authorizationService.assertOwnerOrAdmin(blog.getAuthor().getUser().getId(), lang);
+        if (blog.getStatus() == BlogStatus.PUBLISHED) {
+            throw new ApplicationException(HttpStatus.CONFLICT, ErrorCode.ERROR_BLOG_ALREADY_PUBLISHED, lang);
+        }
+        blog.setStatus(BlogStatus.PUBLISHED);
+        if (blog.getPublishedAt() == null) {
+            blog.setPublishedAt(LocalDateTime.now());
+        }
+        blog = blogRepositories.save(blog);
+        documentService.indexBlog(blog);
+        return BlogResponse.from(blog);
+    }
+
+    /** Back to draft: the post leaves lists and its chunks leave the vector store, so AI answers stop citing it. */
+    public BlogResponse unpublish(Long blogId, String lang) {
+        Blog blog = findByIdWithException(blogId);
+        authorizationService.assertOwnerOrAdmin(blog.getAuthor().getUser().getId(), lang);
+        if (blog.getStatus() != BlogStatus.PUBLISHED) {
+            throw new ApplicationException(HttpStatus.CONFLICT, ErrorCode.ERROR_BLOG_NOT_PUBLISHED, lang);
+        }
+        blog.setStatus(BlogStatus.DRAFT);
+        blog = blogRepositories.save(blog);
+        documentService.deleteBlog(blog.getId());
+        return BlogResponse.from(blog);
+    }
+
+    public BlogResponse update(UpdateBlogRequest request, String lang) {
         Blog blog = findByIdWithException(request.getBlogId());
         authorizationService.assertOwnerOrAdmin(blog.getAuthor().getUser().getId(), lang);
 
@@ -96,11 +178,20 @@ public class BlogService {
         blog.setContent(request.getContent());
         blog.setCategory(category);
         blog.setImageUrl(request.getImageUrl());
+        // Omitted tags or agri info keep the current values, so clients that do not send them do not wipe them.
+        if (request.getAgri() != null) {
+            blog.setAgri(request.getAgri().toMetadata());
+        }
+        if (request.getTags() != null) {
+            blog.setTags(tagService.resolve(request.getTags()));
+        }
 
         blog = blogRepositories.save(blog);
-        documentService.reindexBlog(blog);
+        if (blog.getStatus() == BlogStatus.PUBLISHED) {
+            documentService.reindexBlog(blog);
+        }
 
-        return blog;
+        return BlogResponse.from(blog);
     }
 
     public void delete(Long id, String lang) {
@@ -117,15 +208,21 @@ public class BlogService {
         int pageNo = 0;
         do {
             page = blogRepositories.findAll(PageRequest.of(pageNo++, REINDEX_PAGE_SIZE, Sort.by("id")));
-            page.forEach(documentService::reindexBlog);
+            page.forEach(blog -> {
+                if (blog.getStatus() == BlogStatus.PUBLISHED) {
+                    documentService.reindexBlog(blog);
+                } else {
+                    documentService.deleteBlog(blog.getId());
+                }
+            });
             count += page.getNumberOfElements();
         } while (page.hasNext());
         return count;
     }
 
     /** Up to {@code limit} (1..10) other posts on similar topics, most similar first. */
-    public List<RelatedBlogResponse> related(Long blogId, int limit) {
-        Blog blog = findByIdWithException(blogId);
+    public List<RelatedBlogResponse> related(Long blogId, int limit, String lang) {
+        Blog blog = findVisibleBlog(blogId, lang);
         List<Long> ids = documentService.findRelatedBlogIds(blog, Math.min(Math.max(limit, 1), MAX_RELATED));
         Map<Long, Blog> blogs = blogRepositories.findAllById(ids).stream()
                 .collect(Collectors.toMap(Blog::getId, Function.identity()));
@@ -135,6 +232,78 @@ public class BlogService {
                 .filter(Objects::nonNull)
                 .map(related -> new RelatedBlogResponse(related.getId(), related.getTitle()))
                 .toList();
+    }
+
+    /** Newest published posts. */
+    public Page<BlogResponse> latestFeed(int pageNo, int pageSize) {
+        return blogRepositories.findAllByStatus(BlogStatus.PUBLISHED, CommonUtils.clampedPageable(pageNo, pageSize, NEWEST))
+                .map(BlogResponse::from);
+    }
+
+    /** Newest posts from followed authors and followed tags; empty when the caller follows nothing. */
+    public Page<BlogResponse> followingFeed(int pageNo, int pageSize, String lang) {
+        Long userId = authorizationService.currentUserId(lang);
+        return blogRepositories.findFollowingFeed(userId, CommonUtils.clampedPageable(pageNo, pageSize, NEWEST))
+                .map(BlogResponse::from);
+    }
+
+    /** Posts published in the last {@value #TRENDING_DAYS} days, most clapped first. */
+    public Page<BlogResponse> trendingFeed(int pageNo, int pageSize) {
+        Sort mostClapped = Sort.by(Sort.Direction.DESC, "clapCount").and(NEWEST);
+        return blogRepositories.findAllByStatusAndPublishedAtAfter(BlogStatus.PUBLISHED,
+                        LocalDateTime.now().minusDays(TRENDING_DAYS), CommonUtils.clampedPageable(pageNo, pageSize, mostClapped))
+                .map(BlogResponse::from);
+    }
+
+    public long countPublishedByAuthor(Long authorId) {
+        return blogRepositories.countByAuthorIdAndStatus(authorId, BlogStatus.PUBLISHED);
+    }
+
+    /** Adjusts a blog's clap total atomically (negative to take claps back). */
+    public void addClaps(Long blogId, long delta) {
+        blogRepositories.addClaps(blogId, delta);
+    }
+
+    public BlogResponse getById(Long blogId, String lang) {
+        return BlogResponse.from(findVisibleBlog(blogId, lang));
+    }
+
+    public BlogResponse getBySlug(String slug, String lang) {
+        Blog blog = blogRepositories.findBySlug(slug).orElseThrow(() ->
+                new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_BLOG_NOT_FOUND, lang));
+        return BlogResponse.from(findVisibleBlog(blog.getId(), lang));
+    }
+
+    /** Gives posts created before slugs existed a slug; returns how many were filled. */
+    public int backfillSlugs() {
+        List<Blog> blogs = blogRepositories.findAllBySlugIsNull();
+        blogs.forEach(blog -> {
+            blog.setSlug(uniqueSlug(blog.getTitle()));
+            blogRepositories.save(blog);
+        });
+        return blogs.size();
+    }
+
+    private String uniqueSlug(String title) {
+        String base = Slugs.base(title);
+        for (int attempt = 0; attempt < SLUG_ATTEMPTS; attempt++) {
+            String slug = Slugs.withSuffix(base, SLUG_RANDOM);
+            if (!blogRepositories.existsBySlug(slug)) {
+                return slug;
+            }
+        }
+        // 36^6 suffixes per title: reaching this means something is badly wrong, not bad luck.
+        throw new IllegalStateException("Could not find a free slug for base " + base);
+    }
+
+    /** Published posts for everyone; a draft only for its author and admins, and a 404 for anyone else. */
+    public Blog findVisibleBlog(Long blogId, String lang) {
+        Blog blog = findByIdWithException(blogId);
+        if (blog.getStatus() != BlogStatus.PUBLISHED
+                && !authorizationService.isOwnerOrAdmin(blog.getAuthor().getUser().getId(), lang)) {
+            throw new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_BLOG_NOT_FOUND, lang);
+        }
+        return blog;
     }
 
     public Blog findByIdWithException(Long blogId) {

@@ -40,6 +40,14 @@ public final class AppTables {
 
         public static final String IMAGE_URL = "image_url";
 
+        public static final String STATUS = "status";
+
+        public static final String PUBLISHED_AT = "published_at";
+
+        public static final String SLUG = "slug";
+
+        public static final String CLAP_COUNT = "clap_count";
+
         public static final String NAME = "blogs";
     }
 
@@ -54,6 +62,52 @@ public final class AppTables {
         public static final String PASSWORD = "user_password";
 
         public static final String MOBILE_NUMBER = "mobile_number";
+    }
+
+    public static final class FollowTable {
+
+        public static final String AUTHOR_FOLLOWS = "author_follows";
+
+        public static final String TAG_FOLLOWS = "tag_follows";
+
+        public static final String USER_ID = "user_id";
+
+        public static final String AUTHOR_ID = "author_id";
+
+        public static final String TAG_ID = "tag_id";
+    }
+
+    public static final class BookmarkTable {
+
+        public static final String NAME = "bookmarks";
+
+        public static final String USER_ID = "user_id";
+
+        public static final String BLOG_ID = "blog_id";
+    }
+
+    public static final class ClapTable {
+
+        public static final String NAME = "claps";
+
+        public static final String BLOG_ID = "blog_id";
+
+        public static final String USER_ID = "user_id";
+
+        public static final String CLAP_COUNT = "clap_count";
+    }
+
+    public static final class TagTable {
+
+        public static final String TAG_NAME = "tag_name";
+
+        public static final String NAME = "tags";
+
+        public static final String BLOG_TAGS = "blog_tags";
+
+        public static final String BLOG_ID = "blog_id";
+
+        public static final String TAG_ID = "tag_id";
     }
 
     public static final class CategoryTable {
@@ -78,6 +132,10 @@ public final class AppTables {
         public static final String DESIGNATION = "designation";
         
         public static final String WORK_PLACE_OR_INSTITUTION = "work_place_or_institution";
+
+        public static final String BIO = "bio";
+
+        public static final String PROFILE_IMAGE_URL = "profile_image_url";
     }
 
     public static final class RoleTable {

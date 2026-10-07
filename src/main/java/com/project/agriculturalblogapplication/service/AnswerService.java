@@ -1,5 +1,6 @@
 package com.project.agriculturalblogapplication.service;
 
+import com.project.agriculturalblogapplication.util.CommonUtils;
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.entities.Answer;
@@ -111,6 +112,9 @@ public class AnswerService {
         response.setUserId(answer.getUser().getId());
         response.setQuestionId(answer.getQuestion().getId());
         response.setContent(answer.getContent());
+        response.setAuthorName(answer.getUser().getName());
+        response.setCreatedAt(CommonUtils.toInstant(answer.getCreationDate()));
+        response.setUpdatedAt(CommonUtils.toInstant(answer.getLastModifiedDate()));
 
         return response;
     }

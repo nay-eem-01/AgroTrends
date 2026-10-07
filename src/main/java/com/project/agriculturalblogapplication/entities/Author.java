@@ -33,4 +33,11 @@ public class Author extends AuditModel<String> {
     private String workPlaceOrInstitution;
 
     private List<String> specialities;
+
+    /** The author's own introduction ("professionalStatement" at sign-up). */
+    @Column(name = AuthorTable.BIO, columnDefinition = "TEXT")
+    private String bio;
+
+    @Column(name = AuthorTable.PROFILE_IMAGE_URL)
+    private String profileImageUrl;
 }

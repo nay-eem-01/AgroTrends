@@ -2,6 +2,9 @@ package com.project.agriculturalblogapplication.controllers;
 
 import com.project.agriculturalblogapplication.config.CommonApiResponses;
 import com.project.agriculturalblogapplication.enums.AscOrDescType;
+import com.project.agriculturalblogapplication.enums.CropSeason;
+import com.project.agriculturalblogapplication.enums.SoilType;
+import com.project.agriculturalblogapplication.model.AgriInfo;
 import com.project.agriculturalblogapplication.model.request.CreateQuestionRequest;
 import com.project.agriculturalblogapplication.model.request.UpdateQuestionRequest;
 import com.project.agriculturalblogapplication.model.response.AiDraftAnswerResponse;
@@ -35,19 +38,24 @@ public class QuestionController {
 
     private final AiService aiService;
 
-    @Operation(summary = "Get all questions - paginated", security = @SecurityRequirement(name = "jwtToken"))
+    @Operation(summary = "All questions - paginated; optional filters crop, season, region, soil", security = @SecurityRequirement(name = "jwtToken"))
     @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = QuestionResponse.class))), responseCode = "200")
     @GetMapping(value = "/all")
     public ResponseEntity<HttpResponse> getAll(
             @RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
             @RequestParam(name = PAGE_SIZE, defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
             @RequestParam(name = SORT_BY, defaultValue = SORT_BY_VALUE) String sortBy,
-            @RequestParam(name = ASC_OR_DESC, defaultValue = ASC_OR_DESC_VALUE) AscOrDescType ascOrDesc) {
+            @RequestParam(name = ASC_OR_DESC, defaultValue = ASC_OR_DESC_VALUE) AscOrDescType ascOrDesc,
+            @RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang,
+            @RequestParam(name = "crop", required = false) String crop,
+            @RequestParam(name = "season", required = false) CropSeason season,
+            @RequestParam(name = "region", required = false) String region,
+            @RequestParam(name = "soil", required = false) SoilType soil) {
         PaginationArgs paginationArgs = new PaginationArgs(pageNo, pageSize, sortBy, ascOrDesc);
         return HttpResponse.getResponseEntity(
                 true,
                 "Data loaded successfully.",
-                questionService.getAll(paginationArgs));
+                questionService.getAll(paginationArgs, new AgriInfo(crop, season, region, soil), lang));
     }
 
     @Operation(summary = "Get all questions by user - paginated", security = @SecurityRequirement(name = "jwtToken"))

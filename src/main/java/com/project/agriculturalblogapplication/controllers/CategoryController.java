@@ -2,10 +2,10 @@ package com.project.agriculturalblogapplication.controllers;
 
 import com.project.agriculturalblogapplication.config.CommonApiResponses;
 import com.project.agriculturalblogapplication.entities.Blog;
-import com.project.agriculturalblogapplication.entities.Category;
 import com.project.agriculturalblogapplication.enums.AscOrDescType;
 import com.project.agriculturalblogapplication.model.request.CreateBlogRequest;
 import com.project.agriculturalblogapplication.model.request.UpdateBlogRequest;
+import com.project.agriculturalblogapplication.model.response.CategoryResponse;
 import com.project.agriculturalblogapplication.model.response.HttpResponse;
 import com.project.agriculturalblogapplication.payloads.PaginationArgs;
 import com.project.agriculturalblogapplication.service.BlogService;
@@ -43,22 +43,23 @@ public class CategoryController {
     private final CategoryService categoryService;
 
     @Operation(summary = "Get all categories - paginated", security = @SecurityRequirement(name = "jwtToken"))
-    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = Category.class))), responseCode = "200")
+    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = CategoryResponse.class))), responseCode = "200")
     @GetMapping(value = "/all")
     public ResponseEntity<HttpResponse> getAll(@RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
                                                @RequestParam(name = PAGE_SIZE, defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
                                                @RequestParam(name = SORT_BY, defaultValue = SORT_BY_VALUE) String sortBy,
-                                               @RequestParam(name = ASC_OR_DESC, defaultValue = ASC_OR_DESC_VALUE) AscOrDescType ascOrDesc
+                                               @RequestParam(name = ASC_OR_DESC, defaultValue = ASC_OR_DESC_VALUE) AscOrDescType ascOrDesc,
+                                               @RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang
     ) {
         PaginationArgs paginationArgs = new PaginationArgs(pageNo, pageSize, sortBy, ascOrDesc);
         return HttpResponse.getResponseEntity(
                 true,
                 "Data loaded successfully.",
-                categoryService.getAll(paginationArgs));
+                categoryService.getAll(paginationArgs, lang));
     }
 
     @Operation(summary = "New category creation", security = @SecurityRequirement(name = "jwtToken"))
-    @ApiResponse(content = @Content(schema = @Schema(implementation = Category.class)), responseCode = "200")
+    @ApiResponse(content = @Content(schema = @Schema(implementation = CategoryResponse.class)), responseCode = "200")
     @PreAuthorize("hasAuthority('CATEGORY_CREATE')")
     @PostMapping(value = "/create")
     public ResponseEntity<HttpResponse> createNewCategory(@RequestParam String categoryName) {
@@ -67,7 +68,7 @@ public class CategoryController {
     }
 
     @Operation(summary = "Update category info", security = @SecurityRequirement(name = "jwtToken"))
-    @ApiResponse(content = @Content(schema = @Schema(implementation = Category.class)), responseCode = "200")
+    @ApiResponse(content = @Content(schema = @Schema(implementation = CategoryResponse.class)), responseCode = "200")
     @PreAuthorize("hasAuthority('CATEGORY_UPDATE')")
     @PutMapping(value = "/update/categoryId/{categoryId}")
     public ResponseEntity<HttpResponse> updateCategory(@RequestBody String categoryName, @PathVariable Long categoryId) {

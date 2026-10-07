@@ -7,22 +7,33 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ## Where we are
 
-- Vision: a Medium for agricultural knowledge with AI (`docs/PLAN.md`). Estimated 30–35 % there.
-- Phase 0 (except 0.4) and Phase 1 are **merged** (PR #19 into `main`, 2026-10-01).
-- **Branch model (decided 2026-10-01):** `development` -> `staging` -> `production`, all created from `main`
-  at `da19a32`. Feature work: base branch off `development`, serial step PRs into the base, base -> `development`
-  (test) -> `staging` (test) -> `production`. `main` is frozen; no new work there. See the `git-workflow` skill.
-- **Notifications will use Kafka** (decided 2026-10-05): Phase 5 in the roadmap, decision 10 in the plan.
-- Old `dev` branch reviewed and deleted (2026-10-06). Phase 3 started early (base `feat/ai-rag-base`): 3.1–3.5 done; `/api/ai/ask` answers from the platform's posts and returns them as sources.
+- Vision: a Medium for agricultural knowledge with AI (`docs/PLAN.md`). Roughly 60–65 % there: the publishing core
+  (Phase 2) and the citing AI (Phase 3) are written; shipping (Phase 4) and notifications (Phase 5) remain.
+- **Branch model:** `development` -> `staging` -> `production`; feature base off `development`, serial step PRs into
+  the base. `main` is frozen. See the `git-workflow` skill.
+- Phase 0 (except 0.4) and Phase 1 merged. Phase 3 (3.1–3.5 merged into `feat/ai-rag-base`; 3.6–3.8c pushed) and
+  Phase 2 (2.1a–2.12b plus one fix, pushed on `feat/medium-core-base`) are **code complete, awaiting PRs**.
+- Live-tested on a local pgvector DB except the Gemini **chat** calls (key rejected since 2026-10-06): 3.4–3.8 chat
+  paths, the 3.6 timeout and token counts still need a check with a working key.
+- Notifications will use Kafka (Phase 5, plan decision 10).
 
 ## Next up
 
-1. Merge `feat/rag-citations` into `feat/ai-rag-base` (Phase 3 base, off `development`).
-   Next step: 3.6 (quota, prompt length cap, timeout; token usage) — answers take up to 91 s.
-2. **Nayeem:** GitHub settings — make `development` the default branch; protect `development`, `staging`,
-   `production` (PRs only, require review/CI once 4.5 lands).
-3. **Nayeem:** roadmap 0.4 — revoke keys, rotate the DB password, purge git history.
-4. Phase 2 starts (base `feat/medium-core-base` off `development`) with 2.1 (response DTOs) and 2.2 (real pagination): everything after builds on them.
+1. **Nayeem: open and merge the PRs in this order** (merge commits, not squash; each PR shows only its own step once
+   the previous one is merged):
+   - Phase 3, into `feat/ai-rag-base`: `feat/ai-limits` (3.6), `feat/ai-history` (3.7), `feat/ai-related-posts`
+     (3.8a), `feat/ai-blog-assist` (3.8b), `feat/ai-draft-answer` (3.8c); then `feat/ai-rag-base` -> `development`.
+   - Phase 2, into `feat/medium-core-base`: `feat/blog-category-dtos` (2.1a), `feat/user-dtos` (2.1b),
+     `feat/qa-comment-timestamps` (2.1c), `feat/real-pagination` (2.2), `feat/blog-status` (2.3a),
+     `feat/blog-slug-reading-time` (2.3b), `feat/blog-tags` (2.4), `feat/blog-search` (2.5), `feat/image-upload` (2.6),
+     `feat/claps` (2.7), `feat/bookmarks` (2.8), `fix/delete-commented-blog`, `feat/follows` (2.9),
+     `feat/author-profile` (2.10), `feat/home-feed` (2.11), `feat/agri-metadata-blogs` (2.12a),
+     `feat/agri-metadata-questions` (2.12b); then `feat/medium-core-base` -> `development` (after Phase 3 is in).
+2. Test on `development` (with a working Gemini key; start once with `AI_REINDEX_ON_STARTUP=true`), then
+   `development` -> `staging`.
+3. **Nayeem:** roadmap 0.4 (rotate keys, purge history); make `development` the default branch and protect it.
+4. Phase 4 next: 4.2 Flyway must start from the schema the startup `SchemaPatches` leaves behind; then 4.4
+   Testcontainers so `contextLoads` and query tests run in CI.
 
 ## Open items
 
@@ -35,15 +46,281 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | Client errors (400/401) are logged at ERROR by `ExceptionHandlingController` — noisy | roadmap 4.7 | — |
 | Frontend can show `sources` from `/api/ai/ask` as links to `/api/blogs/id/{blogId}` | frontend | — |
 | Frontend must stop sending `userId` / `authorUserId`, use `/api/auth/refresh-token`, and handle 401 vs 403 | frontend | frontend integration |
-| `/api/user/id/{id}` still returns the full `User` entity (e-mail, mobile, roles) to any signed-in user | roadmap 2.1 | public profiles |
 | `contextLoads` fails without a local Postgres | roadmap 4.4 | CI |
 | No SMTP configured: reset links are written to the log (dev only) | an SMTP account | production password reset |
 | Hotfix path is not defined yet (proposal: branch off `production`, PR into `production`, then back-merge into `development`) | Nayeem to confirm | — |
 | Gemini chat calls fail with "API key not valid" since 2026-10-06 evening (embeddings still work); `.env` key is 53 chars (a key is 39) — check the line for quotes/comments | Nayeem | live checks of 3.6–3.8 |
-| Run once on existing DBs: `ALTER TABLE ai_answers ALTER COLUMN question TYPE text;` | whoever owns the DB | questions > 255 chars |
+| After deploying 2.3a: start once with `AI_REINDEX_ON_STARTUP=true` (old chunks have no `status`, so retrieval ignores them) | whoever deploys | AI answers on existing posts |
+| Deleting a user with comments/questions/answers fails on foreign keys: decide delete vs anonymise | Nayeem | account deletion |
+| A bad enum query parameter (`season=WINTER`, `ascOrDesc=up`) is a 400 with the message "Server Error Occurred." (`ExceptionHandlingController.handleExceptionInternal`) | small fix | clear client errors |
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-07 (roadmap 2.12b — Phase 2 code complete)
+
+**Done**
+- Questions: `agri` (`AgriMetadata`) on create/update (omitted on update = keep) and in `QuestionResponse`;
+  `GET /api/questions/all` takes optional `crop`, `season`, `region`, `soil` (`AgriSpecifications`).
+- Tests: `QuestionServiceTest`. Verified live: create with agri info, filters by crop, season + region, region
+  (no match), none.
+
+## 2026-10-07 (roadmap 2.12a)
+
+**Done**
+- Roadmap 2.12 split into 2.12a (blogs) and 2.12b (questions).
+- `@Embeddable AgriMetadata` (`agri_crop`, `agri_season`, `agri_region`, `agri_soil`); enums `CropSeason`
+  (RABI, KHARIF_1, KHARIF_2, YEAR_ROUND — Bangladesh's seasons) and `SoilType`. `AgriInfo` record for requests,
+  responses and filters (crop/region trimmed + lowercase, <= 60 chars).
+- Blogs: `agri` on create/update (omitted on update = keep) and in `BlogResponse`. `GET /api/blogs/all` takes
+  optional `crop`, `season`, `region`, `soil` (Spring Data `Specification`, `AgriSpecifications`).
+- Tests: `AgriInfoTest`, `BlogServiceTest`. Verified live: create with agri info, filters by crop (any case),
+  season + region, soil (no match), none (all 8).
+
+**Decisions**
+- Crop and region are free text (any crop, any district/upazila); season and soil are fixed lists so filters and
+  the UI can offer them as choices.
+
+## 2026-10-07 (roadmap 2.11)
+
+**Done**
+- `GET /api/feed/latest` (published, `publishedAt` desc), `GET /api/feed/following` (published posts whose author
+  the caller follows **or** that carry a tag the caller follows; JPQL `EXISTS` subqueries, no duplicates; empty when
+  following nothing) and `GET /api/feed/trending` (published in the last 14 days, `clapCount` desc then newest).
+  All paged (`pageSize` clamped).
+- `SchemaPatches`: published blogs from before 2.3a get `published_at = creation_date` (feeds sort by it).
+- Tests: `BlogServiceTest` (sorts, 14-day window, caller-scoped following). Verified live: 6 old posts back-filled,
+  the three feeds, following via a tag only (one post), following nothing (empty).
+
+**Decisions**
+- Trending = most claps among recent posts, using the all-time `clapCount`. A time-decayed score needs clap
+  timestamps per day; revisit when there is real traffic.
+
+## 2026-10-07 (roadmap 2.10)
+
+**Done**
+- `GET /api/authors/{authorId}` -> `AuthorProfileResponse {authorId, name, designation, occupation,
+  workPlaceOrInstitution, specialities, bio, profileImageUrl, publishedPostCount, followerCount, followedByMe}` (no
+  contact details). The author's posts stay at `GET /api/blogs/all/author/{authorId}`.
+- `PUT /api/authors/me` (`UpdateAuthorProfileRequest`, bio <= 2000 chars): authors edit their own profile; others 403.
+- `Author.bio` (TEXT) and `Author.profileImageUrl`: sign-up's `professionalStatement` and `profileImageUrl` were
+  accepted and silently dropped; now stored.
+- `AuthorProfileService` (avoids an `AuthorService` <-> `FollowService` cycle). Tests: `AuthorProfileServiceTest`.
+  Verified live: edit own profile, counts (7 posts, 1 follower), `followedByMe` per caller, consumer edit -> 403.
+
+## 2026-10-07 (roadmap 2.9)
+
+**Done**
+- `AuthorFollow` (`author_follows`) and `TagFollow` (`tag_follows`), unique per pair, all foreign keys
+  `ON DELETE CASCADE`.
+- `PUT`/`DELETE /api/authors/{authorId}/follow` (Author id as in `author.authorId`; yourself -> 400) and
+  `PUT`/`DELETE /api/tags/{tagName}/follow` (normalised name; unknown -> 404). Idempotent.
+- `GET /api/me/following/authors` (`AuthorSummaryResponse`) and `GET /api/me/following/tags` (names), newest first,
+  paged. `FollowService.followerCount` for 2.10. `TagService.findByNameWithException`.
+- Tests: `FollowServiceTest`, `CascadeOnDeleteTest`. Verified live: follow twice = one row, self-follow -> 400,
+  tag by display name, unknown tag -> 404, both lists.
+
+## 2026-10-07 (fix: deleting a commented blog)
+
+**Done**
+- Deleting a blog with comments failed (`comment.blog_id` had no `ON DELETE`; surfaced as a vague 400 from the SQL
+  handler). `Comment.blog` and `Comment.parentComment` are `@OnDelete(CASCADE)`; `SchemaPatches.cascadeOnDelete`
+  rewrites the existing constraints once at startup (idempotent).
+- Tests: `CascadeOnDeleteTest`, `SchemaPatchesTest`. Verified live: constraints patched, blog with a comment deleted,
+  comments gone, second start is a no-op.
+
+**Known limitations**
+- Deleting a *user* who has comments, questions or answers still fails on those foreign keys (account deletion
+  needs its own decision: delete or anonymise their content).
+
+## 2026-10-07 (roadmap 2.8)
+
+**Done**
+- `Bookmark` (`bookmarks`, unique user + blog, both foreign keys `ON DELETE CASCADE`).
+- `PUT /api/blogs/id/{blogId}/bookmark`, `DELETE ...` (both idempotent; a draft that is not yours -> 404) and
+  `GET /api/bookmarks` (caller's own, still-published only, most recently saved first). There is no endpoint that
+  takes another user's id, so other people's lists cannot be addressed at all.
+- Fix (2.7): `claps.blog_id` / `claps.user_id` are `ON DELETE CASCADE` — deleting a clapped blog failed on the
+  foreign key. Test: `CascadeOnDeleteTest`.
+- Tests: `BookmarkServiceTest`. Verified live: FKs created with cascade, double save = one row, list per user,
+  draft -> 404, deleting a blog with a clap and a bookmark succeeds and removes both.
+
+**Decisions**
+- One reading list per user (bookmarks). Named lists can come later on the same table.
+
+**Known limitations**
+- Databases that ran 2.7 before this fix keep the old `claps` foreign keys (ddl-update does not change them):
+  drop the `claps` table once (it is recreated) or alter the constraints.
+
+## 2026-10-07 (roadmap 2.7)
+
+**Done**
+- `Clap` (`claps`, unique per blog + user, `clap_count` 1..50) and `Blog.clapCount` (default 0) kept in step by an
+  atomic `UPDATE ... SET clap_count = clap_count + :delta`. `BlogResponse.clapCount`.
+- `GET /api/blogs/id/{blogId}/claps` -> `{totalClaps, myClaps}`; `POST ...?count=1..50` adds (claps over the cap
+  of 50 per reader are ignored, not refused); `DELETE` takes the caller's claps back. Own blog -> 403, draft -> 404,
+  count outside 1..50 -> 400.
+- Tests: `ClapServiceTest`. Verified live: 30 + 30 -> capped at 50, author -> 403, undo -> 0.
+
+**Known limitations**
+- Two first claps by the same reader at the same instant can hit the unique constraint (one gets a 400/500);
+  acceptable for now.
+
+## 2026-10-07 (roadmap 2.6)
+
+**Done**
+- `POST /api/images` (multipart `file`) -> `{url}`: authors only (403), JPEG/PNG/WebP detected by magic bytes
+  (`ImageType`), max 5 MB (`ImageService.MAX_IMAGE_BYTES`; multipart limit 6 MB so the service answers; larger
+  requests also get the 400 via `handleMaxUploadSizeExceededException`).
+- Port `ImageStorage`; `LocalDiskImageStorage` writes `<uuid>.<ext>` under `app.storage.local-dir`
+  (`STORAGE_DIR`, default `uploads`, git-ignored) and returns `app.storage.public-base-url` + name
+  (`UPLOADS_PUBLIC_BASE_URL`, default `{backendUrl}/uploads`). `/uploads/**` is served read-only and public.
+- Tests: `ImageStorageTest` (detection, storage), `ImageServiceTest` (author-only, SVG disguised as PNG, empty,
+  oversized). Verified live: upload + public download (bytes identical, `nosniff`), SVG -> 400, 7 MB -> 400,
+  consumer -> 403, `..%2f` traversal -> 400.
+
+**Found and fixed while testing**
+- A second `@ExceptionHandler(MaxUploadSizeExceededException)` made startup fail (ambiguous with
+  `ResponseEntityExceptionHandler`); the shipped code overrides its hook instead.
+
+**Known limitations**
+- Local disk only works on one server; behind a load balancer use an object store (new `ImageStorage` impl).
+- Images are stored as uploaded: no resizing and no EXIF/GPS stripping yet (a phone photo can reveal a farm's location).
+- Unused uploads are never deleted.
+
+## 2026-10-07 (roadmap 2.5)
+
+**Done**
+- `Blog.content` and `AiAnswer.aiAnswer`: `@Lob` (Postgres large object) -> `TEXT`. `SchemaPatches` converts existing
+  databases at startup, **before** Hibernate (`SchemaPatchesOrder` = `EntityManagerFactoryDependsOnPostProcessor`):
+  `oid` -> `text` via `convert_from(lo_get(...))`, frees the old large objects, `ai_answers.question` varchar -> text
+  (replaces the manual `ALTER` from 3.6), and creates the GIN index `blogs_search_idx`. Idempotent.
+- `GET /api/blogs/search?q=&pageNo&pageSize`: published blogs, `websearch_to_tsquery('simple', q)` over title +
+  content, ranked by `ts_rank`; supports `"phrases"` and `-exclusions`; blank `q` -> 400.
+- Tests: `SchemaPatchesTest`, `BlogServiceTest` (search). Verified live on the test DB in its pre-2.5 state:
+  11 blog bodies and 8 AI answers converted with their text (incl. Bangla), large objects freed, second start is a
+  no-op, searches for a word, two words, a phrase and an exclusion behave; Bangla tokens match in SQL.
+
+**Found and fixed while testing**
+- First attempt ran the patch after Hibernate: Hibernate's `ddl-auto=update` changed `oid` to `text` itself and
+  copied the large-object **ids** ("24591") into the column. The test DB was restored from the still-existing
+  large objects; the shipped patch runs before Hibernate. Never run an older build of this branch on real data.
+
+**Decisions**
+- `'simple'` text configuration: no stemming (so "disease" does not match "diseases"), but identical behaviour for
+  Bangla and English. A per-language configuration can come later.
+- The startup patch is a stop-gap until Flyway (4.2), which must start from the post-patch schema.
+
+## 2026-10-07 (roadmap 2.4)
+
+**Done**
+- `Tag` (`tags.tag_name`, unique, normalised: trimmed, lowercase, single spaces) and `blog_tags` join table;
+  `Blog.tags` eager (at most five per post).
+- Create/update accept `tags` (max 5, each <= 40 chars, 400 otherwise). Omitted on update = keep current tags.
+  `BlogResponse.tags` (sorted names).
+- `GET /api/blogs/all/tag/{tagName}` (published only, case-insensitive) and `GET /api/tags?q=` (up to 20 names by
+  prefix, for autocomplete).
+- Tests: `TagServiceTest`, `BlogServiceTest` (keep/replace on update). Verified live: tags normalised and
+  de-duplicated, filter by "RICE BLAST" works, suggestions for "ri", 6 tags -> 400.
+
+**Decisions**
+- Tags are free-form (authors create them by using them); 3.8b's AI suggestions feed straight into this field.
+
+## 2026-10-07 (roadmap 2.3b)
+
+**Done**
+- `Blog.slug` (unique): `Slugs.base(title)` (NFKC, lowercase, keeps Unicode letters/marks/digits — Bangla titles
+  stay readable; max 60 chars) + `-` + 6 random `[a-z0-9]`; retried on collision; never changes after creation.
+- `GET /api/blogs/slug/{slug}` (same visibility as by id). `BlogResponse` adds `slug` and `readingTimeMinutes`
+  (words / 200, at least 1; computed, not stored).
+- `BlogSlugBackfillRunner` gives existing posts a slug at startup (idempotent).
+- Verified live: 9 existing posts got slugs, unique index created, lookup by slug works, a Bangla title gave
+  `ধানের-ব্লাস্ট-রোগ-9ivkqc`.
+
+**Decisions**
+- Random suffix instead of the database id: unique without a second save, and ids are not exposed in URLs.
+
+## 2026-10-07 (roadmap 2.3a)
+
+**Done**
+- Roadmap 2.3 split into 2.3a (status) and 2.3b (slug, reading time).
+- `Blog.status` (`BlogStatus` DRAFT/PUBLISHED, column default `'PUBLISHED'` so existing rows stay public) and
+  `publishedAt` (first publish). `CreateBlogRequest.status` optional, default PUBLISHED (as before drafts existed).
+- `POST /api/blogs/id/{id}/publish` and `/unpublish` (owner or admin; 409 if already in that state);
+  `GET /api/blogs/me/drafts` (authors). Lists show PUBLISHED only; `GET /api/blogs/id/{id}` and `/related` give 404
+  for someone else's draft (`AuthorizationService.isOwnerOrAdmin`).
+- Vectors: only published posts are embedded (create/update/publish index; unpublish deletes; re-index deletes
+  drafts' chunks). Chunks carry `status`; RAG retrieval and related posts filter on `status == 'PUBLISHED'`.
+- Fix: `BlogRepositories` is `@Transactional(readOnly = true)`. Paged derived queries failed with "Large Objects
+  may not be used in auto-commit mode" (`Blog.content` is a `@Lob`) — this hit the 2.2 category/author lists too.
+- Verified live on the test DB: existing rows PUBLISHED; draft has no vectors and is missing from the public list;
+  publish -> 1 chunk with `status: PUBLISHED`, publishing again -> 409; unpublish -> chunks gone; lists by
+  category/author work.
+
+**Breaking API changes**
+- Blog payloads gain `status` and `publishedAt`. Lists exclude drafts; someone else's draft is a 404.
+
+**Known limitations**
+- Chunks embedded before this step have no `status` and are now invisible to retrieval: start once with
+  `AI_REINDEX_ON_STARTUP=true` after deploying.
+- Comments can still be posted on a draft by anyone who knows its id (comments are reworked later).
+
+## 2026-10-07 (roadmap 2.2)
+
+**Done**
+- `BlogRepositories.findAllByCategory/findAllByAuthor(…, Pageable)`: real database paging (was load-all + `PageImpl`).
+- `CommonUtils.getPageable(args, sortableFields, lang)`: `sortBy` outside the allowlist -> 400
+  `ERROR_INVALID_SORT_FIELD`. Allowlists: blogs and questions `creationDate, lastModifiedDate, title`;
+  categories `creationDate, categoryName`; admin user list `creationDate, name, email`. List endpoints take `lang`.
+- Tests: `CommonUtilsTest` (400, allowed, empty), `BlogServiceTest` (author paging by Author id).
+
+**Breaking API changes**
+- `GET /api/blogs/all/author/{authorId}` takes the **Author** id (`author.authorId` in blog responses); it used to
+  take the author's user id.
+- An unknown `sortBy` is a 400 (was a 500).
+
+**Known limitations**
+- Admin-only lists (roles, languages, error codes) still accept any `sortBy`; they are admin-only and out of scope.
+
+## 2026-10-07 (roadmap 2.1c)
+
+**Done**
+- `QuestionResponse`, `AnswerResponse`, `CommentResponse` gain `authorName` (the user's display name, never
+  `createdBy`, which holds the e-mail), `createdAt`, `updatedAt` as ISO-8601 `Instant`s.
+- Tests: `QuestionServiceTest` (name + 24-hour-safe timestamp), `CommentServiceTest` (name + timestamp).
+
+**Breaking API changes**
+- Question `createdAt`/`updatedAt` change from `"dd-MM-yyyy hh:mm:ss"` strings to ISO-8601 UTC.
+
+## 2026-10-07 (roadmap 2.1b)
+
+**Done**
+- `UserResponse {id, name, email, mobileNumber, userTypes, roles (names), mustChangePassword, createdAt}` for the
+  caller's own account: `/api/user/me`, `/api/auth/sign-up`, `sign-in`/`refresh-token` (`payload.user`), and the
+  admin list `/api/user/paginated`.
+- `/api/user/id/{id}` returns `PublicUserResponse {id, name}`. Closes the open item "returns the full User entity".
+- Tests: `UserResponseTest`.
+
+**Breaking API changes**
+- `payload.user` in sign-in/refresh and the sign-up payload: roles are role-name strings (were role objects with
+  privileges); audit fields replaced by `createdAt`. `/api/user/id/{id}` is now `{id, name}` only.
+
+## 2026-10-07 (roadmap 2.1a — Phase 2 starts)
+
+**Done**
+- Phase 2 base `feat/medium-core-base`, branched from the end of Phase 3 (`feat/ai-draft-answer`) because Phase 2
+  builds on its code (e.g. 2.3 puts `status` into the vector metadata). Merge Phase 3 into `development` first.
+- Roadmap 2.1 split: 2.1a (Blog/Category), 2.1b (User); the old 2.1b (Q&A/comment timestamps) is now 2.1c.
+- Blog endpoints return `BlogResponse {id, title, content, imageUrl, category {id, categoryName},
+  author {authorId, name}, createdAt, updatedAt}`; category endpoints return `CategoryResponse {id, categoryName}`.
+  `BlogService.getById` for the controller; `findByIdWithException` stays for other services.
+- `CommonUtils.getPageable` clamps `pageSize` to 1..100 and `pageNo` to >= 0. `CommonUtils.toInstant`.
+- Tests: `BlogResponseTest` (author by name only), `CommonUtilsTest` (clamping).
+
+**Breaking API changes**
+- Blog payloads: no `createdBy`/`lastModifiedBy`/`creationDate`/`lastModifiedDate`; `createdAt`/`updatedAt` are
+  ISO-8601 UTC. `author` is `{authorId, name}` (was the whole `Author` with its `user`). `category` is
+  `{id, categoryName}`. Category payloads lose the audit fields.
 
 ## 2026-10-07 (roadmap 3.8c — Phase 3 code complete)
 

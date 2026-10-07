@@ -71,6 +71,7 @@ public class AIConfig {
                 .vectorStore(vectorStore)
                 .topK(aiProperties.getRag().getTopK())
                 .similarityThreshold(aiProperties.getRag().getSimilarityThreshold())
+                .filterExpression(DocumentService.publishedOnly())
                 .build())
             .queryAugmenter(blogQueryAugmenter())
             .build();

@@ -1,5 +1,7 @@
 package com.project.agriculturalblogapplication.service;
 
+import com.project.agriculturalblogapplication.model.response.PublicUserResponse;
+import com.project.agriculturalblogapplication.model.response.UserResponse;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.constatnt.AppConstants;
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
@@ -129,6 +131,14 @@ public class UserService {
         return user;
     }
 
+    public UserResponse getMe(String lang) {
+        return UserResponse.from(getUserInfo(lang));
+    }
+
+    public PublicUserResponse getPublicProfile(Long userId, String lang) {
+        return PublicUserResponse.from(findByIdWithException(userId, lang));
+    }
+
     public User findByIdWithException(Long userId, String lang) {
         return userRepository.findById(userId).orElseThrow(()->
                 new ApplicationException(HttpStatus.NOT_FOUND,ErrorCode.ERROR_USER_NOT_FOUND, lang));
@@ -138,9 +148,9 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public Page<User> getAllPaginatedUser(PaginationArgs paginationArgs){
-        Pageable pageable = CommonUtils.getPageable(paginationArgs);
-        return userRepository.findAll(pageable);
+    public Page<UserResponse> getAllPaginatedUser(PaginationArgs paginationArgs, String lang){
+        Pageable pageable = CommonUtils.getPageable(paginationArgs, Set.of("creationDate", "name", "email"), lang);
+        return userRepository.findAll(pageable).map(UserResponse::from);
     }
 
     public void deleteUser(User user){

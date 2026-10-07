@@ -14,6 +14,7 @@ public class SecurityConstants {
             "/api/auth/**",
             "/api/admin/sign-in",
             "/api/blogs/all",
+            "/uploads/**",
             "/swagger-ui/**",
             "/api-docs/**",
             "/api/verify/**",
