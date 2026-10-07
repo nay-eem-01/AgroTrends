@@ -196,4 +196,5 @@ public final class ErrorCode {
     public static final String ERROR_BLOG_NOT_PUBLISHED = "This blog is not published.";
     public static final String ERROR_TOO_MANY_TAGS = "A blog can have at most 5 tags.";
     public static final String ERROR_TAG_TOO_LONG = "A tag can be at most 40 characters.";
+    public static final String ERROR_SEARCH_QUERY_REQUIRED = "Please enter something to search for.";
 }

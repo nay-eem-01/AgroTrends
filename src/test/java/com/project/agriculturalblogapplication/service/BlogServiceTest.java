@@ -14,9 +14,11 @@ import com.project.agriculturalblogapplication.model.response.RelatedBlogRespons
 import com.project.agriculturalblogapplication.repositories.BlogRepositories;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import com.project.agriculturalblogapplication.enums.AscOrDescType;
 import com.project.agriculturalblogapplication.payloads.PaginationArgs;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -252,6 +254,19 @@ class BlogServiceTest {
         withTags.setTags(List.of("Wheat", "barley"));
 
         assertEquals(List.of("barley", "wheat"), blogService.update(withTags, LANG).tags());
+    }
+
+    @Test
+    void searchNeedsSomethingToSearchForAndTrimsIt() {
+        ApplicationException e = assertThrows(ApplicationException.class, () -> blogService.search("   ", 0, 20, LANG));
+        assertEquals(HttpStatus.BAD_REQUEST, e.getHttpStatus());
+
+        when(blogRepositories.search(eq("rice blast"), any(Pageable.class))).thenReturn(Page.empty());
+        blogService.search("  rice blast ", 0, 500, LANG);
+
+        ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
+        verify(blogRepositories).search(eq("rice blast"), pageable.capture());
+        assertEquals(100, pageable.getValue().getPageSize());
     }
 
     private static UpdateBlogRequest updateRequest(Long blogId) {

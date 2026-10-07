@@ -96,6 +96,18 @@ public class BlogController {
                 blogService.getAllByAuthor(paginationArgs, authorId, lang));
     }
 
+    @Operation(summary = "Search published blogs by words in the title or text (supports \"quoted phrases\" and -exclusions), best match first",
+            security = @SecurityRequirement(name = "jwtToken"))
+    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogResponse.class))), responseCode = "200")
+    @GetMapping(value = "/search")
+    public ResponseEntity<HttpResponse> search(@RequestParam(name = "q") String q,
+                                               @RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
+                                               @RequestParam(name = PAGE_SIZE, defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
+                                               @RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        return HttpResponse.getResponseEntity(
+                true, "Data loaded successfully.", blogService.search(q, pageNo, pageSize, lang));
+    }
+
     @Operation(summary = "Get blog info by id", security = @SecurityRequirement(name = "jwtToken"))
     @ApiResponse(content = @Content(schema = @Schema(implementation = BlogResponse.class)), responseCode = "200")
     @GetMapping(value = "/id/{blogId}")

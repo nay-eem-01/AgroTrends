@@ -27,8 +27,7 @@ public class Blog extends AuditModel<String> {
     @Column(name = BlogTable.TITLE)
     private String title;
 
-    @Lob
-    @Column(name = BlogTable.CONTENT)
+    @Column(name = BlogTable.CONTENT, columnDefinition = "TEXT")
     private String content;
 
     @Column(name = BlogTable.IMAGE_URL)

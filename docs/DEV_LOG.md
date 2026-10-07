@@ -39,11 +39,33 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | No SMTP configured: reset links are written to the log (dev only) | an SMTP account | production password reset |
 | Hotfix path is not defined yet (proposal: branch off `production`, PR into `production`, then back-merge into `development`) | Nayeem to confirm | — |
 | Gemini chat calls fail with "API key not valid" since 2026-10-06 evening (embeddings still work); `.env` key is 53 chars (a key is 39) — check the line for quotes/comments | Nayeem | live checks of 3.6–3.8 |
-| Run once on existing DBs: `ALTER TABLE ai_answers ALTER COLUMN question TYPE text;` | whoever owns the DB | questions > 255 chars |
 | After deploying 2.3a: start once with `AI_REINDEX_ON_STARTUP=true` (old chunks have no `status`, so retrieval ignores them) | whoever deploys | AI answers on existing posts |
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-07 (roadmap 2.5)
+
+**Done**
+- `Blog.content` and `AiAnswer.aiAnswer`: `@Lob` (Postgres large object) -> `TEXT`. `SchemaPatches` converts existing
+  databases at startup, **before** Hibernate (`SchemaPatchesOrder` = `EntityManagerFactoryDependsOnPostProcessor`):
+  `oid` -> `text` via `convert_from(lo_get(...))`, frees the old large objects, `ai_answers.question` varchar -> text
+  (replaces the manual `ALTER` from 3.6), and creates the GIN index `blogs_search_idx`. Idempotent.
+- `GET /api/blogs/search?q=&pageNo&pageSize`: published blogs, `websearch_to_tsquery('simple', q)` over title +
+  content, ranked by `ts_rank`; supports `"phrases"` and `-exclusions`; blank `q` -> 400.
+- Tests: `SchemaPatchesTest`, `BlogServiceTest` (search). Verified live on the test DB in its pre-2.5 state:
+  11 blog bodies and 8 AI answers converted with their text (incl. Bangla), large objects freed, second start is a
+  no-op, searches for a word, two words, a phrase and an exclusion behave; Bangla tokens match in SQL.
+
+**Found and fixed while testing**
+- First attempt ran the patch after Hibernate: Hibernate's `ddl-auto=update` changed `oid` to `text` itself and
+  copied the large-object **ids** ("24591") into the column. The test DB was restored from the still-existing
+  large objects; the shipped patch runs before Hibernate. Never run an older build of this branch on real data.
+
+**Decisions**
+- `'simple'` text configuration: no stemming (so "disease" does not match "diseases"), but identical behaviour for
+  Bangla and English. A per-language configuration can come later.
+- The startup patch is a stop-gap until Flyway (4.2), which must start from the post-patch schema.
 
 ## 2026-10-07 (roadmap 2.4)
 
