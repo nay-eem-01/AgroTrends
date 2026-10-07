@@ -4,9 +4,11 @@ import com.project.agriculturalblogapplication.config.CommonApiResponses;
 import com.project.agriculturalblogapplication.enums.AscOrDescType;
 import com.project.agriculturalblogapplication.model.request.CreateQuestionRequest;
 import com.project.agriculturalblogapplication.model.request.UpdateQuestionRequest;
+import com.project.agriculturalblogapplication.model.response.AiDraftAnswerResponse;
 import com.project.agriculturalblogapplication.model.response.HttpResponse;
 import com.project.agriculturalblogapplication.model.response.QuestionResponse;
 import com.project.agriculturalblogapplication.payloads.PaginationArgs;
+import com.project.agriculturalblogapplication.service.AiService;
 import com.project.agriculturalblogapplication.service.QuestionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -30,6 +32,8 @@ import static com.project.agriculturalblogapplication.constatnt.AppConstants.*;
 public class QuestionController {
 
     private final QuestionService questionService;
+
+    private final AiService aiService;
 
     @Operation(summary = "Get all questions - paginated", security = @SecurityRequirement(name = "jwtToken"))
     @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = QuestionResponse.class))), responseCode = "200")
@@ -69,6 +73,16 @@ public class QuestionController {
     public ResponseEntity<HttpResponse> findById(@PathVariable Long questionId) {
         return HttpResponse.getResponseEntity(
                 true, "Data loaded successfully.", questionService.findById(questionId));
+    }
+
+    @Operation(summary = "AI draft answer for a question that has no answers yet; labelled as AI-generated and not posted",
+            security = @SecurityRequirement(name = "jwtToken"))
+    @ApiResponse(content = @Content(schema = @Schema(implementation = AiDraftAnswerResponse.class)), responseCode = "200")
+    @PostMapping(value = "/id/{questionId}/ai-draft")
+    public ResponseEntity<HttpResponse> aiDraft(@PathVariable Long questionId,
+                                                @RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        return HttpResponse.getResponseEntity(
+                true, "Data loaded successfully.", aiService.draftAnswer(questionId, lang));
     }
 
     @Operation(summary = "New question creation", security = @SecurityRequirement(name = "jwtToken"))

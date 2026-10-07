@@ -45,6 +45,22 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-07 (roadmap 3.8c — Phase 3 code complete)
+
+**Done**
+- `POST /api/questions/id/{questionId}/ai-draft` -> `{label: "AI draft - not reviewed by an expert", answer, sources}`.
+  404 for an unknown question, 409 once it has any answer. Reuses `AiService.ask` (title + content, cut to 1000
+  chars), so it counts against the caller's daily limit and shows in their history.
+- `AnswerService.hasAnswers` (`existsByQuestionId`). Tests in `AiServiceTest`.
+- Verified live: app starts with the new wiring; unknown question -> 404; new question -> 503 (chat key rejected).
+
+**Decisions**
+- The draft is returned to the caller only, not stored as an `Answer`: showing AI text as a community answer
+  needs an "AI-generated" flag and moderation, which no step covers yet.
+
+**Known limitations**
+- Phase 3 chat features (3.4–3.8) need a live re-check once the Gemini chat key works (see Open items).
+
 ## 2026-10-07 (roadmap 3.8b)
 
 **Done**
