@@ -19,6 +19,7 @@ public final class AppConstants {
     public static final String SORT_BY_VALUE = "creationDate";
     public static final String PARAMETERS = "parameters";
     public static final String LANG = "lang";
+    public static final int AI_MAX_QUESTION_LENGTH = 1000;
 
     public static final String INITIAL_MOBILE_NUMBER = "+01833849973";
 

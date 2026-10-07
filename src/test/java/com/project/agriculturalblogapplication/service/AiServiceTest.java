@@ -1,6 +1,8 @@
 package com.project.agriculturalblogapplication.service;
 
+import com.project.agriculturalblogapplication.config.AiProperties;
 import com.project.agriculturalblogapplication.entities.AiAnswer;
+import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.response.AiAnswerResponse;
 import com.project.agriculturalblogapplication.model.response.AiSourceResponse;
 import com.project.agriculturalblogapplication.repositories.AiRepositories;
@@ -10,17 +12,24 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
+import org.springframework.http.HttpStatus;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -29,7 +38,8 @@ class AiServiceTest {
     private final AiRepositories aiRepositories = mock(AiRepositories.class);
     private final ChatClient chatClient = mock(ChatClient.class, RETURNS_DEEP_STUBS);
     private final AuthorizationService authorization = mock(AuthorizationService.class);
-    private final AiService aiService = new AiService(aiRepositories, chatClient, authorization);
+    private final AiProperties aiProperties = new AiProperties();
+    private final AiService aiService = new AiService(aiRepositories, chatClient, authorization, aiProperties);
 
     @Test
     void askReturnsTheAnswerWithItsSourcesAndStoresItForTheCaller() {
@@ -45,6 +55,33 @@ class AiServiceTest {
         verify(aiRepositories).save(saved.capture());
         assertEquals(7L, saved.getValue().getUserId());
         assertEquals("Use resistant varieties.", saved.getValue().getAiAnswer());
+        assertEquals(120, saved.getValue().getPromptTokens());
+        assertEquals(30, saved.getValue().getCompletionTokens());
+    }
+
+    @Test
+    void askIsRefusedOnceTheDailyLimitIsReachedWithoutCallingTheModel() {
+        aiProperties.setDailyQuestionLimit(20);
+        when(authorization.currentUserId("en")).thenReturn(7L);
+        when(aiRepositories.countByUserIdAndCreationDateGreaterThanEqual(7L, LocalDate.now().atStartOfDay())).thenReturn(20L);
+
+        ApplicationException e = assertThrows(ApplicationException.class, () -> aiService.ask("Another question", "en"));
+
+        assertEquals(HttpStatus.TOO_MANY_REQUESTS, e.getHttpStatus());
+        verify(chatClient, never()).prompt();
+        verify(aiRepositories, never()).save(any());
+    }
+
+    @Test
+    void aFailedModelCallIsA503AndIsNotStored() {
+        when(authorization.currentUserId("en")).thenReturn(7L);
+        when(chatClient.prompt().user("Slow question").call().chatClientResponse())
+                .thenThrow(new RuntimeException("Read timed out"));
+
+        ApplicationException e = assertThrows(ApplicationException.class, () -> aiService.ask("Slow question", "en"));
+
+        assertEquals(HttpStatus.SERVICE_UNAVAILABLE, e.getHttpStatus());
+        verify(aiRepositories, never()).save(any());
     }
 
     @Test
@@ -69,7 +106,8 @@ class AiServiceTest {
     }
 
     private static ChatClientResponse response(String answer, List<Document> retrieved) {
-        ChatResponse chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage(answer))));
+        ChatResponse chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage(answer))),
+                ChatResponseMetadata.builder().usage(new DefaultUsage(120, 30)).build());
         return new ChatClientResponse(chatResponse, Map.of(RetrievalAugmentationAdvisor.DOCUMENT_CONTEXT, retrieved));
     }
 }

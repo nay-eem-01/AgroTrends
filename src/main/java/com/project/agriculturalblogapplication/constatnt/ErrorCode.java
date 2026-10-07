@@ -187,4 +187,7 @@ public final class ErrorCode {
     public static final String ERROR_REFRESH_TOKEN_EXPIRED = "Refresh token has expired. Please sign in again.";
     public static final String ERROR_NEW_PASSWORD_SAME_AS_CURRENT = "New password must be different from the current password.";
     public static final String ERROR_AUTHOR_PROFILE_REQUIRED = "Only registered authors can publish blogs.";
+    public static final String ERROR_QUESTION_TOO_LONG = "Question must be at most 1000 characters.";
+    public static final String ERROR_AI_DAILY_LIMIT_REACHED = "You have reached today's limit of AI questions. Please try again tomorrow.";
+    public static final String ERROR_AI_UNAVAILABLE = "The AI advisor is not available right now. Please try again later.";
 }
