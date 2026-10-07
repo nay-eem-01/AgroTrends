@@ -56,6 +56,8 @@ public class BlogService {
 
     private final AuthorizationService authorizationService;
 
+    private final TagService tagService;
+
     public BlogResponse create(CreateBlogRequest request, String lang) {
         Category category = categoryService.findByIdWithException(request.getCategoryId());
 
@@ -68,6 +70,9 @@ public class BlogService {
         blog.setContent(request.getContent());
         blog.setImageUrl(request.getImageUrl());
         blog.setSlug(uniqueSlug(request.getTitle()));
+        if (request.getTags() != null) {
+            blog.setTags(tagService.resolve(request.getTags()));
+        }
         blog.setStatus(request.getStatus() == null ? BlogStatus.PUBLISHED : request.getStatus());
         if (blog.getStatus() == BlogStatus.PUBLISHED) {
             blog.setPublishedAt(LocalDateTime.now());
@@ -97,6 +102,12 @@ public class BlogService {
         Pageable pageable = CommonUtils.getPageable(paginationArgs, SORTABLE_FIELDS, lang);
         Author author = authorService.findByIdWithException(authorId);
         return blogRepositories.findAllByAuthorAndStatus(author, BlogStatus.PUBLISHED, pageable).map(BlogResponse::from);
+    }
+
+    public Page<BlogResponse> getAllByTag(PaginationArgs paginationArgs, String tagName, String lang) {
+        Pageable pageable = CommonUtils.getPageable(paginationArgs, SORTABLE_FIELDS, lang);
+        return blogRepositories.findAllByTagsNameAndStatus(TagService.normalize(tagName), BlogStatus.PUBLISHED, pageable)
+                .map(BlogResponse::from);
     }
 
     /** The caller's own drafts; 403 for users without an author profile. */
@@ -143,6 +154,10 @@ public class BlogService {
         blog.setContent(request.getContent());
         blog.setCategory(category);
         blog.setImageUrl(request.getImageUrl());
+        // Omitted tags keep the current ones, so clients that do not send tags do not wipe them.
+        if (request.getTags() != null) {
+            blog.setTags(tagService.resolve(request.getTags()));
+        }
 
         blog = blogRepositories.save(blog);
         if (blog.getStatus() == BlogStatus.PUBLISHED) {

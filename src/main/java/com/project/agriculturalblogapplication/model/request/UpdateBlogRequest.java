@@ -1,5 +1,8 @@
 package com.project.agriculturalblogapplication.model.request;
 
+import java.util.List;
+import jakarta.validation.constraints.Size;
+import com.project.agriculturalblogapplication.constatnt.AppConstants;
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -27,4 +30,7 @@ public class UpdateBlogRequest {
 
     @NotNull(message = ErrorCode.ERROR_CATEGORY_IS_REQUIRED)
     private Long categoryId;
+    /** Up to five topic tags, e.g. "rice blast"; new names are created. */
+    @Size(max = AppConstants.MAX_TAGS_PER_BLOG, message = ErrorCode.ERROR_TOO_MANY_TAGS)
+    private List<@NotBlank @Size(max = AppConstants.MAX_TAG_LENGTH, message = ErrorCode.ERROR_TAG_TOO_LONG) String> tags;
 }

@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 29 of 52 steps done
+**Progress:** 30 of 52 steps done
 
 ---
 
@@ -52,7 +52,7 @@ Everything that makes it a publishing platform. Each step one small PR.
 | 2.2 | Real database pagination for blogs by category/author; `sortBy` allowlist -> 400; author lists by Author id | ✅ |
 | 2.3a | Blog `status` (DRAFT/PUBLISHED), `publishedAt`, publish/unpublish, drafts list; public lists PUBLISHED only; `status` in vector metadata + retrieval filter | ✅ |
 | 2.3b | Blog slug (stable, Unicode-friendly) and reading time; `GET /api/blogs/slug/{slug}` | ✅ |
-| 2.4 | Tags/topics (many-to-many) and filtering by tag | ⬜ |
+| 2.4 | Tags (many-to-many, normalised, max 5 per blog), `GET /api/blogs/all/tag/{tagName}`, `GET /api/tags?q=` | ✅ |
 | 2.5 | `Blog.content` `@Lob` -> `TEXT`; full-text search endpoint | ⬜ |
 | 2.6 | Image upload (cover + inline) behind a storage port; size/type limits | ⬜ |
 | 2.7 | Claps on blogs (one user, many claps capped) and counts | ⬜ |

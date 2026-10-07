@@ -45,6 +45,21 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-07 (roadmap 2.4)
+
+**Done**
+- `Tag` (`tags.tag_name`, unique, normalised: trimmed, lowercase, single spaces) and `blog_tags` join table;
+  `Blog.tags` eager (at most five per post).
+- Create/update accept `tags` (max 5, each <= 40 chars, 400 otherwise). Omitted on update = keep current tags.
+  `BlogResponse.tags` (sorted names).
+- `GET /api/blogs/all/tag/{tagName}` (published only, case-insensitive) and `GET /api/tags?q=` (up to 20 names by
+  prefix, for autocomplete).
+- Tests: `TagServiceTest`, `BlogServiceTest` (keep/replace on update). Verified live: tags normalised and
+  de-duplicated, filter by "RICE BLAST" works, suggestions for "ri", 6 tags -> 400.
+
+**Decisions**
+- Tags are free-form (authors create them by using them); 3.8b's AI suggestions feed straight into this field.
+
 ## 2026-10-07 (roadmap 2.3b)
 
 **Done**

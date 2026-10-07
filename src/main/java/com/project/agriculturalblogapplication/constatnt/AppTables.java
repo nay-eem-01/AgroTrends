@@ -62,6 +62,19 @@ public final class AppTables {
         public static final String MOBILE_NUMBER = "mobile_number";
     }
 
+    public static final class TagTable {
+
+        public static final String TAG_NAME = "tag_name";
+
+        public static final String NAME = "tags";
+
+        public static final String BLOG_TAGS = "blog_tags";
+
+        public static final String BLOG_ID = "blog_id";
+
+        public static final String TAG_ID = "tag_id";
+    }
+
     public static final class CategoryTable {
         
         public static final String CATEGORY_ID = "category_id";

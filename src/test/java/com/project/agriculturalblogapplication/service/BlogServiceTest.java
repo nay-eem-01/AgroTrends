@@ -3,6 +3,7 @@ package com.project.agriculturalblogapplication.service;
 import com.project.agriculturalblogapplication.entities.Author;
 import com.project.agriculturalblogapplication.entities.Blog;
 import com.project.agriculturalblogapplication.entities.Category;
+import com.project.agriculturalblogapplication.entities.Tag;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.enums.BlogStatus;
@@ -22,8 +23,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.LongStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -52,8 +55,9 @@ class BlogServiceTest {
     private final AuthorService authorService = mock(AuthorService.class);
     private final DocumentService documentService = mock(DocumentService.class);
     private final AuthorizationService authorization = mock(AuthorizationService.class);
+    private final TagService tagService = mock(TagService.class);
     private final BlogService blogService =
-            new BlogService(blogRepositories, categoryService, authorService, documentService, authorization);
+            new BlogService(blogRepositories, categoryService, authorService, documentService, authorization, tagService);
 
     @Test
     void updateReplacesTheBlogsVectorsInsteadOfAddingMore() {
@@ -225,6 +229,29 @@ class BlogServiceTest {
         ApplicationException e = assertThrows(ApplicationException.class, () -> blogService.getBySlug("draft-abc123", LANG));
 
         assertEquals(HttpStatus.NOT_FOUND, e.getHttpStatus());
+    }
+
+    @Test
+    void updateWithoutTagsKeepsThemAndWithTagsReplacesThem() {
+        Blog blog = blog(5L);
+        Tag rice = new Tag();
+        rice.setName("rice");
+        blog.setTags(new LinkedHashSet<>(Set.of(rice)));
+        when(blogRepositories.findById(5L)).thenReturn(Optional.of(blog));
+        when(categoryService.findByIdWithException(30L)).thenReturn(blog.getCategory());
+        when(blogRepositories.save(blog)).thenReturn(blog);
+
+        assertEquals(List.of("rice"), blogService.update(updateRequest(5L), LANG).tags());
+
+        Tag wheat = new Tag();
+        wheat.setName("wheat");
+        Tag barley = new Tag();
+        barley.setName("barley");
+        when(tagService.resolve(List.of("Wheat", "barley"))).thenReturn(new LinkedHashSet<>(List.of(wheat, barley)));
+        UpdateBlogRequest withTags = updateRequest(5L);
+        withTags.setTags(List.of("Wheat", "barley"));
+
+        assertEquals(List.of("barley", "wheat"), blogService.update(withTags, LANG).tags());
     }
 
     private static UpdateBlogRequest updateRequest(Long blogId) {
