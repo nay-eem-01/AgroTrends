@@ -7,6 +7,8 @@ import com.project.agriculturalblogapplication.enums.AscOrDescType;
 import com.project.agriculturalblogapplication.model.request.ChangePasswordRequest;
 import com.project.agriculturalblogapplication.model.request.UpdateUserRequest;
 import com.project.agriculturalblogapplication.model.response.HttpResponse;
+import com.project.agriculturalblogapplication.model.response.PublicUserResponse;
+import com.project.agriculturalblogapplication.model.response.UserResponse;
 import com.project.agriculturalblogapplication.payloads.PaginationArgs;
 import com.project.agriculturalblogapplication.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,7 +38,7 @@ public class UserController {
     private final UserService userService;
 
     @Operation(summary = "Get all users - paginated", security = @SecurityRequirement(name = "jwtToken"))
-    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = User.class))), responseCode = "200")
+    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = UserResponse.class))), responseCode = "200")
     @PreAuthorize("hasAuthority('USER_READ')")
     @GetMapping(value = "/paginated")
     public ResponseEntity<HttpResponse> getAllPaginatedUsers(
@@ -57,24 +59,24 @@ public class UserController {
     }
 
     @Operation(summary = "Get user info", security = @SecurityRequirement(name = "jwtToken"))
-    @ApiResponse(content = @Content(schema = @Schema(implementation = User.class)), responseCode = "200")
+    @ApiResponse(content = @Content(schema = @Schema(implementation = UserResponse.class)), responseCode = "200")
     @GetMapping("/me")
     public ResponseEntity<HttpResponse> getUserInfo(@RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
         return HttpResponse.getResponseEntity(
                 true,
                 "Data loaded successfully.",
-                userService.getUserInfo(lang)
+                userService.getMe(lang)
         );
     }
 
-    @Operation(summary = "Get user info by ID", security = @SecurityRequirement(name = "jwtToken"))
-    @ApiResponse(content = @Content(schema = @Schema(implementation = User.class)), responseCode = "200")
+    @Operation(summary = "Another user's public profile (name only)", security = @SecurityRequirement(name = "jwtToken"))
+    @ApiResponse(content = @Content(schema = @Schema(implementation = PublicUserResponse.class)), responseCode = "200")
     @GetMapping("/id/{id}")
     public ResponseEntity<HttpResponse> findById(@PathVariable Long id, @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) throws JsonProcessingException {
         return HttpResponse.getResponseEntity(
                 true,
                 "Data loaded successfully.",
-                userService.findByIdWithException(id, lang));
+                userService.getPublicProfile(id, lang));
     }
 
     @Operation(summary = "Delete User with User Details", security = @SecurityRequirement(name = "jwtToken"))
