@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.time.Instant;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -16,4 +18,11 @@ public class CommentResponse {
     private Long parentCommentId;
     private Long commentId;
     private String content;
+
+    /** The author's display name (never their e-mail). */
+    private String authorName;
+
+    private Instant createdAt;
+
+    private Instant updatedAt;
 }

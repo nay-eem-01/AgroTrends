@@ -84,8 +84,9 @@ public class QuestionService {
         response.setUserId(question.getUser().getId());
         response.setTitle(question.getTitle());
         response.setContent(question.getContent());
-        response.setCreatedAt(question.getCreationDate());
-        response.setUpdatedAt(question.getLastModifiedDate());
+        response.setAuthorName(question.getUser().getName());
+        response.setCreatedAt(CommonUtils.toInstant(question.getCreationDate()));
+        response.setUpdatedAt(CommonUtils.toInstant(question.getLastModifiedDate()));
 
         return response;
     }
