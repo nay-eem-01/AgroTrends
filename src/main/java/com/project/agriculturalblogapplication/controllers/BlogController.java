@@ -91,6 +91,15 @@ public class BlogController {
                 true, "Data loaded successfully.", blogService.getById(blogId, lang));
     }
 
+    @Operation(summary = "Get a blog by its URL slug", security = @SecurityRequirement(name = "jwtToken"))
+    @ApiResponse(content = @Content(schema = @Schema(implementation = BlogResponse.class)), responseCode = "200")
+    @GetMapping(value = "/slug/{slug}")
+    public ResponseEntity<HttpResponse> findBySlug(@PathVariable String slug,
+                                                   @RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        return HttpResponse.getResponseEntity(
+                true, "Data loaded successfully.", blogService.getBySlug(slug, lang));
+    }
+
     @Operation(summary = "Other posts on similar topics, most similar first (found by meaning, not keywords)",
             security = @SecurityRequirement(name = "jwtToken"))
     @ApiResponse(content = @Content(schema = @Schema(implementation = RelatedBlogResponse.class)), responseCode = "200")

@@ -30,8 +30,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
@@ -194,6 +196,35 @@ class BlogServiceTest {
         assertEquals(HttpStatus.NOT_FOUND, e.getHttpStatus());
 
         assertEquals(9L, blogService.getById(9L, LANG).id());
+    }
+
+    @Test
+    void createRetriesWhenTheRandomSlugIsTaken() {
+        when(categoryService.findByIdWithException(30L)).thenReturn(blog(1L).getCategory());
+        when(authorService.findByUserIdOrForbidden(any(), any())).thenReturn(blog(1L).getAuthor());
+        when(blogRepositories.save(any(Blog.class))).thenAnswer(call -> call.getArgument(0));
+        when(blogRepositories.existsBySlug(anyString())).thenReturn(true, false);
+        CreateBlogRequest request = new CreateBlogRequest();
+        request.setCategoryId(30L);
+        request.setTitle("Rice Blast");
+        request.setContent("Spray early.");
+
+        BlogResponse created = blogService.create(request, LANG);
+
+        assertTrue(created.slug().matches("rice-blast-[a-z0-9]{6}"), created.slug());
+        verify(blogRepositories, times(2)).existsBySlug(anyString());
+    }
+
+    @Test
+    void aSlugLeadingToSomeoneElsesDraftIsA404() {
+        Blog draft = blog(9L);
+        draft.setStatus(BlogStatus.DRAFT);
+        when(blogRepositories.findBySlug("draft-abc123")).thenReturn(Optional.of(draft));
+        when(blogRepositories.findById(9L)).thenReturn(Optional.of(draft));
+
+        ApplicationException e = assertThrows(ApplicationException.class, () -> blogService.getBySlug("draft-abc123", LANG));
+
+        assertEquals(HttpStatus.NOT_FOUND, e.getHttpStatus());
     }
 
     private static UpdateBlogRequest updateRequest(Long blogId) {

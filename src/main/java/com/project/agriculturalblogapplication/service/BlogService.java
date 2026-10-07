@@ -13,6 +13,7 @@ import com.project.agriculturalblogapplication.entities.Category;
 import com.project.agriculturalblogapplication.enums.BlogStatus;
 import com.project.agriculturalblogapplication.repositories.BlogRepositories;
 import com.project.agriculturalblogapplication.util.CommonUtils;
+import com.project.agriculturalblogapplication.util.Slugs;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -22,6 +23,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +39,10 @@ public class BlogService {
     private static final int REINDEX_PAGE_SIZE = 50;
 
     private static final int MAX_RELATED = 10;
+
+    private static final int SLUG_ATTEMPTS = 5;
+
+    private static final SecureRandom SLUG_RANDOM = new SecureRandom();
 
     static final Set<String> SORTABLE_FIELDS = Set.of("creationDate", "lastModifiedDate", "title");
 
@@ -61,6 +67,7 @@ public class BlogService {
         blog.setTitle(request.getTitle());
         blog.setContent(request.getContent());
         blog.setImageUrl(request.getImageUrl());
+        blog.setSlug(uniqueSlug(request.getTitle()));
         blog.setStatus(request.getStatus() == null ? BlogStatus.PUBLISHED : request.getStatus());
         if (blog.getStatus() == BlogStatus.PUBLISHED) {
             blog.setPublishedAt(LocalDateTime.now());
@@ -187,6 +194,34 @@ public class BlogService {
 
     public BlogResponse getById(Long blogId, String lang) {
         return BlogResponse.from(findVisibleBlog(blogId, lang));
+    }
+
+    public BlogResponse getBySlug(String slug, String lang) {
+        Blog blog = blogRepositories.findBySlug(slug).orElseThrow(() ->
+                new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_BLOG_NOT_FOUND, lang));
+        return BlogResponse.from(findVisibleBlog(blog.getId(), lang));
+    }
+
+    /** Gives posts created before slugs existed a slug; returns how many were filled. */
+    public int backfillSlugs() {
+        List<Blog> blogs = blogRepositories.findAllBySlugIsNull();
+        blogs.forEach(blog -> {
+            blog.setSlug(uniqueSlug(blog.getTitle()));
+            blogRepositories.save(blog);
+        });
+        return blogs.size();
+    }
+
+    private String uniqueSlug(String title) {
+        String base = Slugs.base(title);
+        for (int attempt = 0; attempt < SLUG_ATTEMPTS; attempt++) {
+            String slug = Slugs.withSuffix(base, SLUG_RANDOM);
+            if (!blogRepositories.existsBySlug(slug)) {
+                return slug;
+            }
+        }
+        // 36^6 suffixes per title: reaching this means something is badly wrong, not bad luck.
+        throw new IllegalStateException("Could not find a free slug for base " + base);
     }
 
     /** Published posts for everyone; a draft only for its author and admins, and a 404 for anyone else. */

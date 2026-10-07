@@ -31,6 +31,10 @@ public class Blog extends AuditModel<String> {
     @Column(name = BlogTable.IMAGE_URL)
     private String imageUrl;
 
+    /** Set once at creation from the title and never changed, so shared links keep working. */
+    @Column(name = BlogTable.SLUG, unique = true)
+    private String slug;
+
     // Rows that existed before drafts were introduced were all public, so the column defaults to PUBLISHED.
     @Enumerated(EnumType.STRING)
     @ColumnDefault("'PUBLISHED'")

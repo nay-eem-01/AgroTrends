@@ -45,6 +45,20 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-07 (roadmap 2.3b)
+
+**Done**
+- `Blog.slug` (unique): `Slugs.base(title)` (NFKC, lowercase, keeps Unicode letters/marks/digits — Bangla titles
+  stay readable; max 60 chars) + `-` + 6 random `[a-z0-9]`; retried on collision; never changes after creation.
+- `GET /api/blogs/slug/{slug}` (same visibility as by id). `BlogResponse` adds `slug` and `readingTimeMinutes`
+  (words / 200, at least 1; computed, not stored).
+- `BlogSlugBackfillRunner` gives existing posts a slug at startup (idempotent).
+- Verified live: 9 existing posts got slugs, unique index created, lookup by slug works, a Bangla title gave
+  `ধানের-ব্লাস্ট-রোগ-9ivkqc`.
+
+**Decisions**
+- Random suffix instead of the database id: unique without a second save, and ids are not exposed in URLs.
+
 ## 2026-10-07 (roadmap 2.3a)
 
 **Done**

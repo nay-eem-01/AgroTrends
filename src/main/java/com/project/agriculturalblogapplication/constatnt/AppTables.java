@@ -44,6 +44,8 @@ public final class AppTables {
 
         public static final String PUBLISHED_AT = "published_at";
 
+        public static final String SLUG = "slug";
+
         public static final String NAME = "blogs";
     }
 
