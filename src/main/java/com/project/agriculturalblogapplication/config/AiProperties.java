@@ -21,6 +21,9 @@ public class AiProperties {
 
     private final Rag rag = new Rag();
 
+    /** Minimum cosine similarity between two posts for "related posts" (unrelated farming posts measure 0.64-0.76). */
+    private double relatedSimilarityThreshold = 0.75;
+
     @Getter
     @Setter
     public static class Rag {

@@ -1,6 +1,7 @@
 package com.project.agriculturalblogapplication.service;
 
 import com.project.agriculturalblogapplication.config.AIConfig;
+import com.project.agriculturalblogapplication.config.AiProperties;
 import com.project.agriculturalblogapplication.entities.Author;
 import com.project.agriculturalblogapplication.entities.Blog;
 import com.project.agriculturalblogapplication.entities.Category;
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
@@ -16,16 +18,18 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class DocumentServiceTest {
 
     private final VectorStore vectorStore = mock(VectorStore.class);
-    private final DocumentService documentService = new DocumentService(vectorStore, new AIConfig().blogTextSplitter());
+    private final DocumentService documentService = new DocumentService(vectorStore, new AIConfig().blogTextSplitter(), new AiProperties());
 
     @Test
     void shortBlogIsOneChunkWithItsMetadata() {
@@ -63,6 +67,26 @@ class DocumentServiceTest {
 
         verify(vectorStore).delete(blogFilter(4L));
         verify(vectorStore, never()).add(anyList());
+    }
+
+    @Test
+    void relatedPostsExcludeTheBlogItselfAndListEachPostOnce() {
+        when(vectorStore.similaritySearch(any(SearchRequest.class))).thenReturn(List.of(
+                chunkOf(9), chunkOf(4), chunkOf(9), chunkOf(6)));
+
+        List<Long> related = documentService.findRelatedBlogIds(blog(2L, "Rice blast advice."), 2);
+
+        assertEquals(List.of(9L, 4L), related);
+        ArgumentCaptor<SearchRequest> request = ArgumentCaptor.forClass(SearchRequest.class);
+        verify(vectorStore).similaritySearch(request.capture());
+        assertEquals(new FilterExpressionBuilder().ne(DocumentService.BLOG_ID, 2L).build(), request.getValue().getFilterExpression());
+        assertEquals(0.75, request.getValue().getSimilarityThreshold());
+        assertEquals(8, request.getValue().getTopK());
+    }
+
+    // pgvector returns metadata numbers as Integers.
+    private static Document chunkOf(int blogId) {
+        return new Document("excerpt", java.util.Map.of(DocumentService.BLOG_ID, blogId));
     }
 
     private static Filter.Expression blogFilter(Long blogId) {

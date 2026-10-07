@@ -6,6 +6,7 @@ import com.project.agriculturalblogapplication.entities.Category;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.request.UpdateBlogRequest;
+import com.project.agriculturalblogapplication.model.response.RelatedBlogResponse;
 import com.project.agriculturalblogapplication.repositories.BlogRepositories;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import org.junit.jupiter.api.Test;
@@ -94,6 +95,18 @@ class BlogServiceTest {
 
         verify(documentService, times(52)).reindexBlog(any());
         verify(blogRepositories).findAll(PageRequest.of(1, 50, Sort.by("id")));
+    }
+
+    @Test
+    void relatedKeepsSimilarityOrderSkipsMissingBlogsAndClampsTheLimit() {
+        Blog blog = blog(1L);
+        when(blogRepositories.findById(1L)).thenReturn(Optional.of(blog));
+        when(documentService.findRelatedBlogIds(blog, 10)).thenReturn(List.of(8L, 3L, 99L));
+        when(blogRepositories.findAllById(List.of(8L, 3L, 99L))).thenReturn(List.of(blog(3L), blog(8L)));
+
+        List<RelatedBlogResponse> related = blogService.related(1L, 50);
+
+        assertEquals(List.of(new RelatedBlogResponse(8L, "Title 8"), new RelatedBlogResponse(3L, "Title 3")), related);
     }
 
     private static UpdateBlogRequest updateRequest(Long blogId) {

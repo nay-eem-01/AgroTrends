@@ -45,6 +45,19 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-07 (roadmap 3.8a)
+
+**Done**
+- Roadmap 3.8 split into 3.8a (related posts), 3.8b (summary + suggested tags), 3.8c (AI draft answer).
+- `GET /api/blogs/id/{blogId}/related?limit=` (1..10, default 5) -> `[{blogId, title}]`: vector search with the
+  post's title + first 2000 characters, filter `blogId != this`, cosine >= 0.75
+  (`app.ai.related-similarity-threshold`), one entry per post in similarity order.
+- Verified live (embeddings work with the current key): "Rice blast in short" <-> "Stopping potato late blight"
+  (0.76); the cow-feeding and drip-irrigation posts have no related post.
+
+**Known limitations**
+- Each call embeds the post's opening again (one embedding request per view); cache it if traffic grows.
+
 ## 2026-10-07 (roadmap 3.7)
 
 **Done**
