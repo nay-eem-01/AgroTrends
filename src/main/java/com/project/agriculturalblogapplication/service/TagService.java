@@ -1,10 +1,13 @@
 package com.project.agriculturalblogapplication.service;
 
+import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import com.project.agriculturalblogapplication.entities.Tag;
+import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.repositories.TagRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
@@ -38,6 +41,11 @@ public class TagService {
             tags.add(tagRepository.findByName(name).orElseGet(() -> tagRepository.save(newTag(name))));
         }
         return tags;
+    }
+
+    public Tag findByNameWithException(String name, String lang) {
+        return tagRepository.findByName(normalize(name)).orElseThrow(() ->
+                new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_TAG_NOT_FOUND, lang));
     }
 
     /** Tag names starting with {@code prefix}, alphabetically, for autocomplete. */

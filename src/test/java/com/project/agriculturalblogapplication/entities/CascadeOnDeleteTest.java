@@ -27,4 +27,13 @@ class CascadeOnDeleteTest {
         assertEquals(OnDeleteAction.CASCADE, Comment.class.getDeclaredField("blog").getAnnotation(OnDelete.class).action());
         assertEquals(OnDeleteAction.CASCADE, Comment.class.getDeclaredField("parentComment").getAnnotation(OnDelete.class).action());
     }
+
+    @Test
+    void followsGoWithTheirUserAuthorOrTag() throws Exception {
+        for (var field : new java.lang.reflect.Field[]{AuthorFollow.class.getDeclaredField("user"),
+                AuthorFollow.class.getDeclaredField("author"), TagFollow.class.getDeclaredField("user"),
+                TagFollow.class.getDeclaredField("tag")}) {
+            assertEquals(OnDeleteAction.CASCADE, field.getAnnotation(OnDelete.class).action(), field.toString());
+        }
+    }
 }
