@@ -6,6 +6,7 @@ import com.project.agriculturalblogapplication.enums.AscOrDescType;
 import com.project.agriculturalblogapplication.model.request.CreateBlogRequest;
 import com.project.agriculturalblogapplication.model.request.UpdateBlogRequest;
 import com.project.agriculturalblogapplication.model.response.HttpResponse;
+import com.project.agriculturalblogapplication.model.response.RelatedBlogResponse;
 import com.project.agriculturalblogapplication.payloads.PaginationArgs;
 import com.project.agriculturalblogapplication.service.BlogService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -84,6 +85,16 @@ public class BlogController {
     public ResponseEntity<HttpResponse> findById(@PathVariable Long blogId) {
         return HttpResponse.getResponseEntity(
                 true, "Data loaded successfully.", blogService.findByIdWithException(blogId));
+    }
+
+    @Operation(summary = "Other posts on similar topics, most similar first (found by meaning, not keywords)",
+            security = @SecurityRequirement(name = "jwtToken"))
+    @ApiResponse(content = @Content(schema = @Schema(implementation = RelatedBlogResponse.class)), responseCode = "200")
+    @GetMapping(value = "/id/{blogId}/related")
+    public ResponseEntity<HttpResponse> related(@PathVariable Long blogId,
+                                                @RequestParam(name = "limit", defaultValue = "5") int limit) {
+        return HttpResponse.getResponseEntity(
+                true, "Data loaded successfully.", blogService.related(blogId, limit));
     }
 
     @Operation(summary = "New blog creation", security = @SecurityRequirement(name = "jwtToken"))

@@ -15,10 +15,12 @@ public final class AppConstants {
 
     public static final String DEFAULT_PAGE_NO = "0";
     public static final String DEFAULT_PAGE_SIZE = "20";
+    public static final int MAX_PAGE_SIZE = 100;
     public static final String ASC_OR_DESC_VALUE = "asc";
     public static final String SORT_BY_VALUE = "creationDate";
     public static final String PARAMETERS = "parameters";
     public static final String LANG = "lang";
+    public static final int AI_MAX_QUESTION_LENGTH = 1000;
 
     public static final String INITIAL_MOBILE_NUMBER = "+01833849973";
 

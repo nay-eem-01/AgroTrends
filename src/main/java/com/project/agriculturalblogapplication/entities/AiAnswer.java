@@ -22,10 +22,17 @@ public class AiAnswer extends AuditModel<String> {
     @Column(name = AiAnswerTable.USER_ID)
     private Long userId;
 
-    @Column(name = AiAnswerTable.QUESTION)
+    // TEXT, not the default varchar(255): questions may be up to AppConstants.AI_MAX_QUESTION_LENGTH characters.
+    @Column(name = AiAnswerTable.QUESTION, columnDefinition = "TEXT")
     private String question;
 
     @Lob
     @Column(name = AiAnswerTable.AI_ANSWER)
     private String aiAnswer;
+
+    @Column(name = AiAnswerTable.PROMPT_TOKENS)
+    private Integer promptTokens;
+
+    @Column(name = AiAnswerTable.COMPLETION_TOKENS)
+    private Integer completionTokens;
 }

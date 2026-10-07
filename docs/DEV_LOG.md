@@ -13,18 +13,16 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
   at `da19a32`. Feature work: base branch off `development`, serial step PRs into the base, base -> `development`
   (test) -> `staging` (test) -> `production`. `main` is frozen; no new work there. See the `git-workflow` skill.
 - **Notifications will use Kafka** (decided 2026-10-05): Phase 5 in the roadmap, decision 10 in the plan.
-- Old `dev` branch reviewed (2026-10-05): nothing to merge; the prompt fix was salvaged, timestamps became 2.1b.
+- Old `dev` branch reviewed and deleted (2026-10-06). Phase 3 started early (base `feat/ai-rag-base`): 3.1–3.5 done; `/api/ai/ask` answers from the platform's posts and returns them as sources.
 
 ## Next up
 
-1. Merge `docs/branching-model`, then `fix/ai-prompt-language`, then `docs/notifications-plan` into `development`
-   (stacked in that order). Then delete the old `dev` branch (Nayeem's go-ahead).
+1. Merge `feat/rag-citations` into `feat/ai-rag-base` (Phase 3 base, off `development`).
+   Next step: 3.6 (quota, prompt length cap, timeout; token usage) — answers take up to 91 s.
 2. **Nayeem:** GitHub settings — make `development` the default branch; protect `development`, `staging`,
    `production` (PRs only, require review/CI once 4.5 lands).
 3. **Nayeem:** roadmap 0.4 — revoke keys, rotate the DB password, purge git history.
 4. Phase 2 starts (base `feat/medium-core-base` off `development`) with 2.1 (response DTOs) and 2.2 (real pagination): everything after builds on them.
-5. Phase 3.1 (replace the shut-down embedding model) is urgent for blog create/update — consider pulling it
-   forward ahead of the rest of Phase 2.
 
 ## Open items
 
@@ -33,15 +31,192 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | Leaked Gemini keys / DB password in git history — also on `origin/dev` (`f06f456`) and `origin/feature/kafka-impl`, so the purge must cover those branches | Nayeem (revoke, rotate, then purge) | roadmap 0.4 |
 | `feature/kafka-impl`: reference only for Phase 5; delete once Phase 5 is rebuilt | Nayeem | — |
 | Create a local `.env` from `.env.example` (DB_PASSWORD, GEMINI_API_KEY, JWT_SECRET) — the app no longer starts without them | Nayeem | running the app locally |
-| `text-embedding-004` shut down 2026-01-14: blog create/update likely fails at the embedding step | decision on the replacement model; test with a real key | roadmap 3.1 |
+| Any database that still holds `text-embedding-004` vectors: start once with `AI_REINDEX_ON_STARTUP=true` | whoever owns that DB | retrieval on old data |
+| Client errors (400/401) are logged at ERROR by `ExceptionHandlingController` — noisy | roadmap 4.7 | — |
+| Frontend can show `sources` from `/api/ai/ask` as links to `/api/blogs/id/{blogId}` | frontend | — |
 | Frontend must stop sending `userId` / `authorUserId`, use `/api/auth/refresh-token`, and handle 401 vs 403 | frontend | frontend integration |
 | `/api/user/id/{id}` still returns the full `User` entity (e-mail, mobile, roles) to any signed-in user | roadmap 2.1 | public profiles |
 | `contextLoads` fails without a local Postgres | roadmap 4.4 | CI |
 | No SMTP configured: reset links are written to the log (dev only) | an SMTP account | production password reset |
 | Hotfix path is not defined yet (proposal: branch off `production`, PR into `production`, then back-merge into `development`) | Nayeem to confirm | — |
+| Gemini chat calls fail with "API key not valid" since 2026-10-06 evening (embeddings still work); `.env` key is 53 chars (a key is 39) — check the line for quotes/comments | Nayeem | live checks of 3.6–3.8 |
+| Run once on existing DBs: `ALTER TABLE ai_answers ALTER COLUMN question TYPE text;` | whoever owns the DB | questions > 255 chars |
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-07 (roadmap 3.8c — Phase 3 code complete)
+
+**Done**
+- `POST /api/questions/id/{questionId}/ai-draft` -> `{label: "AI draft - not reviewed by an expert", answer, sources}`.
+  404 for an unknown question, 409 once it has any answer. Reuses `AiService.ask` (title + content, cut to 1000
+  chars), so it counts against the caller's daily limit and shows in their history.
+- `AnswerService.hasAnswers` (`existsByQuestionId`). Tests in `AiServiceTest`.
+- Verified live: app starts with the new wiring; unknown question -> 404; new question -> 503 (chat key rejected).
+
+**Decisions**
+- The draft is returned to the caller only, not stored as an `Answer`: showing AI text as a community answer
+  needs an "AI-generated" flag and moderation, which no step covers yet.
+
+**Known limitations**
+- Phase 3 chat features (3.4–3.8) need a live re-check once the Gemini chat key works (see Open items).
+
+## 2026-10-07 (roadmap 3.8b)
+
+**Done**
+- `POST /api/ai/blog-assist` `{title, content}` -> `{summary, suggestedTags}` for the writing screen. Authors only
+  (same rule as publishing: 403 without an `Author` profile), content cut at 12 000 characters, structured output
+  via `ChatClient.entity(BlogAssistResponse.class)`, 503 when Gemini fails.
+- `BlogAssistService` builds its own chat client (system prompt, no retrieval advisor) from the prototype
+  `ChatClient.Builder`. `BlogAssistServiceTest` covers author-only, truncation, 503 and pass-through.
+
+**Known limitations**
+- Not verified live (chat key rejected). No per-user quota on this endpoint yet (author-only limits who can call it).
+- Tags are suggestions only; they become real tags with 2.4.
+
+## 2026-10-07 (roadmap 3.8a)
+
+**Done**
+- Roadmap 3.8 split into 3.8a (related posts), 3.8b (summary + suggested tags), 3.8c (AI draft answer).
+- `GET /api/blogs/id/{blogId}/related?limit=` (1..10, default 5) -> `[{blogId, title}]`: vector search with the
+  post's title + first 2000 characters, filter `blogId != this`, cosine >= 0.75
+  (`app.ai.related-similarity-threshold`), one entry per post in similarity order.
+- Verified live (embeddings work with the current key): "Rice blast in short" <-> "Stopping potato late blight"
+  (0.76); the cow-feeding and drip-irrigation posts have no related post.
+
+**Known limitations**
+- Each call embeds the post's opening again (one embedding request per view); cache it if traffic grows.
+
+## 2026-10-07 (roadmap 3.7)
+
+**Done**
+- `GET /api/ai/history?pageNo&pageSize`: the caller's own `{id, question, answer, askedAt}` (`askedAt` is an ISO
+  `Instant`), newest first, Spring `Page` in `payload`. Identity from the token; no user id in the URL.
+- `CommonUtils.clampedPageable` + `AppConstants.MAX_PAGE_SIZE = 100` (2.2 reuses them). The unused
+  `AiService.getAllByUserId(…, userId)` and its unpaged repository method are gone.
+
+**Known limitations**
+- History does not include the sources of each answer (they are not stored).
+
+## 2026-10-07 (roadmap 3.6)
+
+**Done**
+- `AiProperties` (`app.ai.*`): `daily-question-limit` (20, env `AI_DAILY_QUESTION_LIMIT`), `timeout` (60 s),
+  `rag.top-k`, `rag.similarity-threshold`. Own Gemini `Client` bean with an HTTP timeout; `spring.ai.retry.max-attempts=2`.
+- `AskQuestionRequest`: `@NotBlank`, `@Size(max = 1000)` (400). Quota: answered questions since local midnight;
+  the 21st is a 429 before Gemini is called. Gemini failures -> 503 `ERROR_AI_UNAVAILABLE`, cause logged.
+- `AiAnswer.promptTokens`/`completionTokens`; `ai_answers.question` mapped as `TEXT`. Unused `CreateAiResponseRequest` removed.
+- Verified live without a working chat key: blank -> 400, 1001 chars -> 400, 21st question -> 429 with no
+  Gemini call, failure -> 503 and nothing stored. Unit tests: `AiServiceTest` (quota, 503, token usage).
+
+**Known limitations**
+- Not verified live (chat key rejected since 2026-10-06 evening): the 60 s timeout actually applying (a 1 ms
+  override did not reach the app, and the client's key fingerprint differed from the configured one — check that
+  the chat model uses the `googleGenAiClient` bean) and token columns being filled.
+- Existing databases need `ALTER TABLE ai_answers ALTER COLUMN question TYPE text;` once (ddl-auto=update does
+  not change column types; Flyway arrives in 4.2).
+- The quota counts per server-local day and is not atomic: parallel requests can exceed it by a few.
+
+## 2026-10-06 (roadmap 3.5)
+
+**Done**
+- `/api/ai/ask` payload is now `AiAnswerResponse {answer, sources: [{blogId, title}]}`: one source per retrieved
+  post (chunks of the same post collapse), in relevance order; `[]` when nothing matched.
+- The chat call moved from `AiChatController` into `AiService.ask`; the caller id comes from
+  `AuthorizationService.currentUserId` (token). `AiServiceTest` covers sources, de-duplication and storing the answer.
+- Verified live: a rice + potato question returned both posts as sources; the mango question returned `[]`.
+
+**API changes (additive)**
+- `payload.sources` is new; `payload.answer` is unchanged.
+
+**Decisions**
+- `sources` lists the posts given to the model as context (what the answer was grounded on), not a parse of the
+  titles the model happened to mention.
+
+**Known limitations**
+- `AskQuestionRequest.question` has no validation (blank/huge prompts reach Gemini) — 3.6.
+- Latency up to 91 s measured; no timeout yet (3.6).
+
+## 2026-10-06 (roadmap 3.4)
+
+**Done**
+- `RetrievalAugmentationAdvisor` is a default advisor on the chat client: top 5 chunks with cosine similarity
+  >= 0.7 (`app.ai.rag.top-k`, `app.ai.rag.similarity-threshold`). Excerpts go in as `Post: <title>` blocks,
+  framed as user-written reference material whose instructions are ignored; the model names the posts it used
+  and answers in the question's language. With no match the question is passed through unchanged.
+- New dependency `spring-ai-rag` (version from the Spring AI BOM).
+- Fix: chat model `gemini-2.5-flash` -> `gemini-3.8-flash`. Google returns 404 "no longer available to new users"
+  for the rotated key, so `/api/ai/ask` was a 500 before this step. `EmbeddingConfigTest` became `AiModelConfigTest`.
+- Verified live: rice-blast question answered from and naming "Rice blast in short"; mango question (no post)
+  answered generally; a Bangla question retrieved the English cow-feeding post and was answered in Bangla;
+  a "what is the admin password" probe was refused.
+
+**Decisions**
+- `RetrievalAugmentationAdvisor` over `QuestionAnswerAdvisor`: its augmenter can pass a question through when no
+  post matches (general advice still works) and takes a custom document formatter (titles for citations).
+- Threshold 0.7 from measurement with gemini-embedding-2: question vs matching post 0.80–0.84, vs unrelated
+  farming posts 0.60–0.66 (rice blast vs potato blight 0.73), off-topic ~0.55. Re-check on real data.
+- `gemini-3.8-flash` was named by Google's own error message and confirmed working; Nayeem may prefer another model.
+
+**Known limitations**
+- Drafts are retrievable until 2.3 adds status and the filter.
+- Answers took 12–67 s; no timeout yet (3.6). Sources are named in the text only; structured citations are 3.5.
+
+## 2026-10-06 (roadmap 3.3)
+
+**Done**
+- `DocumentService.reindexBlog` deletes a blog's chunks (filter `blogId == id`) before indexing it again;
+  `deleteBlog` runs after the blog row is deleted. `BlogService.update`/`delete` use them.
+- One-off backfill: `AI_REINDEX_ON_STARTUP=true` (`app.ai.reindex-on-startup`) makes `BlogReindexRunner`
+  re-embed every blog, 50 per page, then log the count. Off by default; documented in `.env.example`.
+- Tests: `BlogServiceTest` (update replaces, delete order, a stranger's delete keeps vectors, re-index walks
+  every page); `DocumentServiceTest` (delete-before-add, delete by filter).
+- Verified live: re-index gave the 3.1 test blog full metadata; updating a 4-chunk blog left 1 new chunk;
+  deleting a blog removed its chunks.
+
+**Decisions**
+- Backfill is a start-up switch, not an HTTP endpoint: no new API surface or privilege to secure, and it is
+  rarely needed (only after a model change).
+- Unpublish needs a blog status, so it moved into 2.3.
+
+**Known limitations**
+- Replace is delete-then-add, not atomic: if embedding fails mid-update, the blog has no vectors until the
+  next update or a re-index. The re-index also runs while the app already serves requests.
+- Vectors of blogs deleted before this change stay in `vector_store` (none in the fresh local DB).
+
+## 2026-10-06 (roadmap 3.2)
+
+**Done**
+- `DocumentService` splits each blog (title + content) with a `TokenTextSplitter` bean (`AIConfig.blogTextSplitter`,
+  ~800 tokens) and stores `blogId`, `authorId`, `categoryId`, `title` on every chunk. `DocumentServiceTest` covers
+  short posts, long posts and batches.
+- Verified live: a ~13 kB post became 4 chunks, each with the metadata plus Spring AI's own `chunk_index`,
+  `total_chunks` and `parent_document_id`.
+
+**Decisions**
+- `authorId` is the `Author` id (not the user id), matching `/api/blogs/all/author/...` and the future public profile.
+- `status` metadata waits for 2.3 (blogs have no status yet); retrieval filters on it from then on.
+
+**Known limitations**
+- The blog indexed during the 3.1 check has only `blogId`; 3.3's backfill re-indexes it.
+
+## 2026-10-06 (roadmap 3.1)
+
+**Done**
+- Embeddings: `gemini-embedding-2` with `dimensions=768` (matches `vector(768)`); `text-embedding-004` was shut
+  down on 2026-01-14. `EmbeddingConfigTest` guards the model and the dimension match.
+- Verified live on a fresh pgvector DB: sign-up as author -> create blog -> one `vector_store` row,
+  `{"blogId": 1}`, 768 dims, norm 1.0 (gemini-embedding-2 normalises truncated vectors itself).
+- Old `dev` branch deleted (local and origin).
+
+**Decisions**
+- `gemini-embedding-2` over `gemini-embedding-001`: Google's named replacement, no shutdown date, and it
+  normalises at 768 dims (001 would need manual normalisation).
+- Local DB for testing: Docker `pgvector/pgvector:pg16` named `agrotrends-db`, volume `agrotrends-pgdata`,
+  bound to 127.0.0.1 with trust auth (dev only; becomes the compose service in 4.3).
+
+**Known limitations**
+- Re-embedding existing blogs is not automated (3.3). The local DB was empty, so nothing to re-embed.
 
 ## 2026-10-05 (old `dev` review, AI prompt fix, notifications plan)
 

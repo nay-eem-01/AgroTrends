@@ -1,27 +1,30 @@
 package com.project.agriculturalblogapplication.controllers;
 
 import com.project.agriculturalblogapplication.config.CommonApiResponses;
-import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.model.request.AskQuestionRequest;
-import com.project.agriculturalblogapplication.model.request.CreateAiResponseRequest;
-import com.project.agriculturalblogapplication.model.request.CreateAnswerRequest;
+import com.project.agriculturalblogapplication.model.request.BlogAssistRequest;
+import com.project.agriculturalblogapplication.model.response.AiAnswerResponse;
+import com.project.agriculturalblogapplication.model.response.AiHistoryItemResponse;
+import com.project.agriculturalblogapplication.model.response.BlogAssistResponse;
 import com.project.agriculturalblogapplication.model.response.HttpResponse;
 import com.project.agriculturalblogapplication.service.AiService;
-import com.project.agriculturalblogapplication.service.UserService;
+import com.project.agriculturalblogapplication.service.BlogAssistService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-
 import static com.project.agriculturalblogapplication.constatnt.AppConstants.DEFAULT_LANGUAGE_CODE;
+import static com.project.agriculturalblogapplication.constatnt.AppConstants.DEFAULT_PAGE_NO;
+import static com.project.agriculturalblogapplication.constatnt.AppConstants.DEFAULT_PAGE_SIZE;
+import static com.project.agriculturalblogapplication.constatnt.AppConstants.PAGE_NO;
+import static com.project.agriculturalblogapplication.constatnt.AppConstants.PAGE_SIZE;
 
 @Tag(name = "AI Chat - controller", description = "AI chat related operations.")
 @RestController
@@ -30,35 +33,44 @@ import static com.project.agriculturalblogapplication.constatnt.AppConstants.DEF
 @RequiredArgsConstructor
 public class AiChatController {
 
-    private final ChatClient chatClient;
-
     private final AiService aiService;
 
-    private final UserService userService;
+    private final BlogAssistService blogAssistService;
 
-    @Operation(summary = "Ask anything", security = @SecurityRequirement(name = "jwtToken"))
-    @ApiResponse(content = @Content(schema = @Schema(implementation = HttpResponse.class)), responseCode = "200")
+    @Operation(summary = "Ask the AI advisor; the answer is grounded in matching AgroTrends posts, which are returned as sources",
+            security = @SecurityRequirement(name = "jwtToken"))
+    @ApiResponse(content = @Content(schema = @Schema(implementation = AiAnswerResponse.class)), responseCode = "200")
     @PostMapping(value = "/ask")
-    public ResponseEntity<HttpResponse> ask(@RequestBody AskQuestionRequest request,
+    public ResponseEntity<HttpResponse> ask(@Valid @RequestBody AskQuestionRequest request,
                                             @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang
     ) {
-        String answer = chatClient.prompt()
-                .user(request.question())
-                .call()
-                .content();
-
-        User user = userService.getUserInfo(lang);
-
-        CreateAiResponseRequest aiResponseRequest = new CreateAiResponseRequest();
-        aiResponseRequest.setQuestion(request.question());
-        aiResponseRequest.setAnswer(answer);
-        aiResponseRequest.setUserId(user.getId());
-
-        aiService.save(aiResponseRequest);
-
         return HttpResponse.getResponseEntity(
                 true,
                 "Answer created successfully.",
-                Map.of("answer", answer));
+                aiService.ask(request.question(), lang));
+    }
+
+    @Operation(summary = "Your own AI questions and answers, newest first", security = @SecurityRequirement(name = "jwtToken"))
+    @ApiResponse(content = @Content(schema = @Schema(implementation = AiHistoryItemResponse.class)), responseCode = "200")
+    @GetMapping(value = "/history")
+    public ResponseEntity<HttpResponse> history(@RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
+                                                @RequestParam(name = PAGE_SIZE, defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
+                                                @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        return HttpResponse.getResponseEntity(
+                true,
+                "Data loaded successfully.",
+                aiService.history(pageNo, pageSize, lang));
+    }
+
+    @Operation(summary = "Authors only: a short summary and suggested topic tags for a draft post",
+            security = @SecurityRequirement(name = "jwtToken"))
+    @ApiResponse(content = @Content(schema = @Schema(implementation = BlogAssistResponse.class)), responseCode = "200")
+    @PostMapping(value = "/blog-assist")
+    public ResponseEntity<HttpResponse> blogAssist(@Valid @RequestBody BlogAssistRequest request,
+                                                   @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        return HttpResponse.getResponseEntity(
+                true,
+                "Data loaded successfully.",
+                blogAssistService.assist(request.title(), request.content(), lang));
     }
 }

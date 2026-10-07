@@ -114,4 +114,8 @@ public class AnswerService {
 
         return response;
     }
+
+    public boolean hasAnswers(Long questionId) {
+        return answerRepository.existsByQuestionId(questionId);
+    }
 }

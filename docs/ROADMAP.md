@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 13 of 48 steps done
+**Progress:** 23 of 50 steps done
 
 ---
 
@@ -49,7 +49,7 @@ Everything that makes it a publishing platform. Each step one small PR.
 | 2.1 | Response DTOs for User, Blog, Category (and a clamped `pageSize`); stop returning entities | ⬜ |
 | 2.1b | Answer / Comment / Question responses: `createdAt`, `updatedAt` and the author's display name (never `createdBy`, which holds the e-mail); one date format | ⬜ |
 | 2.2 | Real database pagination for blogs by category/author/user; `sortBy` allowlist -> 400 | ⬜ |
-| 2.3 | Blog `status` (DRAFT/PUBLISHED), slug, reading time, `published_at`; public lists show PUBLISHED only | ⬜ |
+| 2.3 | Blog `status` (DRAFT/PUBLISHED), slug, reading time, `published_at`; public lists show PUBLISHED only; `status` in the vector metadata and the retrieval filter; unpublish removes the vectors | ⬜ |
 | 2.4 | Tags/topics (many-to-many) and filtering by tag | ⬜ |
 | 2.5 | `Blog.content` `@Lob` -> `TEXT`; full-text search endpoint | ⬜ |
 | 2.6 | Image upload (cover + inline) behind a storage port; size/type limits | ⬜ |
@@ -66,14 +66,16 @@ The differentiator. See `docs/research/rag-and-platform-findings.md`.
 
 | # | Step | Status |
 |---|---|---|
-| 3.1 | Replace the shut-down embedding model; set dimensions; re-embed all blogs; verify end to end | ⬜ |
-| 3.2 | Index with metadata (`blogId`, author, category, status) + `TokenTextSplitter` chunking | ⬜ |
-| 3.3 | Delete/replace vectors on blog update, unpublish and delete; backfill script | ⬜ |
-| 3.4 | Retrieval advisor on the chat client (`QuestionAnswerAdvisor`), PUBLISHED only | ⬜ |
-| 3.5 | Citations: `/api/ai/ask` returns the source posts | ⬜ |
-| 3.6 | Per-user daily quota, prompt length cap, timeout; token usage on `AiAnswer` | ⬜ |
-| 3.7 | `GET /api/ai/history` (private to the caller) | ⬜ |
-| 3.8 | AI helpers: suggested tags, summary, related posts, labelled AI draft for unanswered questions | ⬜ |
+| 3.1 | Replace the shut-down embedding model (`gemini-embedding-2`, 768 dims); verify end to end | ✅ |
+| 3.2 | Index with metadata (`blogId`, `authorId`, `categoryId`, `title`) + `TokenTextSplitter` chunking (~800 tokens); `status` is added with 2.3 | ✅ |
+| 3.3 | Replace vectors on blog update, delete them on blog delete; one-off re-index (`AI_REINDEX_ON_STARTUP`); unpublish is handled in 2.3 | ✅ |
+| 3.4 | Retrieval advisor on the chat client (`RetrievalAugmentationAdvisor`, top 5, similarity ≥ 0.7); PUBLISHED-only filter lands with 2.3 | ✅ |
+| 3.5 | Citations: `/api/ai/ask` returns `sources` (`blogId`, `title`) next to `answer` | ✅ |
+| 3.6 | Per-user daily quota (20), question cap (1000 chars), 60 s Gemini timeout, 503 on AI failure; token usage on `AiAnswer` | ✅ |
+| 3.7 | `GET /api/ai/history` (private to the caller, newest first, paged) | ✅ |
+| 3.8a | AI helpers: related posts for a blog (`GET /api/blogs/id/{blogId}/related`) | ✅ |
+| 3.8b | AI helpers: summary and suggested tags for an author's draft (`POST /api/ai/blog-assist`) | ✅ |
+| 3.8c | AI helpers: labelled AI draft answer for an unanswered question (`POST /api/questions/id/{questionId}/ai-draft`) | ✅ |
 
 ## Phase 4 — Ship it
 
