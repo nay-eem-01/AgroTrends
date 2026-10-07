@@ -33,6 +33,9 @@ public class Blog extends AuditModel<String> {
     @Column(name = BlogTable.IMAGE_URL)
     private String imageUrl;
 
+    @Embedded
+    private AgriMetadata agri = new AgriMetadata();
+
     /** Sum of all readers' claps, kept in step by ClapService so lists need no count query. */
     @ColumnDefault("0")
     @Column(name = BlogTable.CLAP_COUNT, nullable = false)

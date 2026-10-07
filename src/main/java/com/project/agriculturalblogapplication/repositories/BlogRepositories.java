@@ -7,6 +7,7 @@ import com.project.agriculturalblogapplication.entities.Category;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -21,7 +22,7 @@ import java.util.Optional;
 // Blog.content was a large object that could only be read inside a transaction; 2.5 made it TEXT.)
 @Repository
 @Transactional(readOnly = true)
-public interface BlogRepositories extends JpaRepository<Blog, Long> {
+public interface BlogRepositories extends JpaRepository<Blog, Long>, JpaSpecificationExecutor<Blog> {
 
     Blog findBlogsById(Long blogId);
 
