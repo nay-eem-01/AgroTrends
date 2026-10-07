@@ -32,4 +32,7 @@ public class Question extends AuditModel<String> {
     @JsonIgnore
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Answer> answers = new ArrayList<>();
+
+    @Embedded
+    private AgriMetadata agri = new AgriMetadata();
 }
