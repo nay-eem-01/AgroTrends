@@ -17,6 +17,7 @@ public record BlogResponse(
         String imageUrl,
         int readingTimeMinutes,
         List<String> tags,
+        long clapCount,
         CategoryResponse category,
         AuthorSummaryResponse author,
         BlogStatus status,
@@ -29,6 +30,7 @@ public record BlogResponse(
         return new BlogResponse(blog.getId(), blog.getSlug(), blog.getTitle(), blog.getContent(), blog.getImageUrl(),
                 Slugs.readingTimeMinutes(blog.getContent()),
                 blog.getTags() == null ? List.of() : blog.getTags().stream().map(Tag::getName).sorted().toList(),
+                blog.getClapCount(),
                 CategoryResponse.from(blog.getCategory()), AuthorSummaryResponse.from(blog.getAuthor()),
                 blog.getStatus(), CommonUtils.toInstant(blog.getPublishedAt()),
                 CommonUtils.toInstant(blog.getCreationDate()), CommonUtils.toInstant(blog.getLastModifiedDate()));

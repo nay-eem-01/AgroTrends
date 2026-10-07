@@ -7,6 +7,7 @@ import com.project.agriculturalblogapplication.entities.Category;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -28,6 +29,12 @@ public interface BlogRepositories extends JpaRepository<Blog, Long> {
     Page<Blog> findAllByCategoryAndStatus(Category category, BlogStatus status, Pageable pageable);
 
     Page<Blog> findAllByStatus(BlogStatus status, Pageable pageable);
+
+    /** Atomic, so two readers clapping at once cannot overwrite each other's count. */
+    @Modifying
+    @Transactional
+    @Query("UPDATE Blog b SET b.clapCount = b.clapCount + :delta WHERE b.id = :blogId")
+    void addClaps(@Param("blogId") Long blogId, @Param("delta") long delta);
 
     Page<Blog> findAllByTagsNameAndStatus(String tagName, BlogStatus status, Pageable pageable);
 
