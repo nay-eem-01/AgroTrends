@@ -64,6 +64,15 @@ public final class AppTables {
         public static final String MOBILE_NUMBER = "mobile_number";
     }
 
+    public static final class BookmarkTable {
+
+        public static final String NAME = "bookmarks";
+
+        public static final String USER_ID = "user_id";
+
+        public static final String BLOG_ID = "blog_id";
+    }
+
     public static final class ClapTable {
 
         public static final String NAME = "claps";

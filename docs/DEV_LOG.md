@@ -40,9 +40,29 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | Hotfix path is not defined yet (proposal: branch off `production`, PR into `production`, then back-merge into `development`) | Nayeem to confirm | — |
 | Gemini chat calls fail with "API key not valid" since 2026-10-06 evening (embeddings still work); `.env` key is 53 chars (a key is 39) — check the line for quotes/comments | Nayeem | live checks of 3.6–3.8 |
 | After deploying 2.3a: start once with `AI_REINDEX_ON_STARTUP=true` (old chunks have no `status`, so retrieval ignores them) | whoever deploys | AI answers on existing posts |
+| Deleting a blog that has comments fails: `comment.blog_id` has no `ON DELETE` and `Blog.comments` only cascades PERSIST (found 2026-10-07) | a fix step (cascade or explicit delete) | deleting commented blogs |
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-07 (roadmap 2.8)
+
+**Done**
+- `Bookmark` (`bookmarks`, unique user + blog, both foreign keys `ON DELETE CASCADE`).
+- `PUT /api/blogs/id/{blogId}/bookmark`, `DELETE ...` (both idempotent; a draft that is not yours -> 404) and
+  `GET /api/bookmarks` (caller's own, still-published only, most recently saved first). There is no endpoint that
+  takes another user's id, so other people's lists cannot be addressed at all.
+- Fix (2.7): `claps.blog_id` / `claps.user_id` are `ON DELETE CASCADE` — deleting a clapped blog failed on the
+  foreign key. Test: `CascadeOnDeleteTest`.
+- Tests: `BookmarkServiceTest`. Verified live: FKs created with cascade, double save = one row, list per user,
+  draft -> 404, deleting a blog with a clap and a bookmark succeeds and removes both.
+
+**Decisions**
+- One reading list per user (bookmarks). Named lists can come later on the same table.
+
+**Known limitations**
+- Databases that ran 2.7 before this fix keep the old `claps` foreign keys (ddl-update does not change them):
+  drop the `claps` table once (it is recreated) or alter the constraints.
 
 ## 2026-10-07 (roadmap 2.7)
 
