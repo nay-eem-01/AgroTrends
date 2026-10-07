@@ -45,6 +45,23 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-07 (roadmap 2.1a — Phase 2 starts)
+
+**Done**
+- Phase 2 base `feat/medium-core-base`, branched from the end of Phase 3 (`feat/ai-draft-answer`) because Phase 2
+  builds on its code (e.g. 2.3 puts `status` into the vector metadata). Merge Phase 3 into `development` first.
+- Roadmap 2.1 split: 2.1a (Blog/Category), 2.1b (User); the old 2.1b (Q&A/comment timestamps) is now 2.1c.
+- Blog endpoints return `BlogResponse {id, title, content, imageUrl, category {id, categoryName},
+  author {authorId, name}, createdAt, updatedAt}`; category endpoints return `CategoryResponse {id, categoryName}`.
+  `BlogService.getById` for the controller; `findByIdWithException` stays for other services.
+- `CommonUtils.getPageable` clamps `pageSize` to 1..100 and `pageNo` to >= 0. `CommonUtils.toInstant`.
+- Tests: `BlogResponseTest` (author by name only), `CommonUtilsTest` (clamping).
+
+**Breaking API changes**
+- Blog payloads: no `createdBy`/`lastModifiedBy`/`creationDate`/`lastModifiedDate`; `createdAt`/`updatedAt` are
+  ISO-8601 UTC. `author` is `{authorId, name}` (was the whole `Author` with its `user`). `category` is
+  `{id, categoryName}`. Category payloads lose the audit fields.
+
 ## 2026-10-07 (roadmap 3.8c — Phase 3 code complete)
 
 **Done**
