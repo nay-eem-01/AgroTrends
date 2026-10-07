@@ -9,6 +9,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Column changes that ddl-auto=update cannot make safely. Temporary: Flyway (roadmap 4.2) takes these over.
@@ -30,6 +31,11 @@ public class SchemaPatches implements ApplicationRunner {
     // varchar(255) columns that must hold longer text.
     static final List<String[]> VARCHAR_TO_TEXT = List.<String[]>of(
             new String[]{"ai_answers", "question"});
+
+    // Foreign keys created without ON DELETE: {table, column, referenced table}. @OnDelete covers new databases.
+    static final List<String[]> CASCADE_ON_DELETE = List.of(
+            new String[]{"comment", "blog_id", "blogs"},
+            new String[]{"comment", "parent_comment_id", "comment"});
 
     static final String BLOG_SEARCH_INDEX = """
             CREATE INDEX IF NOT EXISTS blogs_search_idx ON blogs
@@ -56,6 +62,23 @@ public class SchemaPatches implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         jdbcTemplate.execute(BLOG_SEARCH_INDEX);
+        CASCADE_ON_DELETE.forEach(fk -> cascadeOnDelete(fk[0], fk[1], fk[2]));
+    }
+
+    /** Recreates a foreign key with ON DELETE CASCADE unless it already has it (confdeltype 'c'). */
+    void cascadeOnDelete(String table, String column, String referencedTable) {
+        List<Map<String, Object>> keys = jdbcTemplate.queryForList("""
+                SELECT c.conname, c.confdeltype::text AS action FROM pg_constraint c
+                JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = ANY (c.conkey)
+                WHERE c.contype = 'f' AND c.conrelid = to_regclass(?) AND a.attname = ?""", table, column);
+        for (Map<String, Object> key : keys) {
+            if (!"c".equals(key.get("action"))) {
+                String name = (String) key.get("conname");
+                jdbcTemplate.execute("ALTER TABLE " + table + " DROP CONSTRAINT " + name + ", ADD CONSTRAINT " + name
+                        + " FOREIGN KEY (" + column + ") REFERENCES " + referencedTable + "(id) ON DELETE CASCADE");
+                log.warn("Schema patch: {}.{} foreign key -> ON DELETE CASCADE", table, column);
+            }
+        }
     }
 
     private void oidToText(String table, String column) {
