@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 36 of 52 steps done
+**Progress:** 37 of 52 steps done
 
 ---
 
@@ -59,7 +59,7 @@ Everything that makes it a publishing platform. Each step one small PR.
 | 2.8 | Bookmarks: private reading list (`PUT`/`DELETE /api/blogs/id/{blogId}/bookmark`, `GET /api/bookmarks`) | ✅ |
 | 2.9 | Follow authors and topic tags (`/api/authors/{authorId}/follow`, `/api/tags/{tagName}/follow`, `/api/me/following/*`) | ✅ |
 | 2.10 | Public author profile `GET /api/authors/{authorId}` (bio, specialities, post/follower counts) and `PUT /api/authors/me` | ✅ |
-| 2.11 | Home feed: following, trending, latest | ⬜ |
+| 2.11 | Home feed: `/api/feed/latest`, `/api/feed/following` (authors + tags), `/api/feed/trending` (14 days, most clapped) | ✅ |
 | 2.12 | Agriculture metadata on blogs and questions (crop, season, region, soil) + filters | ⬜ |
 
 ## Phase 3 — AI that cites
