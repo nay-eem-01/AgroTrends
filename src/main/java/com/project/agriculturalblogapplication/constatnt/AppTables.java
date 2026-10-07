@@ -132,6 +132,10 @@ public final class AppTables {
         public static final String DESIGNATION = "designation";
         
         public static final String WORK_PLACE_OR_INSTITUTION = "work_place_or_institution";
+
+        public static final String BIO = "bio";
+
+        public static final String PROFILE_IMAGE_URL = "profile_image_url";
     }
 
     public static final class RoleTable {
