@@ -30,7 +30,7 @@ public class CommentController {
 
     private final CommentService commentService;
 
-    @Operation(summary = "Get all comments by blog id", security = @SecurityRequirement(name = "jwtToken"))
+    @Operation(summary = "Get all comments by blog id")
     @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = Comment.class))), responseCode = "200")
     @GetMapping(value = "/blog/{blogId}")
     public ResponseEntity<HttpResponse> getAllCommentsByBlogId(@PathVariable Long blogId) {
@@ -40,7 +40,7 @@ public class CommentController {
                 commentService.getAllByBlogId(blogId));
     }
 
-    @Operation(summary = "Get all replies by parent comment id", security = @SecurityRequirement(name = "jwtToken"))
+    @Operation(summary = "Get all replies by parent comment id")
     @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = Comment.class))), responseCode = "200")
     @GetMapping(value = "/replies/{parentCommentId}")
     public ResponseEntity<HttpResponse> getRepliesByParentCommentId(@PathVariable Long parentCommentId) {
@@ -50,7 +50,7 @@ public class CommentController {
                 commentService.viewReplies(parentCommentId));
     }
 
-    @Operation(summary = "Get comment by id", security = @SecurityRequirement(name = "jwtToken"))
+    @Operation(summary = "Get comment by id")
     @ApiResponse(content = @Content(schema = @Schema(implementation = Comment.class)), responseCode = "200")
     @GetMapping(value = "/id/{commentId}")
     public ResponseEntity<HttpResponse> findById(@PathVariable Long commentId) {

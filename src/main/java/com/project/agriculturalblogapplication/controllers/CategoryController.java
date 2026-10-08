@@ -42,7 +42,7 @@ public class CategoryController {
 
     private final CategoryService categoryService;
 
-    @Operation(summary = "Get all categories - paginated", security = @SecurityRequirement(name = "jwtToken"))
+    @Operation(summary = "Get all categories - paginated")
     @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = CategoryResponse.class))), responseCode = "200")
     @GetMapping(value = "/all")
     public ResponseEntity<HttpResponse> getAll(@RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,

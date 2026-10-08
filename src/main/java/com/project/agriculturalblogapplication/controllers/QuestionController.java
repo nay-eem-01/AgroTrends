@@ -38,7 +38,7 @@ public class QuestionController {
 
     private final AiService aiService;
 
-    @Operation(summary = "All questions - paginated; optional filters crop, season, region, soil", security = @SecurityRequirement(name = "jwtToken"))
+    @Operation(summary = "All questions - paginated; optional filters crop, season, region, soil")
     @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = QuestionResponse.class))), responseCode = "200")
     @GetMapping(value = "/all")
     public ResponseEntity<HttpResponse> getAll(
@@ -58,7 +58,7 @@ public class QuestionController {
                 questionService.getAll(paginationArgs, new AgriInfo(crop, season, region, soil), lang));
     }
 
-    @Operation(summary = "Get all questions by user - paginated", security = @SecurityRequirement(name = "jwtToken"))
+    @Operation(summary = "Get all questions by user - paginated")
     @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = QuestionResponse.class))), responseCode = "200")
     @GetMapping(value = "/all/user/{userId}")
     public ResponseEntity<HttpResponse> getAllByUser(
@@ -75,7 +75,7 @@ public class QuestionController {
                 questionService.getAllByUser(paginationArgs, userId, lang));
     }
 
-    @Operation(summary = "Get question info by id", security = @SecurityRequirement(name = "jwtToken"))
+    @Operation(summary = "Get question info by id")
     @ApiResponse(content = @Content(schema = @Schema(implementation = QuestionResponse.class)), responseCode = "200")
     @GetMapping(value = "/id/{questionId}")
     public ResponseEntity<HttpResponse> findById(@PathVariable Long questionId) {

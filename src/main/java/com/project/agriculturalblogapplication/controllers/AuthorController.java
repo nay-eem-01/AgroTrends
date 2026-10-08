@@ -28,8 +28,7 @@ public class AuthorController {
 
     private final AuthorProfileService authorProfileService;
 
-    @Operation(summary = "An author's public profile with post and follower counts (posts: /api/blogs/all/author/{authorId})",
-            security = @SecurityRequirement(name = "jwtToken"))
+    @Operation(summary = "An author's public profile with post and follower counts (posts: /api/blogs/all/author/{authorId}); public, followedByMe is false when not signed in")
     @ApiResponse(content = @Content(schema = @Schema(implementation = AuthorProfileResponse.class)), responseCode = "200")
     @GetMapping("/{authorId}")
     public ResponseEntity<HttpResponse> get(@PathVariable Long authorId,
