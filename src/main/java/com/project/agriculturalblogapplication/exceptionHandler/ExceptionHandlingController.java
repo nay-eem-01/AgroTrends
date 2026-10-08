@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.Hidden;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.ConversionNotSupportedException;
+import org.springframework.beans.TypeMismatchException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
@@ -24,6 +25,7 @@ import org.springframework.web.HttpMediaTypeNotAcceptableException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.MissingPathVariableException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -33,7 +35,9 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 import java.net.SocketTimeoutException;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -83,8 +87,35 @@ public class ExceptionHandlingController extends ResponseEntityExceptionHandler 
 	protected ResponseEntity<Object> handleExceptionInternal(Exception ex, @Nullable Object body, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
 		log.warn("Request failed with {}: {}", statusCode, ex.getMessage());
 
-		// TODO Auto-generated method stub
-		return buildResponseEntity((new HttpResponse(HttpStatus.valueOf(statusCode.value()), false, "Server Error Occurred.", null)));
+		String message = statusCode.is4xxClientError() ? ErrorCode.ERROR_INVALID_REQUEST : "Server Error Occurred.";
+		return buildResponseEntity((new HttpResponse(HttpStatus.valueOf(statusCode.value()), false, message, null)));
+	}
+
+	// A query or path value that does not convert (season=WINTER, pageNo=abc): name the parameter and, for an
+	// enum, list the accepted values. Never echo the rejected value or the conversion error.
+	@Override
+	protected ResponseEntity<Object> handleTypeMismatch(TypeMismatchException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+		log.warn("Request parameter '{}' did not convert", ex.getPropertyName());
+		return buildResponseEntity(new HttpResponse(HttpStatus.BAD_REQUEST, false, typeMismatchMessage(ex.getPropertyName(), ex.getRequiredType()), null));
+	}
+
+	@Override
+	protected ResponseEntity<Object> handleMissingServletRequestParameter(MissingServletRequestParameterException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+		return buildResponseEntity(new HttpResponse(HttpStatus.BAD_REQUEST, false,
+				String.format(ErrorCode.ERROR_MISSING_PARAMETER, ex.getParameterName()), null));
+	}
+
+	static String typeMismatchMessage(String parameter, @Nullable Class<?> requiredType) {
+		if (parameter == null) {
+			return ErrorCode.ERROR_INVALID_REQUEST;
+		}
+		if (requiredType != null && requiredType.isEnum()) {
+			String choices = Arrays.stream(requiredType.getEnumConstants())
+					.map(constant -> ((Enum<?>) constant).name())
+					.collect(Collectors.joining(", "));
+			return String.format(ErrorCode.ERROR_INVALID_PARAMETER_CHOICE, parameter, choices);
+		}
+		return String.format(ErrorCode.ERROR_INVALID_PARAMETER_VALUE, parameter);
 	}
 
 	@Override
