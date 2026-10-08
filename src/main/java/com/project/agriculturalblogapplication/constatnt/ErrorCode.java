@@ -206,4 +206,9 @@ public final class ErrorCode {
     public static final String ERROR_TAG_NOT_FOUND = "Tag not found.";
     public static final String ERROR_BIO_TOO_LONG = "A bio can be at most 2000 characters.";
     public static final String ERROR_AGRI_FIELD_TOO_LONG = "Crop and region can be at most 60 characters.";
+    public static final String ERROR_INVALID_REQUEST = "Invalid request.";
+    // Formatted with the parameter name (and, for enums, the allowed values) by ExceptionHandlingController.
+    public static final String ERROR_INVALID_PARAMETER_VALUE = "Invalid value for '%s'.";
+    public static final String ERROR_INVALID_PARAMETER_CHOICE = "Invalid value for '%s'. Use one of: %s.";
+    public static final String ERROR_MISSING_PARAMETER = "Missing required parameter '%s'.";
 }
