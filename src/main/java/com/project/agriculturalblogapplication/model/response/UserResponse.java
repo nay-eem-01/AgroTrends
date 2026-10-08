@@ -8,7 +8,10 @@ import java.time.Instant;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/** A user's own account (or an admin's view of it): includes contact details, never the password hash. */
+/**
+ * A user's own account (or an admin's view of it): includes contact details, never the password hash.
+ * {@code authorId} is the user's author profile id ({@code /api/authors/{authorId}}), or null for readers.
+ */
 public record UserResponse(
         Long id,
         String name,
@@ -17,14 +20,15 @@ public record UserResponse(
         Set<String> userTypes,
         Set<String> roles,
         boolean mustChangePassword,
-        Instant createdAt
+        Instant createdAt,
+        Long authorId
 ) {
 
-    public static UserResponse from(User user) {
+    public static UserResponse from(User user, Long authorId) {
         Set<String> roles = user.getRoles() == null ? Set.of()
                 : user.getRoles().stream().map(Role::getRoleName).collect(Collectors.toSet());
         return new UserResponse(user.getId(), user.getName(), user.getEmail(), user.getMobileNumber(),
                 user.getUserTypes() == null ? Set.of() : Set.copyOf(user.getUserTypes()), roles,
-                Boolean.TRUE.equals(user.getMustChangePassword()), CommonUtils.toInstant(user.getCreationDate()));
+                Boolean.TRUE.equals(user.getMustChangePassword()), CommonUtils.toInstant(user.getCreationDate()), authorId);
     }
 }

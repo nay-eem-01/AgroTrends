@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 40 of 54 steps done
+**Progress:** 41 of 55 steps done
 
 ---
 
@@ -63,6 +63,7 @@ Everything that makes it a publishing platform. Each step one small PR.
 | 2.12a | Agriculture metadata on blogs (crop, season, region, soil) + filters on `/api/blogs/all` | ✅ |
 | 2.12b | Agriculture metadata on questions + filters on `/api/questions/all` | ✅ |
 | 2.13 | Public reading: anonymous GET on published content (blogs, feeds latest/trending, search, tags, categories, authors, comments, questions, answers); every write still needs sign-in | ✅ |
+| 2.14 | `GET /api/authors/me` (prefill the author profile editor) and `authorId` on `UserResponse` (null for readers) | ✅ |
 
 ## Phase 3 — AI that cites
 

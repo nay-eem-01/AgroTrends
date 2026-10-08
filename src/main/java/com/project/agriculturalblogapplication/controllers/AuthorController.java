@@ -36,6 +36,14 @@ public class AuthorController {
         return HttpResponse.getResponseEntity(true, "Data loaded successfully.", authorProfileService.get(authorId, lang));
     }
 
+    @Operation(summary = "Your own author profile, for the profile editor (authors only; 403 for readers)",
+            security = @SecurityRequirement(name = "jwtToken"))
+    @ApiResponse(content = @Content(schema = @Schema(implementation = AuthorProfileResponse.class)), responseCode = "200")
+    @GetMapping("/me")
+    public ResponseEntity<HttpResponse> getMine(@RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        return HttpResponse.getResponseEntity(true, "Data loaded successfully.", authorProfileService.getMine(lang));
+    }
+
     @Operation(summary = "Edit your own author profile (authors only)", security = @SecurityRequirement(name = "jwtToken"))
     @ApiResponse(content = @Content(schema = @Schema(implementation = AuthorProfileResponse.class)), responseCode = "200")
     @PutMapping("/me")

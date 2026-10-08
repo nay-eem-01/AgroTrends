@@ -70,6 +70,22 @@ class AuthorProfileServiceTest {
     }
 
     @Test
+    void myProfileIsTheCallersOwnForPrefillingTheEditor() {
+        Author mine = author();
+        when(authorService.findByUserIdOrForbidden(7L, "en")).thenReturn(mine);
+
+        assertEquals("Rahim", service.getMine("en").name());
+        verify(authorService, never()).findByIdWithException(any());
+    }
+
+    @Test
+    void readersWithoutAnAuthorProfileGet403ForMyProfile() {
+        when(authorService.findByUserIdOrForbidden(7L, "en")).thenThrow(new ApplicationException(HttpStatus.FORBIDDEN, "forbidden"));
+
+        assertEquals(HttpStatus.FORBIDDEN, assertThrows(ApplicationException.class, () -> service.getMine("en")).getHttpStatus());
+    }
+
+    @Test
     void onlyAuthorsCanEditAndOnlyTheirOwnProfile() {
         when(authorService.findByUserIdOrForbidden(7L, "en")).thenThrow(new ApplicationException(HttpStatus.FORBIDDEN, "forbidden"));
 

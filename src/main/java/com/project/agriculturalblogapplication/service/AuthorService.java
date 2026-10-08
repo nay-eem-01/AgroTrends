@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 public class AuthorService {
@@ -38,6 +40,11 @@ public class AuthorService {
     public Author findByUserIdOrForbidden(Long userId, String lang){
         return authorRepository.findByUserId(userId).orElseThrow(()->
                 new ApplicationException(HttpStatus.FORBIDDEN, ErrorCode.ERROR_AUTHOR_PROFILE_REQUIRED, lang));
+    }
+
+    /** The author profile id of a user, empty for readers without one. */
+    public Optional<Long> findAuthorIdByUserId(Long userId) {
+        return authorRepository.findByUserId(userId).map(Author::getId);
     }
 
     public Author save(Author author) {
