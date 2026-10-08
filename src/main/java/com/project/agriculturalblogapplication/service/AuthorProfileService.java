@@ -28,6 +28,12 @@ public class AuthorProfileService {
         return toResponse(authorService.findByIdWithException(authorId), callerId);
     }
 
+    /** The caller's own author profile, to prefill the editor; 403 for users who are not authors. */
+    public AuthorProfileResponse getMine(String lang) {
+        Long callerId = authorizationService.currentUserId(lang);
+        return toResponse(authorService.findByUserIdOrForbidden(callerId, lang), callerId);
+    }
+
     /** Edits the caller's own author profile; 403 for users who are not authors. */
     public AuthorProfileResponse updateMine(UpdateAuthorProfileRequest request, String lang) {
         Long callerId = authorizationService.currentUserId(lang);

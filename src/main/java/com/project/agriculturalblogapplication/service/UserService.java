@@ -132,7 +132,12 @@ public class UserService {
     }
 
     public UserResponse getMe(String lang) {
-        return UserResponse.from(getUserInfo(lang));
+        return toResponse(getUserInfo(lang));
+    }
+
+    /** The caller-facing account view, with the author profile id when the user is an author. */
+    public UserResponse toResponse(User user) {
+        return UserResponse.from(user, authorService.findAuthorIdByUserId(user.getId()).orElse(null));
     }
 
     public PublicUserResponse getPublicProfile(Long userId, String lang) {
@@ -150,7 +155,7 @@ public class UserService {
 
     public Page<UserResponse> getAllPaginatedUser(PaginationArgs paginationArgs, String lang){
         Pageable pageable = CommonUtils.getPageable(paginationArgs, Set.of("creationDate", "name", "email"), lang);
-        return userRepository.findAll(pageable).map(UserResponse::from);
+        return userRepository.findAll(pageable).map(this::toResponse);
     }
 
     public void deleteUser(User user){

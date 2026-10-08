@@ -77,7 +77,7 @@ public class AuthService {
                 .professionalInfoRequest(request.getProfessionalInfoRequest())
 				.build();
 
-		return UserResponse.from(userService.createUser(createUserRequest, lang));
+		return userService.toResponse(userService.createUser(createUserRequest, lang));
 	}
 
 	public WebTokenResponse signIn(SignInRequest request, String lang, String clientIp) {
@@ -161,7 +161,7 @@ public class AuthService {
 		userSessionService.createNewSession(createUserSessionRequest);
 
 		String refreshToken = refreshTokenService.createRefreshToken(user.getId()).getToken();
-		return new WebTokenResponse(jwt, refreshToken, "Bearer", UserResponse.from(user));
+		return new WebTokenResponse(jwt, refreshToken, "Bearer", userService.toResponse(user));
 	}
 
 	public Boolean isAdmin(User user) {

@@ -10,15 +10,18 @@ import java.util.Arrays;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class UserResponseTest {
 
     @Test
     void ownAccountShowsContactDetailsAndRoleNamesButNoPassword() {
-        UserResponse response = UserResponse.from(user());
+        UserResponse response = UserResponse.from(user(), 20L);
 
         assertEquals("rahim@example.com", response.email());
+        assertEquals(20L, response.authorId());
+        assertNull(UserResponse.from(user(), null).authorId());
         assertEquals(Set.of("ROLE_USER"), response.roles());
         assertTrue(Arrays.stream(UserResponse.class.getRecordComponents())
                 .noneMatch(c -> c.getName().toLowerCase().contains("password") && c.getType() == String.class));

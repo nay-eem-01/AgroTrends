@@ -20,7 +20,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ## Next up
 
-1. Merge `feat/public-reads` into `development` (roadmap 2.13).
+1. Merge `feat/author-me` into `development` (roadmap 2.14); the frontend's F1.4 author profile editor waits on it.
 2. Frontend (`../agrotrends-web`, its own roadmap and log): Phase F0 pushed; F1 accounts next.
 3. **Nayeem:** fix the Gemini key; start once with `AI_REINDEX_ON_STARTUP=true`; roadmap 0.4 (rotate keys, purge
    history); make `development` the default branch and protect it; delete merged step branches.
@@ -45,6 +45,21 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | After deploying 2.3a: start once with `AI_REINDEX_ON_STARTUP=true` (old chunks have no `status`, so retrieval ignores them) | whoever deploys | AI answers on existing posts |
 | Deleting a user with comments/questions/answers fails on foreign keys: decide delete vs anonymise | Nayeem | account deletion |
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
+
+---
+
+## 2026-10-08 (roadmap 2.14 — my author profile)
+
+**Done**
+- Asked for by the frontend (F1.4): the author profile editor had no way to load the current values.
+- `GET /api/authors/me` -> `AuthorProfileResponse` for the caller; 403 for readers without an author profile (same as
+  `PUT /api/authors/me`), 401 when anonymous.
+- `UserResponse.authorId` (null for readers) on sign-up, sign-in, refresh, `/api/user/me` and the admin user list, so
+  the client knows whether to show author features and can link to `/api/authors/{authorId}`.
+- Tests: `UserResponseTest`, `AuthorProfileServiceTest`. Verified live with a new reader and a new author account.
+
+**Breaking API changes**
+- None; `authorId` is a new field. The frontend should regenerate its types (`npm run gen:api`).
 
 ---
 
