@@ -6,6 +6,7 @@ import com.project.agriculturalblogapplication.security.service.CustomUserDetail
 import com.project.agriculturalblogapplication.constatnt.SecurityConstants;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -76,6 +77,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(SecurityConstants.JWTDisabledAntMatchers).permitAll()
+                        .requestMatchers(HttpMethod.GET, SecurityConstants.PUBLIC_GET_MATCHERS).permitAll()
                         .anyRequest()
                         .authenticated())
                 .sessionManagement(session -> session

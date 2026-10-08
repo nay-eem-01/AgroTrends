@@ -12,8 +12,10 @@ import org.springframework.http.HttpStatus;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -33,6 +35,20 @@ class AuthorProfileServiceTest {
     @BeforeEach
     void setUp() {
         when(authorization.currentUserId("en")).thenReturn(7L);
+        when(authorization.signedInUserId()).thenReturn(Optional.of(7L));
+    }
+
+    @Test
+    void anonymousVisitorsSeeTheProfileButFollowNobody() {
+        when(authorization.signedInUserId()).thenReturn(Optional.empty());
+        when(authorService.findByIdWithException(20L)).thenReturn(author());
+
+        AuthorProfileResponse profile = service.get(20L, "en");
+
+        assertEquals("Rahim", profile.name());
+        assertFalse(profile.followedByMe());
+        verify(followService, never()).isFollowingAuthor(any(), any());
+        verify(authorization, never()).currentUserId(any());
     }
 
     @Test

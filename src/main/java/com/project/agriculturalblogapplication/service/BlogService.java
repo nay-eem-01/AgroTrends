@@ -296,11 +296,11 @@ public class BlogService {
         throw new IllegalStateException("Could not find a free slug for base " + base);
     }
 
-    /** Published posts for everyone; a draft only for its author and admins, and a 404 for anyone else. */
+    /** Published posts for everyone, signed in or not; a draft only for its author and admins, and a 404 for anyone else. */
     public Blog findVisibleBlog(Long blogId, String lang) {
         Blog blog = findByIdWithException(blogId);
         if (blog.getStatus() != BlogStatus.PUBLISHED
-                && !authorizationService.isOwnerOrAdmin(blog.getAuthor().getUser().getId(), lang)) {
+                && !authorizationService.isSignedInOwnerOrAdmin(blog.getAuthor().getUser().getId())) {
             throw new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_BLOG_NOT_FOUND, lang);
         }
         return blog;

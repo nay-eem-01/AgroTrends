@@ -29,7 +29,7 @@ public class FeedController {
 
     private final BlogService blogService;
 
-    @Operation(summary = "Newest published posts", security = @SecurityRequirement(name = "jwtToken"))
+    @Operation(summary = "Newest published posts")
     @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogResponse.class))), responseCode = "200")
     @GetMapping("/latest")
     public ResponseEntity<HttpResponse> latest(@RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
@@ -47,7 +47,7 @@ public class FeedController {
         return HttpResponse.getResponseEntity(true, "Data loaded successfully.", blogService.followingFeed(pageNo, pageSize, lang));
     }
 
-    @Operation(summary = "Posts from the last 14 days, most clapped first", security = @SecurityRequirement(name = "jwtToken"))
+    @Operation(summary = "Posts from the last 14 days, most clapped first")
     @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogResponse.class))), responseCode = "200")
     @GetMapping("/trending")
     public ResponseEntity<HttpResponse> trending(@RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,

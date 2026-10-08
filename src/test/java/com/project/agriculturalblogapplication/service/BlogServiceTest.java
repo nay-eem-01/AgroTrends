@@ -196,11 +196,12 @@ class BlogServiceTest {
     }
 
     @Test
-    void someoneElsesDraftIsA404AndTheOwnersDraftIsVisible() {
+    void someoneElsesOrAnAnonymousReadersDraftIsA404AndTheOwnersDraftIsVisible() {
         Blog draft = blog(9L);
         draft.setStatus(BlogStatus.DRAFT);
         when(blogRepositories.findById(9L)).thenReturn(Optional.of(draft));
-        when(authorization.isOwnerOrAdmin(10L, LANG)).thenReturn(false, true);
+        // false for a stranger and for an anonymous reader alike: never a 401 that would confirm the draft exists
+        when(authorization.isSignedInOwnerOrAdmin(10L)).thenReturn(false, true);
 
         ApplicationException e = assertThrows(ApplicationException.class, () -> blogService.getById(9L, LANG));
         assertEquals(HttpStatus.NOT_FOUND, e.getHttpStatus());

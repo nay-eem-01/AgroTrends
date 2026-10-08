@@ -13,7 +13,6 @@ public class SecurityConstants {
             "/api/public",
             "/api/auth/**",
             "/api/admin/sign-in",
-            "/api/blogs/all",
             "/uploads/**",
             "/swagger-ui/**",
             "/api-docs/**",
@@ -24,6 +23,33 @@ public class SecurityConstants {
             "/configuration/security",
             "/webjars/**",
 
+    };
+
+    /**
+     * Reading is open to everyone; posting is not. Only GET on these paths is public - the same paths with any
+     * other method (and every path not listed: drafts, bookmarks, the following feed, claps, related posts, AI)
+     * still need a token. Related posts stay signed-in because each call embeds text with a paid model.
+     */
+    public static final String[] PUBLIC_GET_MATCHERS = {
+            "/api/blogs/all",
+            "/api/blogs/all/**",
+            "/api/blogs/search",
+            "/api/blogs/id/*",
+            "/api/blogs/slug/*",
+            "/api/feed/latest",
+            "/api/feed/trending",
+            "/api/categories/all",
+            "/api/tags",
+            "/api/authors/*",
+            "/api/comments/blog/*",
+            "/api/comments/replies/*",
+            "/api/comments/id/*",
+            "/api/questions/all",
+            "/api/questions/all/**",
+            "/api/questions/id/*",
+            "/api/answers/question/*",
+            "/api/answers/replies/*",
+            "/api/answers/id/*",
     };
 
     private SecurityConstants() {

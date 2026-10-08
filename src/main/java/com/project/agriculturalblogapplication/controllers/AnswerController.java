@@ -31,7 +31,7 @@ public class AnswerController {
 
     private final AnswerService answerService;
 
-    @Operation(summary = "Get all answers by question id", security = @SecurityRequirement(name = "jwtToken"))
+    @Operation(summary = "Get all answers by question id")
     @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = Answer.class))), responseCode = "200")
     @GetMapping(value = "/question/{questionId}")
     public ResponseEntity<HttpResponse> getAllByQuestionId(@PathVariable Long questionId) {
@@ -41,7 +41,7 @@ public class AnswerController {
                 answerService.getAllByQuestionId(questionId));
     }
 
-    @Operation(summary = "Get all replies by parent answer id", security = @SecurityRequirement(name = "jwtToken"))
+    @Operation(summary = "Get all replies by parent answer id")
     @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = Answer.class))), responseCode = "200")
     @GetMapping(value = "/replies/{parentAnswerId}")
     public ResponseEntity<HttpResponse> getRepliesByParentAnswerId(@PathVariable Long parentAnswerId) {
@@ -51,7 +51,7 @@ public class AnswerController {
                 answerService.viewReplies(parentAnswerId));
     }
 
-    @Operation(summary = "Get answer by id", security = @SecurityRequirement(name = "jwtToken"))
+    @Operation(summary = "Get answer by id")
     @ApiResponse(content = @Content(schema = @Schema(implementation = Answer.class)), responseCode = "200")
     @GetMapping(value = "/id/{answerId}")
     public ResponseEntity<HttpResponse> findById(@PathVariable Long answerId) {

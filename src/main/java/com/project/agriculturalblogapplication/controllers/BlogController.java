@@ -55,7 +55,7 @@ public class BlogController {
                 blogService.getAll(paginationArgs, new AgriInfo(crop, season, region, soil), lang));
     }
 
-    @Operation(summary = "Get all blogs by category - paginated", security = @SecurityRequirement(name = "jwtToken"))
+    @Operation(summary = "Get all blogs by category - paginated")
     @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogResponse.class))), responseCode = "200")
     @GetMapping(value = "/all/category/{categoryId}")
     public ResponseEntity<HttpResponse> getAllByCategory(@RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
@@ -72,7 +72,7 @@ public class BlogController {
                 blogService.getAllByCategory(paginationArgs, categoryId, lang));
     }
 
-    @Operation(summary = "Published blogs with a tag (case-insensitive) - paginated", security = @SecurityRequirement(name = "jwtToken"))
+    @Operation(summary = "Published blogs with a tag (case-insensitive) - paginated")
     @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogResponse.class))), responseCode = "200")
     @GetMapping(value = "/all/tag/{tagName}")
     public ResponseEntity<HttpResponse> getAllByTag(@RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
@@ -86,7 +86,7 @@ public class BlogController {
                 true, "Data loaded successfully.", blogService.getAllByTag(paginationArgs, tagName, lang));
     }
 
-    @Operation(summary = "Get all blogs by an author (the author.authorId shown on a blog) - paginated", security = @SecurityRequirement(name = "jwtToken"))
+    @Operation(summary = "Get all blogs by an author (the author.authorId shown on a blog) - paginated")
     @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogResponse.class))), responseCode = "200")
     @GetMapping(value = "/all/author/{authorId}")
     public ResponseEntity<HttpResponse> getAllByAuthor(@RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
@@ -103,8 +103,7 @@ public class BlogController {
                 blogService.getAllByAuthor(paginationArgs, authorId, lang));
     }
 
-    @Operation(summary = "Search published blogs by words in the title or text (supports \"quoted phrases\" and -exclusions), best match first",
-            security = @SecurityRequirement(name = "jwtToken"))
+    @Operation(summary = "Search published blogs by words in the title or text (supports \"quoted phrases\" and -exclusions), best match first")
     @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogResponse.class))), responseCode = "200")
     @GetMapping(value = "/search")
     public ResponseEntity<HttpResponse> search(@RequestParam(name = "q") String q,
@@ -115,7 +114,7 @@ public class BlogController {
                 true, "Data loaded successfully.", blogService.search(q, pageNo, pageSize, lang));
     }
 
-    @Operation(summary = "Get blog info by id", security = @SecurityRequirement(name = "jwtToken"))
+    @Operation(summary = "A blog by id; public when published, a draft only for its author or an admin (404 otherwise)")
     @ApiResponse(content = @Content(schema = @Schema(implementation = BlogResponse.class)), responseCode = "200")
     @GetMapping(value = "/id/{blogId}")
     public ResponseEntity<HttpResponse> findById(@PathVariable Long blogId,
@@ -124,7 +123,7 @@ public class BlogController {
                 true, "Data loaded successfully.", blogService.getById(blogId, lang));
     }
 
-    @Operation(summary = "Get a blog by its URL slug", security = @SecurityRequirement(name = "jwtToken"))
+    @Operation(summary = "A blog by its URL slug; public when published, a draft only for its author or an admin (404 otherwise)")
     @ApiResponse(content = @Content(schema = @Schema(implementation = BlogResponse.class)), responseCode = "200")
     @GetMapping(value = "/slug/{slug}")
     public ResponseEntity<HttpResponse> findBySlug(@PathVariable String slug,

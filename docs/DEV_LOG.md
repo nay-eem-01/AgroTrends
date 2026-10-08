@@ -20,8 +20,8 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ## Next up
 
-1. Merge `fix/bad-param-400` into `development`.
-2. New frontend repo: roadmap, scaffold, then screens step by step (tracked in that repo).
+1. Merge `feat/public-reads` into `development` (roadmap 2.13).
+2. Frontend (`../agrotrends-web`, its own roadmap and log): Phase F0 pushed; F1 accounts next.
 3. **Nayeem:** fix the Gemini key; start once with `AI_REINDEX_ON_STARTUP=true`; roadmap 0.4 (rotate keys, purge
    history); make `development` the default branch and protect it; delete merged step branches.
 4. Later: test `development` and promote to `staging`; Phase 4 (4.2 Flyway must start from the schema the startup
@@ -45,6 +45,33 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | After deploying 2.3a: start once with `AI_REINDEX_ON_STARTUP=true` (old chunks have no `status`, so retrieval ignores them) | whoever deploys | AI answers on existing posts |
 | Deleting a user with comments/questions/answers fails on foreign keys: decide delete vs anonymise | Nayeem | account deletion |
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
+
+---
+
+## 2026-10-08 (roadmap 2.13 — public reading)
+
+**Done**
+- Decision (Nayeem): anyone can read; posting anything needs sign-in, like Medium.
+- `SecurityConstants.PUBLIC_GET_MATCHERS`, permitted for **GET only**: `/api/blogs/all/**`, `/api/blogs/search`,
+  `/api/blogs/id/*`, `/api/blogs/slug/*`, `/api/feed/latest`, `/api/feed/trending`, `/api/categories/all`,
+  `/api/tags`, `/api/authors/*`, comments, questions and answers reads. `/api/blogs/all` moved here from the
+  all-methods list.
+- `AuthorizationService.signedInPrincipal()` / `signedInUserId()` / `isSignedInOwnerOrAdmin()`: anonymous is "nobody",
+  not a 401. A draft read anonymously is a **404** (by id and by slug), as for a stranger. The author profile's
+  `followedByMe` is false for anonymous visitors.
+- Swagger: the token requirement removed from exactly those endpoints.
+- Tests: `PublicReadMatchersTest` (which paths are public, which are not), `AuthorizationServiceTest`,
+  `BlogServiceTest`, `AuthorProfileServiceTest`. Verified live: 14 anonymous reads 200, drafts 404, 13 private reads
+  and writes 401.
+
+**Decisions**
+- Still signed-in: the following feed, drafts, bookmarks, my claps, follows lists, AI (`/api/ai/*`, AI drafts) and
+  **related posts** — each related-posts call embeds text with a paid model, so opening it would be an unmetered bill.
+
+**Known limitations**
+- An expired token on a public GET is treated as anonymous (no 401), so `followedByMe` reads false until the client
+  refreshes. The frontend should refresh the access token before it expires (15 minutes).
+- No rate limit on public reads yet (Phase 4).
 
 ---
 

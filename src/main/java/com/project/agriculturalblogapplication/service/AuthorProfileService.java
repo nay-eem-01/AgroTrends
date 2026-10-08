@@ -22,8 +22,9 @@ public class AuthorProfileService {
 
     private final AuthorizationService authorizationService;
 
+    /** Public; {@code followedByMe} is false for anonymous visitors. */
     public AuthorProfileResponse get(Long authorId, String lang) {
-        Long callerId = authorizationService.currentUserId(lang);
+        Long callerId = authorizationService.signedInUserId().orElse(null);
         return toResponse(authorService.findByIdWithException(authorId), callerId);
     }
 
@@ -46,6 +47,6 @@ public class AuthorProfileService {
                 author.getSpecialities() == null ? List.of() : List.copyOf(author.getSpecialities()),
                 author.getBio(), author.getProfileImageUrl(),
                 blogService.countPublishedByAuthor(author.getId()), followService.followerCount(author.getId()),
-                followService.isFollowingAuthor(callerId, author.getId()));
+                callerId != null && followService.isFollowingAuthor(callerId, author.getId()));
     }
 }
