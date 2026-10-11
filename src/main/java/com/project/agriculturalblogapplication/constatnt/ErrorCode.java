@@ -185,6 +185,7 @@ public final class ErrorCode {
     public static final String ERROR_FORBIDDEN = "You do not have permission to perform this action.";
     public static final String ERROR_INVALID_GOOGLE_TOKEN = "Google sign-in failed. Please try again.";
     public static final String ERROR_GOOGLE_EMAIL_UNVERIFIED = "Your Google account's e-mail is not verified.";
+    public static final String ERROR_NO_PASSWORD_SET = "This account signs in with Google and has no password yet. Use 'Forgot password' to set one.";
     public static final String ERROR_GOOGLE_SIGN_IN_DISABLED = "Google sign-in is not available.";
     public static final String ERROR_INVALID_OR_EXPIRED_RESET_TOKEN = "Reset link is invalid or has expired.";
     public static final String ERROR_REFRESH_TOKEN_EXPIRED = "Refresh token has expired. Please sign in again.";
