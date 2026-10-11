@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -23,6 +24,10 @@ class UserResponseTest {
         assertEquals(20L, response.authorId());
         assertNull(UserResponse.from(user(), null).authorId());
         assertEquals(Set.of("ROLE_USER"), response.roles());
+        assertTrue(response.hasPassword());
+        User googleOnly = user();
+        googleOnly.setPassword(null);
+        assertFalse(UserResponse.from(googleOnly, null).hasPassword());
         assertTrue(Arrays.stream(UserResponse.class.getRecordComponents())
                 .noneMatch(c -> c.getName().toLowerCase().contains("password") && c.getType() == String.class));
     }

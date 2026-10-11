@@ -20,7 +20,9 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ## Next up
 
-1. Merge `feat/author-me` into `development` (roadmap 2.14); the frontend's F1.4 author profile editor waits on it.
+1. Open PRs for Google sign-in: `feat/google-token-verifier` -> `feat/google-signin-base`, then
+   `feat/google-signin-endpoint` -> the base, then the base -> `development` (roadmap 2.15). Create the Google
+   OAuth client id and set `GOOGLE_CLIENT_ID`; frontend adds the Google button.
 2. Frontend (`../agrotrends-web`, its own roadmap and log): Phase F0 pushed; F1 accounts next.
 3. **Nayeem:** fix the Gemini key; start once with `AI_REINDEX_ON_STARTUP=true`; roadmap 0.4 (rotate keys, purge
    history); make `development` the default branch and protect it; delete merged step branches.
@@ -47,6 +49,49 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-11 (roadmap 2.15b)
+
+**Done**
+- `POST /api/auth/google` `{idToken, userType?}` -> the usual `WebTokenResponse` (our JWT + refresh token). The
+  account linked to the Google id; else the account with the same e-mail, now linked; else a new account
+  (`USER` role, `userType` as at sign-up, default `CONSUMER`; `AUTHOR` also gets an author profile).
+- `User`: `googleSubject` (unique), `emailVerifiedAt`; `password` and `mobileNumber` are now optional
+  (`SchemaPatches` drops their NOT NULL on existing databases, idempotently).
+- Linking an account whose e-mail was never verified drops its password and every session first: whoever
+  registered that e-mail may not own it (account pre-hijacking). A completed password reset now sets
+  `emailVerifiedAt` (the e-mailed link proves ownership), so such accounts keep their password when linked.
+- Admin accounts are refused (same generic 401) **before** any linking; the admin portal stays password-only.
+- Change-password on an account with no password: 409 with a hint to use "forgot password" (was a misleading
+  "incorrect password"). E-mail change clears `emailVerifiedAt`.
+- Fixed in passing: sign-up as `AUTHOR` without `professionalInfoRequest` threw a NullPointerException.
+- `UserResponse` gains `hasPassword` and `emailVerified`.
+- Tests: `GoogleSignInTest` (8), `UserResponseTest` extended. 162 unit tests pass. Live on a local DB:
+  no client id -> 503, forged token -> 401, missing token -> 400.
+
+**API changes (additive)**
+- New endpoint `POST /api/auth/google`; new `UserResponse` fields `hasPassword`, `emailVerified`.
+
+**Known limitations**
+- Not tested with a real Google credential yet: needs a Google Cloud OAuth client id (`GOOGLE_CLIENT_ID`) and
+  the frontend's Google button (Google Identity Services) sending the credential here.
+- No per-IP rate limit on `/api/auth/google` (a forged token costs one local signature check).
+- Google sign-up has no phone number; anything that later needs one must ask for it.
+
+## 2026-10-11 (roadmap 2.15a)
+
+**Done**
+- `GoogleIdTokenVerifier` checks a Google Identity Services ID token locally: signature against Google's JWKS
+  (keys cached by Nimbus), issuer `accounts.google.com`, audience = `app.google.client-id`, not expired.
+  Returns `GoogleIdentity(subject, email, emailVerified, name)`; its `toString` leaves the e-mail out.
+- New dependency `spring-security-oauth2-jose` (version from the Boot BOM). `GOOGLE_CLIENT_ID` in `.env.example`.
+- `GoogleIdTokenVerifierTest` (3) with a local RSA key standing in for Google's.
+
+**Decisions**
+- ID-token flow (the browser gets the token from Google, the API verifies it), not the server-side
+  authorization-code redirect: no client secret, no OAuth session state, and the API keeps issuing its own
+  JWT + refresh token. Same design as habit-tracker.
+- Blank client id = Google sign-in off (503), so the app still starts without it.
 
 ## 2026-10-08 (roadmap 2.14 — my author profile)
 

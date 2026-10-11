@@ -14,6 +14,8 @@ import com.project.agriculturalblogapplication.repositories.UserRepository;
 import com.project.agriculturalblogapplication.enums.UserType;
 import com.project.agriculturalblogapplication.model.request.AuthorCreateRequest;
 import com.project.agriculturalblogapplication.model.request.CreateUserRequest;
+import com.project.agriculturalblogapplication.model.request.ProfessionalInfoRequest;
+import com.project.agriculturalblogapplication.security.service.GoogleIdentity;
 import com.project.agriculturalblogapplication.security.service.AttemptLimiter;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import com.project.agriculturalblogapplication.security.service.UserSessionService;
@@ -25,9 +27,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -89,20 +94,57 @@ public class UserService {
         user.setUserTypes(userTypeStrings);
 
         user = userRepository.save(user);
-
-        User finalUser = user;
-        userTypeStrings.forEach(userType -> {
-            if (userType.equals(UserType.AUTHOR.name())) {
-                AuthorCreateRequest authorCreateRequest = AuthorCreateRequest.builder()
-                        .user(finalUser)
-                        .professionalInfoRequest(createUserRequest.getProfessionalInfoRequest())
-                        .build();
-
-                authorService.createAuthorUser(authorCreateRequest, lang);
-            }
-        });
-
+        createAuthorProfileIfAuthor(user, createUserRequest.getProfessionalInfoRequest(), lang);
         return user;
+    }
+
+    /**
+     * A new account for a Google identity: no password, no mobile number, e-mail already verified by Google.
+     * {@code userTypes} as at sign-up; null or empty means a reader.
+     */
+    public User createGoogleUser(GoogleIdentity google, Set<UserType> userTypes, String lang) {
+        Role role = roleService.findRoleByNameWithException(AppConstants.USER_ROLE, lang);
+        Set<UserType> types = userTypes == null || userTypes.isEmpty() ? Set.of(UserType.CONSUMER) : userTypes;
+
+        User user = new User();
+        user.setName(StringUtils.hasText(google.name()) ? google.name() : google.email().substring(0, google.email().indexOf('@')));
+        user.setEmail(google.email());
+        user.setGoogleSubject(google.subject());
+        user.setEmailVerifiedAt(LocalDateTime.now());
+        user.setRoles(new HashSet<>(Set.of(role)));
+        user.setUserTypes(types.stream().map(Enum::name).collect(Collectors.toSet()));
+
+        user = userRepository.save(user);
+        createAuthorProfileIfAuthor(user, null, lang);
+        return user;
+    }
+
+    /**
+     * Links a Google account to an existing account with the same e-mail. If that e-mail was never verified, whoever
+     * registered it may not own it, so its password and every session are dropped: only the Google owner gets in.
+     */
+    public User linkGoogle(User user, String googleSubject) {
+        if (user.getEmailVerifiedAt() == null) {
+            user.setPassword(null);
+            revokeAllCredentials(user.getId());
+        }
+        user.setGoogleSubject(googleSubject);
+        user.setEmailVerifiedAt(LocalDateTime.now());
+        return userRepository.save(user);
+    }
+
+    public Optional<User> findByGoogleSubject(String googleSubject) {
+        return userRepository.findByGoogleSubject(googleSubject);
+    }
+
+    private void createAuthorProfileIfAuthor(User user, ProfessionalInfoRequest professionalInfo, String lang) {
+        if (user.getUserTypes().contains(UserType.AUTHOR.name())) {
+            authorService.createAuthorUser(AuthorCreateRequest.builder()
+                    .user(user)
+                    // An author may sign up without professional details (always so through Google).
+                    .professionalInfoRequest(professionalInfo == null ? new ProfessionalInfoRequest() : professionalInfo)
+                    .build(), lang);
+        }
     }
 
     public User findByEmail(String email) {
@@ -179,6 +221,9 @@ public class UserService {
 
         user.setName(request.getName());
         user.setEmail(request.getEmail());
+        if (emailChanged) {
+            user.setEmailVerifiedAt(null);
+        }
         user.setMobileNumber(mobileNumber);
         user = userRepository.save(user);
 
@@ -195,6 +240,10 @@ public class UserService {
 
         if (attemptLimiter.isBlocked(attemptKey)) {
             throw new ApplicationException(HttpStatus.TOO_MANY_REQUESTS, ErrorCode.ERROR_TOO_MANY_ATTEMPTS, lang);
+        }
+        if (user.getPassword() == null) {
+            // A Google-only account has no current password to check; "forgot password" sets its first one.
+            throw new ApplicationException(HttpStatus.CONFLICT, ErrorCode.ERROR_NO_PASSWORD_SET, lang);
         }
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
             attemptLimiter.record(attemptKey, 5, Duration.ofMinutes(15));

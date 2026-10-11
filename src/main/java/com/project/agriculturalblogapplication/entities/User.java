@@ -11,6 +11,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Entity
@@ -25,8 +26,8 @@ public class User extends AuditModel<String> {
     @Column(name = UserTable.NAME)
     private String name;
 
+    /** BCrypt hash. Null for an account that only signs in with Google and never set a password. */
     @JsonIgnore
-    @NotBlank(message = "Password can't be blank")
     @Column(name = UserTable.PASSWORD)
     private String password;
 
@@ -35,9 +36,17 @@ public class User extends AuditModel<String> {
     @Column(name = UserTable.EMAIL)
     private String email;
 
-    @NotBlank
+    /** Required at e-mail sign-up; null for accounts created through Google, which gives no phone number. */
     @Column(name = UserTable.MOBILE_NUMBER)
     private String mobileNumber;
+
+    /** Google's {@code sub} claim: the stable id of the linked Google account, or null. */
+    @Column(name = UserTable.GOOGLE_SUBJECT, unique = true)
+    private String googleSubject;
+
+    /** When the user proved they own the e-mail (Google sign-in or a reset link); null until then. */
+    @Column(name = UserTable.EMAIL_VERIFIED_AT)
+    private LocalDateTime emailVerifiedAt;
 
     @Column(name = AppTables.USER_TYPES)
     private Set<String> userTypes;

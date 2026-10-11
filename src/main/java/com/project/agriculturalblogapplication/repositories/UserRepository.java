@@ -27,4 +27,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Boolean existsByRolesIn(Set<Role> role);
 
     Boolean existsByMobileNumber(String mobileNumber);
+
+    Optional<User> findByGoogleSubject(String googleSubject);
 }

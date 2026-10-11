@@ -19,6 +19,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.Locale;
@@ -88,6 +89,10 @@ public class PasswordResetService {
         }
 
         User user = userService.findByIdWithException(stored.getUserId(), lang);
+        // The e-mailed link proves the user owns the address (saved together with the new password).
+        if (user.getEmailVerifiedAt() == null) {
+            user.setEmailVerifiedAt(LocalDateTime.now());
+        }
         // Validates the password policy first, so a weak password does not burn the token.
         userService.setNewPassword(user, newPassword, lang);
         tokenRepository.deleteAllByUserId(user.getId());
