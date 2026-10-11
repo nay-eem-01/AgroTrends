@@ -48,6 +48,21 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-11 (roadmap 2.15a)
+
+**Done**
+- `GoogleIdTokenVerifier` checks a Google Identity Services ID token locally: signature against Google's JWKS
+  (keys cached by Nimbus), issuer `accounts.google.com`, audience = `app.google.client-id`, not expired.
+  Returns `GoogleIdentity(subject, email, emailVerified, name)`; its `toString` leaves the e-mail out.
+- New dependency `spring-security-oauth2-jose` (version from the Boot BOM). `GOOGLE_CLIENT_ID` in `.env.example`.
+- `GoogleIdTokenVerifierTest` (3) with a local RSA key standing in for Google's.
+
+**Decisions**
+- ID-token flow (the browser gets the token from Google, the API verifies it), not the server-side
+  authorization-code redirect: no client secret, no OAuth session state, and the API keeps issuing its own
+  JWT + refresh token. Same design as habit-tracker.
+- Blank client id = Google sign-in off (503), so the app still starts without it.
+
 ## 2026-10-08 (roadmap 2.14 — my author profile)
 
 **Done**
