@@ -14,6 +14,8 @@ import com.project.agriculturalblogapplication.model.response.WebTokenResponse;
 import com.project.agriculturalblogapplication.security.model.request.CreateUserSessionRequest;
 import com.project.agriculturalblogapplication.security.service.AttemptLimiter;
 import com.project.agriculturalblogapplication.security.service.CustomUserDetails;
+import com.project.agriculturalblogapplication.security.service.GoogleIdTokenVerifier;
+import com.project.agriculturalblogapplication.security.service.GoogleIdentity;
 import com.project.agriculturalblogapplication.security.service.UserSessionService;
 import com.project.agriculturalblogapplication.util.CommonUtils;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,6 +31,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.Locale;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -50,6 +53,8 @@ public class AuthService {
 	private final UserSessionService userSessionService;
 
 	private final AttemptLimiter attemptLimiter;
+
+	private final GoogleIdTokenVerifier googleIdTokenVerifier;
 
 	public void validateEmail(ValidateEmailRequest request, String lang) {
 		userService.validateEmail(request.getEmail(), lang);
@@ -125,6 +130,33 @@ public class AuthService {
 		if (adminPortal) {
 			userSessionService.deactivatePreviousSession(user.getId());
 		}
+		return issueTokens(user);
+	}
+
+	/**
+	 * Sign in (or up) with Google: the account linked to this Google id; else the account with this e-mail, now
+	 * linked; else a new account. Admin accounts are refused with the same 401 as the password sign-in, so the
+	 * admin portal stays password-only.
+	 */
+	public WebTokenResponse signInWithGoogle(GoogleSignInRequest request, String lang) {
+		GoogleIdentity google = googleIdTokenVerifier.verify(request.getIdToken(), lang);
+		if (!google.emailVerified() || google.email() == null) {
+			throw new ApplicationException(HttpStatus.UNAUTHORIZED, ErrorCode.ERROR_GOOGLE_EMAIL_UNVERIFIED, lang);
+		}
+
+		User user = userService.findByGoogleSubject(google.subject())
+				.or(() -> Optional.ofNullable(userService.findByEmail(google.email())))
+				.orElse(null);
+		// Checked before linking, so an admin account is never changed by a Google sign-in.
+		if (user != null && !isConsumer(user)) {
+			throw new ApplicationException(HttpStatus.UNAUTHORIZED, ErrorCode.ERROR_INVALID_CREDENTIALS, lang);
+		}
+		if (user == null) {
+			user = userService.createGoogleUser(google, request.getUserType(), lang);
+		} else if (user.getGoogleSubject() == null) {
+			user = userService.linkGoogle(user, google.subject());
+		}
+		log.info("User {} signed in with Google", user.getId());
 		return issueTokens(user);
 	}
 

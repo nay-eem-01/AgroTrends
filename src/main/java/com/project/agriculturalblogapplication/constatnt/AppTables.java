@@ -62,6 +62,10 @@ public final class AppTables {
         public static final String PASSWORD = "user_password";
 
         public static final String MOBILE_NUMBER = "mobile_number";
+
+        public static final String GOOGLE_SUBJECT = "google_subject";
+
+        public static final String EMAIL_VERIFIED_AT = "email_verified_at";
     }
 
     public static final class FollowTable {

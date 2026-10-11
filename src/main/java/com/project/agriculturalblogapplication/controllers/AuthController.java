@@ -57,6 +57,23 @@ public class AuthController {
                 authService.signIn(request, lang, httpServletRequest.getRemoteAddr()));
     }
 
+    @Operation(summary = "Sign in (or up) with Google",
+            description = "Send the ID token (credential) Google Identity Services gives the page. Finds the account "
+                    + "linked to that Google account, else links the account with the same e-mail, else creates one "
+                    + "(no password; userType as at sign-up). Linking an account whose e-mail was never verified drops "
+                    + "its password and sessions. Admin accounts must use the admin sign-in.")
+    @ApiResponse(content = @Content(schema = @Schema(implementation = WebTokenResponse.class)), responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Invalid Google token, unverified Google e-mail, or an admin account")
+    @ApiResponse(responseCode = "503", description = "Google sign-in is not configured (no GOOGLE_CLIENT_ID)")
+    @PostMapping(value = "/google")
+    public ResponseEntity<HttpResponse> signInWithGoogle(@Valid @RequestBody GoogleSignInRequest request,
+                                                         @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        return HttpResponse.getResponseEntity(
+                true,
+                "Sign-in successful.",
+                authService.signInWithGoogle(request, lang));
+    }
+
     @Operation(summary = "Exchange a refresh token for a new access token (the refresh token is single-use and rotated)")
     @ApiResponse(content = @Content(schema = @Schema(implementation = WebTokenResponse.class)), responseCode = "200")
     @PostMapping(value = "/refresh-token")

@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 42 of 57 steps done
+**Progress:** 43 of 57 steps done
 
 ---
 
@@ -65,7 +65,7 @@ Everything that makes it a publishing platform. Each step one small PR.
 | 2.13 | Public reading: anonymous GET on published content (blogs, feeds latest/trending, search, tags, categories, authors, comments, questions, answers); every write still needs sign-in | ✅ |
 | 2.14 | `GET /api/authors/me` (prefill the author profile editor) and `authorId` on `UserResponse` (null for readers) | ✅ |
 | 2.15a | Google ID-token verifier (`spring-security-oauth2-jose`, Google JWKS, `iss`/`aud`/expiry checks); `GOOGLE_CLIENT_ID` | ✅ |
-| 2.15b | `POST /api/auth/google`: find by Google id, else link by e-mail, else create; `emailVerifiedAt`; password and mobile optional | ⬜ |
+| 2.15b | `POST /api/auth/google`: find by Google id, else link by e-mail, else create; `emailVerifiedAt`; password and mobile optional | ✅ |
 
 ## Phase 3 — AI that cites
 

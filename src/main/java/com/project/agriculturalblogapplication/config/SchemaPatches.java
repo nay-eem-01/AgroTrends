@@ -37,6 +37,11 @@ public class SchemaPatches implements ApplicationRunner {
             new String[]{"comment", "blog_id", "blogs"},
             new String[]{"comment", "parent_comment_id", "comment"});
 
+    // Columns that became optional: Google accounts have no password or mobile number. Idempotent.
+    static final List<String> DROP_NOT_NULL = List.of(
+            "ALTER TABLE users ALTER COLUMN user_password DROP NOT NULL",
+            "ALTER TABLE users ALTER COLUMN mobile_number DROP NOT NULL");
+
     static final String PUBLISHED_AT_BACKFILL =
             "UPDATE blogs SET published_at = creation_date WHERE status = 'PUBLISHED' AND published_at IS NULL";
 
@@ -66,6 +71,7 @@ public class SchemaPatches implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         jdbcTemplate.execute(BLOG_SEARCH_INDEX);
         CASCADE_ON_DELETE.forEach(fk -> cascadeOnDelete(fk[0], fk[1], fk[2]));
+        DROP_NOT_NULL.forEach(jdbcTemplate::execute);
         // Posts published before drafts existed have no published_at; feeds sort by it.
         int stamped = jdbcTemplate.update(PUBLISHED_AT_BACKFILL);
         if (stamped > 0) {
