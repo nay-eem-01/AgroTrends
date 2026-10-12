@@ -2,7 +2,7 @@ package com.project.agriculturalblogapplication.service;
 
 import com.project.agriculturalblogapplication.entities.Bookmark;
 import com.project.agriculturalblogapplication.enums.BlogStatus;
-import com.project.agriculturalblogapplication.model.response.BlogResponse;
+import com.project.agriculturalblogapplication.model.response.BlogSummaryResponse;
 import com.project.agriculturalblogapplication.repositories.BookmarkRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import com.project.agriculturalblogapplication.util.CommonUtils;
@@ -45,10 +45,10 @@ public class BookmarkService {
 
     /** Saved blogs that are still published, most recently saved first. */
     @Transactional(readOnly = true)
-    public Page<BlogResponse> mine(int pageNo, int pageSize, String lang) {
+    public Page<BlogSummaryResponse> mine(int pageNo, int pageSize, String lang) {
         Long userId = authorizationService.currentUserId(lang);
         return bookmarkRepository.findAllByUserIdAndBlogStatus(userId, BlogStatus.PUBLISHED,
                         CommonUtils.clampedPageable(pageNo, pageSize, Sort.by(Sort.Direction.DESC, "creationDate")))
-                .map(bookmark -> BlogResponse.from(bookmark.getBlog()));
+                .map(bookmark -> BlogSummaryResponse.from(bookmark.getBlog()));
     }
 }
