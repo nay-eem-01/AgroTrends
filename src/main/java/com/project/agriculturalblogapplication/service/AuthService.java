@@ -78,8 +78,6 @@ public class AuthService {
 				.countryCode(request.getCountryCode())
 				.mobileNumber(request.getMobileNumber())
 				.password(request.getPassword())
-                .userTypes(request.getUserType())
-                .professionalInfoRequest(request.getProfessionalInfoRequest())
 				.build();
 
 		return userService.toResponse(userService.createUser(createUserRequest, lang));
@@ -152,7 +150,7 @@ public class AuthService {
 			throw new ApplicationException(HttpStatus.UNAUTHORIZED, ErrorCode.ERROR_INVALID_CREDENTIALS, lang);
 		}
 		if (user == null) {
-			user = userService.createGoogleUser(google, request.getUserType(), lang);
+			user = userService.createGoogleUser(google, lang);
 		} else if (user.getGoogleSubject() == null) {
 			user = userService.linkGoogle(user, google.subject());
 		}

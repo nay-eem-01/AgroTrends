@@ -4,7 +4,6 @@ import com.project.agriculturalblogapplication.entities.RefreshToken;
 import com.project.agriculturalblogapplication.entities.Role;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.enums.RoleType;
-import com.project.agriculturalblogapplication.enums.UserType;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.request.ChangePasswordRequest;
 import com.project.agriculturalblogapplication.model.request.GoogleSignInRequest;
@@ -65,12 +64,12 @@ class GoogleSignInTest {
     @Test
     void unknownGoogleAccountCreatesAnAccountWithTheRequestedType() {
         User created = user(RoleType.USER, null);
-        when(userService.createGoogleUser(any(), any(), any())).thenReturn(created);
+        when(userService.createGoogleUser(any(), any())).thenReturn(created);
 
-        WebTokenResponse tokens = authService.signInWithGoogle(request(Set.of(UserType.AUTHOR)), "en");
+        WebTokenResponse tokens = authService.signInWithGoogle(request(), "en");
 
         assertEquals("access", tokens.getAccessToken());
-        verify(userService).createGoogleUser(new GoogleIdentity(SUBJECT, EMAIL, true, "Rahim"), Set.of(UserType.AUTHOR), "en");
+        verify(userService).createGoogleUser(new GoogleIdentity(SUBJECT, EMAIL, true, "Rahim"), "en");
         verify(userService, never()).linkGoogle(any(), any());
     }
 
@@ -79,10 +78,10 @@ class GoogleSignInTest {
         User linked = user(RoleType.USER, SUBJECT);
         when(userService.findByGoogleSubject(SUBJECT)).thenReturn(Optional.of(linked));
 
-        assertNotNull(authService.signInWithGoogle(request(null), "en"));
+        assertNotNull(authService.signInWithGoogle(request(), "en"));
 
         verify(userService, never()).linkGoogle(any(), any());
-        verify(userService, never()).createGoogleUser(any(), any(), any());
+        verify(userService, never()).createGoogleUser(any(), any());
     }
 
     @Test
@@ -91,10 +90,10 @@ class GoogleSignInTest {
         when(userService.findByEmail(EMAIL)).thenReturn(existing);
         when(userService.linkGoogle(existing, SUBJECT)).thenReturn(existing);
 
-        authService.signInWithGoogle(request(null), "en");
+        authService.signInWithGoogle(request(), "en");
 
         verify(userService).linkGoogle(existing, SUBJECT);
-        verify(userService, never()).createGoogleUser(any(), any(), any());
+        verify(userService, never()).createGoogleUser(any(), any());
     }
 
     @Test
@@ -102,7 +101,7 @@ class GoogleSignInTest {
         when(userService.findByEmail(EMAIL)).thenReturn(user(RoleType.SUPER_ADMIN, null));
 
         ApplicationException e = assertThrows(ApplicationException.class,
-                () -> authService.signInWithGoogle(request(null), "en"));
+                () -> authService.signInWithGoogle(request(), "en"));
 
         assertEquals(HttpStatus.UNAUTHORIZED, e.getHttpStatus());
         verify(userService, never()).linkGoogle(any(), any());
@@ -114,7 +113,7 @@ class GoogleSignInTest {
         when(verifier.verify("id-token", "en")).thenReturn(new GoogleIdentity(SUBJECT, EMAIL, false, "Rahim"));
 
         ApplicationException e = assertThrows(ApplicationException.class,
-                () -> authService.signInWithGoogle(request(null), "en"));
+                () -> authService.signInWithGoogle(request(), "en"));
 
         assertEquals(HttpStatus.UNAUTHORIZED, e.getHttpStatus());
         verify(userService, never()).findByEmail(any());
@@ -179,10 +178,9 @@ class GoogleSignInTest {
                 mock(AuthorizationService.class), refreshTokens, sessions, mock(AttemptLimiter.class));
     }
 
-    private static GoogleSignInRequest request(Set<UserType> userType) {
+    private static GoogleSignInRequest request() {
         GoogleSignInRequest request = new GoogleSignInRequest();
         request.setIdToken("id-token");
-        request.setUserType(userType);
         return request;
     }
 

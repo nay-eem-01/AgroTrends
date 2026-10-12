@@ -3,7 +3,6 @@ package com.project.agriculturalblogapplication.service;
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import com.project.agriculturalblogapplication.entities.Author;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
-import com.project.agriculturalblogapplication.model.request.AuthorCreateRequest;
 import com.project.agriculturalblogapplication.repositories.AuthorRepository;
 import com.project.agriculturalblogapplication.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,20 +18,6 @@ public class AuthorService {
     private final AuthorRepository authorRepository;
 
     private final UserRepository userRepository;
-
-    public void createAuthorUser(AuthorCreateRequest authorCreateRequest, String lang) {
-        Author author = new Author();
-        author.setDesignation(authorCreateRequest.getProfessionalInfoRequest().getDesignation());
-        author.setOccupation(authorCreateRequest.getProfessionalInfoRequest().getOccupation());
-        author.setWorkPlaceOrInstitution(authorCreateRequest.getProfessionalInfoRequest().getInstitution());
-        author.setSpecialities(authorCreateRequest.getProfessionalInfoRequest().getSpecialities());
-        // Both were accepted at sign-up and silently dropped before.
-        author.setBio(authorCreateRequest.getProfessionalInfoRequest().getProfessionalStatement());
-        author.setProfileImageUrl(authorCreateRequest.getProfessionalInfoRequest().getProfileImageUrl());
-        author.setUser(authorCreateRequest.getUser());
-
-        authorRepository.save(author);
-    }
 
     public Author findByUserIdWithException(Long userId){
         return authorRepository.findByUserId(userId).orElseThrow(()->

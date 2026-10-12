@@ -17,7 +17,6 @@ public final class AppTables {
 
     public static final String ROLE_PRIVILEGE_NAME = "role_privilege";
 
-    public static final String USER_TYPES = "user_types";
 
     public static final class AuditModelTable {
 
