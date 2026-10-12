@@ -20,7 +20,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 ## Next up
 
 1. Merge `docs/product-study` and `docs/launch-plan` into `development`.
-2. Phase 5 on `feat/launch-blockers-base`: 5.1–5.3 done; next 5.4 (delete dead code).
+2. Phase 5 on `feat/launch-blockers-base`: 5.1–5.4 done; next 5.5 (one account type).
 3. Then Phases 6, 7, 8; deploy (Phase 4) and live-test only after all of them.
 4. **Team:** 30–50 seeded Bangla articles; 5–10 experts invited; pick the 6–8 launch topics (categories).
 5. **Nayeem:** fix the Gemini key; roadmap 0.4 (rotate keys, purge history); set `GOOGLE_CLIENT_ID`; make
@@ -45,6 +45,18 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | After deploying 2.3a: start once with `AI_REINDEX_ON_STARTUP=true` (old chunks have no `status`, so retrieval ignores them) | whoever deploys | AI answers on existing posts |
 | Deleting a user with comments/questions/answers fails on foreign keys: decide delete vs anonymise | Nayeem | account deletion |
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
+
+---
+
+## 2026-10-13 (roadmap 5.4)
+
+**Done**
+- Deleted the `dtos/` package, the ModelMapper bean and dependency, and `CommonUtils.mapEntity*` (audit O4).
+- Deleted the commented-out `ForgetPasswordService` with its OTP types (`OTPChannel`,
+  `InitiateForgetPasswordRequest`, `InitiateUpdatePasswordRequest`, `ResetPasswordFromSessionTokenRequest`,
+  `SendVerificationCodeResponse`), plus `CustomSuccessHandler` and `FileStorageException` (audit O6).
+- Removed Thymeleaf: three dependencies, six templates, `spring.thymeleaf.*` (audit O5).
+- Split over `chore/delete-dead-code` and `chore/remove-thymeleaf`. 163 unit tests pass.
 
 ---
 
