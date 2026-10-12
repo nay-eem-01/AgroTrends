@@ -5,6 +5,7 @@ import com.project.agriculturalblogapplication.entities.Author;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.request.AuthorCreateRequest;
 import com.project.agriculturalblogapplication.repositories.AuthorRepository;
+import com.project.agriculturalblogapplication.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,8 @@ import java.util.Optional;
 public class AuthorService {
 
     private final AuthorRepository authorRepository;
+
+    private final UserRepository userRepository;
 
     public void createAuthorUser(AuthorCreateRequest authorCreateRequest, String lang) {
         Author author = new Author();
@@ -36,10 +39,13 @@ public class AuthorService {
                 new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_AUTHOR_NOT_FOUND));
     }
 
-    /** Publishing requires an author profile; callers without one are refused (403) rather than told "not found". */
-    public Author findByUserIdOrForbidden(Long userId, String lang){
-        return authorRepository.findByUserId(userId).orElseThrow(()->
-                new ApplicationException(HttpStatus.FORBIDDEN, ErrorCode.ERROR_AUTHOR_PROFILE_REQUIRED, lang));
+    /** The user's profile, created the first time it is needed: every account may publish (PLAN decision 11). */
+    public Author profileOf(Long userId) {
+        return authorRepository.findByUserId(userId).orElseGet(() -> {
+            Author author = new Author();
+            author.setUser(userRepository.getReferenceById(userId));
+            return authorRepository.save(author);
+        });
     }
 
     /** The author profile id of a user, empty for readers without one. */

@@ -2,13 +2,11 @@ package com.project.agriculturalblogapplication.service;
 
 import com.project.agriculturalblogapplication.entities.Author;
 import com.project.agriculturalblogapplication.entities.User;
-import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.request.UpdateAuthorProfileRequest;
 import com.project.agriculturalblogapplication.model.response.AuthorProfileResponse;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpStatus;
 
 import java.util.Arrays;
 import java.util.List;
@@ -16,7 +14,6 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -72,32 +69,16 @@ class AuthorProfileServiceTest {
     @Test
     void myProfileIsTheCallersOwnForPrefillingTheEditor() {
         Author mine = author();
-        when(authorService.findByUserIdOrForbidden(7L, "en")).thenReturn(mine);
+        when(authorService.profileOf(7L)).thenReturn(mine);
 
         assertEquals("Rahim", service.getMine("en").name());
         verify(authorService, never()).findByIdWithException(any());
     }
 
     @Test
-    void readersWithoutAnAuthorProfileGet403ForMyProfile() {
-        when(authorService.findByUserIdOrForbidden(7L, "en")).thenThrow(new ApplicationException(HttpStatus.FORBIDDEN, "forbidden"));
-
-        assertEquals(HttpStatus.FORBIDDEN, assertThrows(ApplicationException.class, () -> service.getMine("en")).getHttpStatus());
-    }
-
-    @Test
-    void onlyAuthorsCanEditAndOnlyTheirOwnProfile() {
-        when(authorService.findByUserIdOrForbidden(7L, "en")).thenThrow(new ApplicationException(HttpStatus.FORBIDDEN, "forbidden"));
-
-        assertEquals(HttpStatus.FORBIDDEN, assertThrows(ApplicationException.class,
-                () -> service.updateMine(new UpdateAuthorProfileRequest(), "en")).getHttpStatus());
-        verify(authorService, never()).save(any());
-    }
-
-    @Test
     void editingSavesTheBio() {
         Author mine = author();
-        when(authorService.findByUserIdOrForbidden(7L, "en")).thenReturn(mine);
+        when(authorService.profileOf(7L)).thenReturn(mine);
         when(authorService.save(mine)).thenReturn(mine);
         UpdateAuthorProfileRequest request = new UpdateAuthorProfileRequest();
         request.setDesignation("Agronomist");

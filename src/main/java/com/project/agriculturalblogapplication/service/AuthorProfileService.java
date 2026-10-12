@@ -28,16 +28,16 @@ public class AuthorProfileService {
         return toResponse(authorService.findByIdWithException(authorId), callerId);
     }
 
-    /** The caller's own author profile, to prefill the editor; 403 for users who are not authors. */
+    /** The caller's own profile, to prefill the editor. */
     public AuthorProfileResponse getMine(String lang) {
         Long callerId = authorizationService.currentUserId(lang);
-        return toResponse(authorService.findByUserIdOrForbidden(callerId, lang), callerId);
+        return toResponse(authorService.profileOf(callerId), callerId);
     }
 
-    /** Edits the caller's own author profile; 403 for users who are not authors. */
+    /** Edits the caller's own profile. */
     public AuthorProfileResponse updateMine(UpdateAuthorProfileRequest request, String lang) {
         Long callerId = authorizationService.currentUserId(lang);
-        Author author = authorService.findByUserIdOrForbidden(callerId, lang);
+        Author author = authorService.profileOf(callerId);
         author.setDesignation(request.getDesignation());
         author.setSpecialities(request.getSpecialities());
         author.setOccupation(request.getOccupation());

@@ -68,7 +68,7 @@ public class BlogService {
     public BlogResponse create(CreateBlogRequest request, String lang) {
         Category category = categoryService.findByIdWithException(request.getCategoryId());
 
-        Author author = authorService.findByUserIdOrForbidden(authorizationService.currentUserId(lang), lang);
+        Author author = authorService.profileOf(authorizationService.currentUserId(lang));
 
         Blog blog = new Blog();
         blog.setCategory(category);
@@ -134,10 +134,10 @@ public class BlogService {
                 .map(BlogResponse::from);
     }
 
-    /** The caller's own drafts; 403 for users without an author profile. */
+    /** The caller's own drafts. */
     public Page<BlogResponse> getMyDrafts(PaginationArgs paginationArgs, String lang) {
         Pageable pageable = CommonUtils.getPageable(paginationArgs, SORTABLE_FIELDS, lang);
-        Author author = authorService.findByUserIdOrForbidden(authorizationService.currentUserId(lang), lang);
+        Author author = authorService.profileOf(authorizationService.currentUserId(lang));
         return blogRepositories.findAllByAuthorAndStatus(author, BlogStatus.DRAFT, pageable).map(BlogResponse::from);
     }
 

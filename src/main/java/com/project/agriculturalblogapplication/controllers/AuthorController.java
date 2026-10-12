@@ -36,7 +36,7 @@ public class AuthorController {
         return HttpResponse.getResponseEntity(true, "Data loaded successfully.", authorProfileService.get(authorId, lang));
     }
 
-    @Operation(summary = "Your own author profile, for the profile editor (authors only; 403 for readers)",
+    @Operation(summary = "Your own profile, for the profile editor (created on first use)",
             security = @SecurityRequirement(name = "jwtToken"))
     @ApiResponse(content = @Content(schema = @Schema(implementation = AuthorProfileResponse.class)), responseCode = "200")
     @GetMapping("/me")
@@ -44,7 +44,7 @@ public class AuthorController {
         return HttpResponse.getResponseEntity(true, "Data loaded successfully.", authorProfileService.getMine(lang));
     }
 
-    @Operation(summary = "Edit your own author profile (authors only)", security = @SecurityRequirement(name = "jwtToken"))
+    @Operation(summary = "Edit your own profile", security = @SecurityRequirement(name = "jwtToken"))
     @ApiResponse(content = @Content(schema = @Schema(implementation = AuthorProfileResponse.class)), responseCode = "200")
     @PutMapping("/me")
     public ResponseEntity<HttpResponse> updateMine(@Valid @RequestBody UpdateAuthorProfileRequest request,
