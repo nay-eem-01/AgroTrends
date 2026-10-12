@@ -21,7 +21,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 1. Merge `docs/product-study` and `docs/launch-plan` into `development`.
 2. Phase 5 on `feat/launch-blockers-base`: 5.1 (indexing never fails a save) first, then 5.2–5.11.
-3. Then 4.1–4.3 so the team can test on a live server.
+3. Then Phases 6, 7, 8; deploy (Phase 4) and live-test only after all of them.
 4. **Team:** 30–50 seeded Bangla articles; 5–10 experts invited; pick the 6–8 launch topics (categories).
 5. **Nayeem:** fix the Gemini key; roadmap 0.4 (rotate keys, purge history); set `GOOGLE_CLIENT_ID`; make
    `development` the default branch; delete `feature/kafka-impl` (superseded by Phase 8).

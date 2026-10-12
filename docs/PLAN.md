@@ -78,7 +78,8 @@ answers. Never unchecked AI answers, flagged or hidden content, or drafts.
 
 ## 6. Launch and the 8-week test
 
-1. Build Phases 5 → 4.1–4.3 → 6 → 7 → 8 → rest of 4.
+1. Build Phases 5 → 6 → 7 → 8 with unit tests, then Phase 4 (ship it). Deploy and live-test only once all of
+   5–8 are done.
 2. Before launch: 30–50 seeded Bangla articles, 5–10 invited and verified experts.
 3. Launch through the Facebook page and 2–3 university groups.
 4. Weekly numbers, targets by week 8: ≥ 30 weekly active askers/answerers, ≥ 80 % of questions with a human

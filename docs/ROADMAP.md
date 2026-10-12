@@ -11,7 +11,7 @@ gets split here first.
 **Progress:** 43 of 84 steps done
 
 **Launch scope (decided 2026-10-13):** Phases 4–8 must all be done before the public launch. Order of work:
-5 (blockers) → 4.1–4.3 (a live test server early) → 6 → 7 → 8 → the rest of 4 → launch. After launch, the
+5 → 6 → 7 → 8 → 4 (deploy) → live test → launch. Nothing is deployed until Phases 5–8 are done. After launch, the
 8-week test decides what comes from **Later** (see `docs/PLAN.md` §6).
 
 ---
@@ -91,8 +91,7 @@ The differentiator. See `docs/research/rag-and-platform-findings.md`.
 
 ## Phase 4 — Ship it
 
-Operability and regression safety. 4.1–4.3 run early (right after Phase 5) so the team can test on a live
-server; the rest before launch.
+Operability and regression safety. Runs after Phases 5–8 are complete; then deploy and live-test before launch.
 
 | # | Step | Status |
 |---|---|---|
