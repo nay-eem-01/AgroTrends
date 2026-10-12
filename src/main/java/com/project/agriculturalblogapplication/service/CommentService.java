@@ -15,11 +15,14 @@ import com.project.agriculturalblogapplication.security.service.AuthorizationSer
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+// Comment's user, blog and parent are lazy: every method maps them inside a transaction (open-in-view is off).
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class CommentService {
 
     private final BlogService blogService;
