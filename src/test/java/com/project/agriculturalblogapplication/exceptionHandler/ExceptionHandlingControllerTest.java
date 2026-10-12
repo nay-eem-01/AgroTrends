@@ -1,7 +1,6 @@
 package com.project.agriculturalblogapplication.exceptionHandler;
 
 import com.project.agriculturalblogapplication.enums.CropSeason;
-import com.project.agriculturalblogapplication.service.ErrorCodeService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
@@ -11,7 +10,6 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import static org.mockito.Mockito.mock;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -43,7 +41,7 @@ class ExceptionHandlingControllerTest {
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(new ProbeController())
-                .setControllerAdvice(new ExceptionHandlingController(mock(ErrorCodeService.class)))
+                .setControllerAdvice(new ExceptionHandlingController())
                 .build();
     }
 
