@@ -102,7 +102,7 @@ New tables are marked with the roadmap step that adds them.
 erDiagram
     USER ||--|| PROFILE : has
     USER ||--o{ USER_SESSION : "signs in"
-    USER ||--o{ EMAIL_VERIFICATION_TOKEN : "5.6"
+    USER ||--o{ EMAIL_TOKEN : "reset, confirm (5.6)"
     USER ||--o{ BLOG : writes
     USER ||--o{ QUESTION : asks
     USER ||--o{ ANSWER : writes
@@ -228,7 +228,8 @@ sequenceDiagram
     API-->>U: 403 EMAIL_NOT_VERIFIED if not confirmed
 ```
 
-- Reuses the password-reset token design (hash stored, single use) and `MailService`.
+- Shares `EmailToken` (purpose `RESET_PASSWORD` or `VERIFY_EMAIL`, hash stored, single use) and
+  `EmailTokenService` with password reset; a mail failure at sign-up is logged, not thrown.
 - `POST /api/auth/resend-verification` is rate-limited with `AttemptLimiter`.
 - `UserResponse.emailVerified` (exists) lets the frontend show a banner.
 

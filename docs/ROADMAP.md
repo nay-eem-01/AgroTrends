@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 48 of 84 steps done
+**Progress:** 49 of 84 steps done
 
 **Launch scope (decided 2026-10-13):** Phases 4–8 must all be done before the public launch. Order of work:
 5 → 6 → 7 → 8 → 4 (deploy) → live test → launch. Nothing is deployed until Phases 5–8 are done. After launch, the
@@ -118,7 +118,7 @@ everyone; a confirmed e-mail before any write.
 | 5.3 | Delete the DB-driven i18n error stack (`ErrorCodeEntity`, `Language`, `LocalizedText`, `Translation` + services) and unused `ErrorCode` constants (audit O1, O3; fixes B4) | ✅ |
 | 5.4 | Delete dead code: `dtos/` + ModelMapper, Thymeleaf, `ForgetPasswordService` and other orphans (audit O4–O6) | ✅ |
 | 5.5 | One account type: sign-up takes no `userType`; the author profile becomes the user's profile, created on first need; any confirmed user may publish | ✅ |
-| 5.6 | E-mail confirmation: token mailed at sign-up, `POST /api/auth/verify-email`, `POST /api/auth/resend-verification`; Google sign-in counts as confirmed | ⬜ |
+| 5.6 | E-mail confirmation: token mailed at sign-up, `POST /api/auth/verify-email`, `POST /api/auth/resend-verification`; Google sign-in counts as confirmed | ✅ |
 | 5.7 | Confirmed-e-mail gate on every write (questions, answers, comments, blogs, votes, images, AI): 403 `EMAIL_NOT_VERIFIED` | ⬜ |
 | 5.8 | Per-IP daily cap on `/api/ai/**` and `/api/auth/google` (audit B3 remainder) | ⬜ |
 | 5.9 | Server-side HTML sanitising (jsoup safelist) for blogs, questions and answers | ⬜ |
