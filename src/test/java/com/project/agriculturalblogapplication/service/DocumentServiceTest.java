@@ -16,10 +16,12 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -59,6 +61,14 @@ class DocumentServiceTest {
         InOrder inOrder = inOrder(vectorStore);
         inOrder.verify(vectorStore).delete(blogFilter(3L));
         inOrder.verify(vectorStore).add(anyList());
+    }
+
+    @Test
+    void embeddingFailureIsSwallowedSoTheSavedPostIsNotReportedAsFailed() {
+        doThrow(new RuntimeException("Gemini unavailable")).when(vectorStore).add(anyList());
+
+        assertDoesNotThrow(() -> documentService.indexBlog(blog(5L, "Saved even when Gemini is down.")));
+        assertDoesNotThrow(() -> documentService.reindexBlog(blog(5L, "Edited while Gemini is down.")));
     }
 
     @Test
