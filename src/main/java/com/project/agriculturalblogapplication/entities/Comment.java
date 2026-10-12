@@ -1,5 +1,6 @@
 package com.project.agriculturalblogapplication.entities;
 
+import com.project.agriculturalblogapplication.util.SafeHtml;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -44,4 +45,11 @@ public class Comment extends AuditModel<String> {
     )
     @JsonIgnore
     private List<Comment> replies = new ArrayList<>();
+
+    /** Stored HTML is always safe, whichever endpoint wrote it. */
+    @PrePersist
+    @PreUpdate
+    void sanitize() {
+        commentContent = SafeHtml.clean(commentContent);
+    }
 }

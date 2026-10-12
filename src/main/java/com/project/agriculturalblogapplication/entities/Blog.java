@@ -1,5 +1,6 @@
 package com.project.agriculturalblogapplication.entities;
 
+import com.project.agriculturalblogapplication.util.SafeHtml;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.project.agriculturalblogapplication.constatnt.AppTables.CategoryTable;
 import com.project.agriculturalblogapplication.constatnt.AppTables.BlogTable;
@@ -73,4 +74,11 @@ public class Blog extends AuditModel<String> {
     @JsonIgnore
     @OneToMany(mappedBy = "blog", cascade = CascadeType.PERSIST,fetch = FetchType.LAZY)
     private List<Comment> comments;
+
+    /** Stored HTML is always safe, whichever endpoint wrote it. */
+    @PrePersist
+    @PreUpdate
+    void sanitize() {
+        content = SafeHtml.clean(content);
+    }
 }
