@@ -8,7 +8,11 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 43 of 57 steps done
+**Progress:** 43 of 84 steps done
+
+**Launch scope (decided 2026-10-13):** Phases 4–8 must all be done before the public launch. Order of work:
+5 (blockers) → 4.1–4.3 (a live test server early) → 6 → 7 → 8 → the rest of 4 → launch. After launch, the
+8-week test decides what comes from **Later** (see `docs/PLAN.md` §6).
 
 ---
 
@@ -84,33 +88,96 @@ The differentiator. See `docs/research/rag-and-platform-findings.md`.
 | 3.8b | AI helpers: summary and suggested tags for an author's draft (`POST /api/ai/blog-assist`) | ✅ |
 | 3.8c | AI helpers: labelled AI draft answer for an unanswered question (`POST /api/questions/id/{questionId}/ai-draft`) | ✅ |
 
+
 ## Phase 4 — Ship it
 
-Operability and regression safety.
+Operability and regression safety. 4.1–4.3 run early (right after Phase 5) so the team can test on a live
+server; the rest before launch.
 
 | # | Step | Status |
 |---|---|---|
-| 4.1 | `dev` / `prod` profiles; `ddl-auto=validate`; CORS origins from a property | ⬜ |
-| 4.2 | Flyway baseline + migrations for the existing schema | ⬜ |
-| 4.3 | `docker-compose.yml` with `pgvector/pgvector:pg16`; Dockerfile | ⬜ |
+| 4.1 | `dev` / `prod` profiles; `ddl-auto=validate`; CORS origins from `app.frontendUrl` (audit B6) | ⬜ |
+| 4.2 | Flyway baseline + migrations for the existing schema; then delete `SchemaPatches` (audit O8) | ⬜ |
+| 4.3 | `docker-compose.yml` with `pgvector/pgvector:pg16`; Dockerfile; `uploads/` on a named volume | ⬜ |
 | 4.4 | Testcontainers (pgvector): `contextLoads` passes; `@WebMvcTest` slices for auth and ownership | ⬜ |
 | 4.5 | GitHub Actions: build + test + gitleaks | ⬜ |
 | 4.6 | README: prerequisites, env vars, run, endpoint table | ⬜ |
-| 4.7 | Housekeeping: rename `constatnt`, delete dead Thymeleaf templates and orphan OTP DTOs, fix `AuditModel` date format, unify `TranslationService` injection | ⬜ |
-| 4.8 | Rate-limit store: move `AttemptLimiter` to a shared store if running more than one instance | ⬜ |
+| 4.7 | Housekeeping: rename `constatnt`, fix `AuditModel` date format, log 4xx below ERROR (dead code moved to 5.4) | ⬜ |
+| 4.8 | Rate-limit store: move `AttemptLimiter` to a shared store if running more than one instance | ⏸ |
+| 4.9 | Spring Boot Actuator: health + basic metrics, health endpoint public, the rest admin-only | ⬜ |
+| 4.10 | Backups: nightly `pg_dump` and `uploads/` copy, restore tested once | ⬜ |
 
-## Phase 5 — Notifications (Kafka)
+## Phase 5 — Launch blockers
 
-Notification events go through Kafka (decision 10 in `docs/PLAN.md`). Rebuilt on `development`; the old
-`feature/kafka-impl` branch is reference only (it was built on the stale `dev` branch, takes `userId` from
-the path, publishes inside the transaction and trusts every package for JSON).
-Needs 2.9 (follows) for the "new post from an author you follow" event.
+Code-audit fixes (`docs/research/product-study-2026-10.md` §6) and the account model. One account type for
+everyone; a confirmed e-mail before any write.
 
 | # | Step | Status |
 |---|---|---|
-| 5.1 | Kafka in `docker-compose.yml` (KRaft, no ZooKeeper); `spring-kafka`; topics declared in code; bootstrap servers from env; JSON trusted packages limited to our event package | ⬜ |
-| 5.2 | Notification events (records with ids only): comment on your blog, reply to your comment, answer on your question, new post from a followed author; published **after commit** | ⬜ |
-| 5.3 | Consumer: `Notification` entity, idempotent on event id, no self-notifications, retries + dead-letter topic | ⬜ |
-| 5.4 | `/api/notifications` for the caller only (identity from the token, 404 for others'): list, unread count, mark one / all read | ⬜ |
-| 5.5 | Tests: unit tests for event -> notification rules; Testcontainers Kafka integration test (after 4.4) | ⬜ |
-| 5.6 | Delivery beyond the inbox (e-mail digest / push / WebSocket) | ⏸ |
+| 5.1 | AI indexing never fails a blog save: catch + log in `DocumentService.indexBlog`/`reindexBlog`, the re-index runner heals (audit B1) | ⬜ |
+| 5.2 | System prompt: drop the "Bangla only if explicitly asked" sentence; test asserts it (audit B2) | ⬜ |
+| 5.3 | Delete the DB-driven i18n error stack (`ErrorCodeEntity`, `Language`, `LocalizedText`, `Translation` + services) and unused `ErrorCode` constants (audit O1, O3; fixes B4) | ⬜ |
+| 5.4 | Delete dead code: `dtos/` + ModelMapper, Thymeleaf, `ForgetPasswordService` and other orphans (audit O4–O6) | ⬜ |
+| 5.5 | One account type: sign-up takes no `userType`; the author profile becomes the user's profile, created on first need; any confirmed user may publish | ⬜ |
+| 5.6 | E-mail confirmation: token mailed at sign-up, `POST /api/auth/verify-email`, `POST /api/auth/resend-verification`; Google sign-in counts as confirmed | ⬜ |
+| 5.7 | Confirmed-e-mail gate on every write (questions, answers, comments, blogs, votes, images, AI): 403 `EMAIL_NOT_VERIFIED` | ⬜ |
+| 5.8 | Per-IP daily cap on `/api/ai/**` and `/api/auth/google` (audit B3 remainder) | ⬜ |
+| 5.9 | Server-side HTML sanitising (jsoup safelist) for blogs, questions and answers | ⬜ |
+| 5.10 | `BlogSummaryResponse` with a 200-character excerpt for every list endpoint (audit A1) | ⬜ |
+| 5.11 | `@EntityGraph` on list queries; `open-in-view=false` (audit A2) | ⬜ |
+
+## Phase 6 — Community Q&A and reputation
+
+Stack Overflow-style trust. Topics are the existing categories. Point values are in `docs/PLAN.md` §5.
+
+| # | Step | Status |
+|---|---|---|
+| 6.1 | Topic (category, required) and tags on questions; filter by topic and tag | ⬜ |
+| 6.2 | Photos on questions (up to 4 image URLs from `POST /api/images`, now open to every confirmed user) | ⬜ |
+| 6.3 | Full-text search over questions; `answerCount`; `unanswered` filter | ⬜ |
+| 6.4 | Votes on questions and answers: up/down, one per user, not on your own, atomic `score` | ⬜ |
+| 6.5 | Accepted answer: the asker picks one (can change it); accepted answer sorts first | ⬜ |
+| 6.6 | Reputation ledger: `ReputationEvent` rows per user and topic, written and reversed with votes and accepts; downvoting needs 50 points | ⬜ |
+| 6.7 | Reputation on profiles and posts: totals per topic on `GET /api/users/{id}/reputation`; author reputation + badges on question/answer responses | ⬜ |
+| 6.8 | Top Contributor badge, computed per topic (250 points and 5 accepted answers) | ⬜ |
+
+## Phase 7 — Verified experts and AI review
+
+The trust layer. An expert is verified **per topic**; only verified experts confirm or correct AI answers.
+
+| # | Step | Status |
+|---|---|---|
+| 7.1 | Expert application: `POST /api/experts/applications` (topics, field title, credential type, institution, proof images, links); `GET /api/experts/applications/me` | ⬜ |
+| 7.2 | Admin review: pending list, approve (grants an `ExpertBadge` per topic) / reject with reason, revoke a badge | ⬜ |
+| 7.3 | Stored AI answer on every new question, generated after commit (async), status `UNCHECKED`; replaces the on-demand `ai-draft`; responses carry a safety `disclaimer` | ⬜ |
+| 7.4 | Review queue for experts (their topics only): confirm / correct (creates an expert answer, AI answer `CORRECTED`) / flag (`FLAGGED`, hidden); admin can reopen | ⬜ |
+| 7.5 | "Ask an expert to check this": turn a private `/api/ai/ask` answer into a public question | ⬜ |
+| 7.6 | RAG over Q&A: index accepted answers, expert answers and confirmed AI answers (`type=answer`, `questionId`); remove on un-accept, delete, flag or hide; `sources` gain `type` and `questionId` | ⬜ |
+| 7.7 | Question crop/season/region passed into the AI prompt | ⬜ |
+
+## Phase 8 — Notifications and moderation
+
+Replaces the old Kafka phase: in-process after-commit events, same API, no broker (`docs/PLAN.md` decision 13).
+The old `feature/kafka-impl` branch can be deleted.
+
+| # | Step | Status |
+|---|---|---|
+| 8.1 | `@TransactionalEventListener(AFTER_COMMIT)` writes `Notification` rows: answer on your question, your answer accepted, AI answer on your question checked, new review item in your topic, application decided, reply to your comment | ⬜ |
+| 8.2 | `/api/notifications` for the caller only: list, unread count, mark one / all read | ⬜ |
+| 8.3 | Reports: `POST /api/reports` (blog, question, answer, AI answer, comment, user; reason); one per user per target | ⬜ |
+| 8.4 | Moderation: admin report queue, hide content (out of public lists and RAG, reputation reversed), ban user (sessions revoked), revoke expert badge | ⬜ |
+
+## Later — after the 8-week launch test
+
+Not counted in progress. Each one waits for the week-8 decision (`docs/PLAN.md` §6) and is tested by hand
+before it is built.
+
+| Item | Note |
+|---|---|
+| AgroTrends Academy (courses, cohorts, enrolment) | First course runs on Google Meet + bKash, no code |
+| Paid priority questions, then expert appointments | Start as a bKash number on expert profiles |
+| Payments (bKash / SSLCommerz) | Only once a paid stream is proven |
+| Remove the `String lang` parameter from service signatures (audit O2) | Use `Accept-Language` / `LocaleContextHolder` when needed |
+| Messenger bot, photo triage (Gemini vision), voice in/out | Product study §5 |
+| Multi-turn AI chat; thumbs up/down on AI answers | |
+| SEO: sitemap, OpenGraph, RSS; weekly e-mail digest | |
