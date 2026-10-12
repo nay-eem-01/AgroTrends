@@ -17,6 +17,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import java.security.SecureRandom;
+import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.project.agriculturalblogapplication.constatnt.AppConstants.*;
@@ -94,6 +95,8 @@ public class InitialDataLoader implements ApplicationListener<ApplicationReadyEv
         superAdminUser.setMobileNumber(INITIAL_MOBILE_NUMBER);
         superAdminUser.setPassword(passwordEncoder.encode(password));
         superAdminUser.setMustChangePassword(true);
+        // The address comes from the operator's own configuration, not from a sign-up form.
+        superAdminUser.setEmailVerifiedAt(LocalDateTime.now());
         superAdminUser.setRoles(roles);
         userService.saveUser(superAdminUser);
 

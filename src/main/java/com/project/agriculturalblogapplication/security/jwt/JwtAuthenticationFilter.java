@@ -1,5 +1,6 @@
 package com.project.agriculturalblogapplication.security.jwt;
 
+import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import com.project.agriculturalblogapplication.constatnt.SecurityConstants;
 import com.project.agriculturalblogapplication.model.response.HttpResponse;
 import com.project.agriculturalblogapplication.security.service.CustomUserDetailService;
@@ -35,6 +36,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/api/user/me",
             "/api/auth/sign-out");
 
+    /** Account housekeeping an unconfirmed user may still do (besides /api/auth/**); every other write needs it. */
+    private static final Set<String> WRITES_ALLOWED_BEFORE_EMAIL_CONFIRMED = Set.of(
+            "/api/user/update",
+            "/api/user/change-password",
+            "/api/user/delete");
+
+    private static final Set<String> READ_METHODS = Set.of("GET", "HEAD", "OPTIONS");
+
     private final CustomUserDetailService userDetailsService;
     private final JwtUtil jwtUtil;
     private final UserSessionService userSessionService;
@@ -52,9 +61,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             CustomUserDetails userDetails = authenticate(jwt);
 
             if (userDetails != null) {
-                if (userDetails.isMustChangePassword()
-                        && !ALLOWED_WHILE_PASSWORD_CHANGE_PENDING.contains(request.getRequestURI())) {
-                    writeError(response, HttpStatus.FORBIDDEN, "Password change required before using this API.");
+                String refusal = refusal(userDetails, request);
+                if (refusal != null) {
+                    writeError(response, HttpStatus.FORBIDDEN, refusal);
                     return;
                 }
 
@@ -66,6 +75,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    /** Why a signed-in request is refused before it reaches a controller, or null when it may go on. */
+    static String refusal(CustomUserDetails user, HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        if (user.isMustChangePassword() && !ALLOWED_WHILE_PASSWORD_CHANGE_PENDING.contains(uri)) {
+            return "Password change required before using this API.";
+        }
+        if (!user.isEmailVerified() && !READ_METHODS.contains(request.getMethod())
+                && !uri.startsWith("/api/auth/") && !WRITES_ALLOWED_BEFORE_EMAIL_CONFIRMED.contains(uri)) {
+            return ErrorCode.ERROR_EMAIL_NOT_VERIFIED;
+        }
+        return null;
     }
 
     /**
