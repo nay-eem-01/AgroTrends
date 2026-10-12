@@ -20,7 +20,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 ## Next up
 
 1. Merge `docs/product-study` and `docs/launch-plan` into `development`.
-2. Phase 5 on `feat/launch-blockers-base`: 5.1 (indexing never fails a save) first, then 5.2–5.11.
+2. Phase 5 on `feat/launch-blockers-base`: 5.1 done; next 5.2 (prompt language), then 5.3–5.11.
 3. Then Phases 6, 7, 8; deploy (Phase 4) and live-test only after all of them.
 4. **Team:** 30–50 seeded Bangla articles; 5–10 experts invited; pick the 6–8 launch topics (categories).
 5. **Nayeem:** fix the Gemini key; roadmap 0.4 (rotate keys, purge history); set `GOOGLE_CLIENT_ID`; make
@@ -45,6 +45,20 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | After deploying 2.3a: start once with `AI_REINDEX_ON_STARTUP=true` (old chunks have no `status`, so retrieval ignores them) | whoever deploys | AI answers on existing posts |
 | Deleting a user with comments/questions/answers fails on foreign keys: decide delete vs anonymise | Nayeem | account deletion |
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
+
+---
+
+## 2026-10-13 (roadmap 5.1)
+
+**Done**
+- `DocumentService.indexBlog` catches and logs an embedding failure instead of throwing (audit B1). Covers
+  create, publish, update (`reindexBlog`) and `reindexAll`, which all go through it. Chunking stays outside
+  the catch, so a bug in our own code still surfaces.
+- Test: `DocumentServiceTest.embeddingFailureIsSwallowedSoTheSavedPostIsNotReportedAsFailed`. 163 unit tests pass.
+
+**Known limitations**
+- A post whose embedding failed stays out of AI answers until its next edit or a start with
+  `AI_REINDEX_ON_STARTUP=true` (marked `shortcut:` in the code). On update, the old chunks are already deleted.
 
 ---
 
