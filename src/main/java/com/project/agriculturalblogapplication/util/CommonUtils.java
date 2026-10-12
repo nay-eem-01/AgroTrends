@@ -8,13 +8,11 @@ import com.project.agriculturalblogapplication.constatnt.AppConstants;
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import com.project.agriculturalblogapplication.enums.AscOrDescType;
 import com.project.agriculturalblogapplication.payloads.PaginationArgs;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -303,13 +301,5 @@ public final class CommonUtils {
 		parameters.remove(AppConstants.LANG);
 		parameters.remove(AppConstants.LOAD_ORIGINAL_TEXT);
 		return parameters;
-	}
-
-	public static <D, E> D mapEntityToDto(ModelMapper modelMapper, E entity, Class<D> dtoClass) {
-		return modelMapper.map(entity, dtoClass);
-	}
-
-	public static <E, D> Page<D> mapEntityPageToDtoPage(ModelMapper modelMapper, Page<E> entities, Class<D> dtoClass) {
-		return entities.map(objectEntity -> modelMapper.map(objectEntity, dtoClass));
 	}
 }
