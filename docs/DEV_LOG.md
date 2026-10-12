@@ -20,7 +20,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 ## Next up
 
 1. Merge `docs/product-study` and `docs/launch-plan` into `development`.
-2. Phase 5 on `feat/launch-blockers-base`: 5.1–5.10 done; next 5.11 (N+1 queries).
+2. Phase 5 is done (5.1–5.11). Next: Phase 6 (community Q&A and reputation) on `feat/qa-reputation-base`, 6.1 first.
 3. Then Phases 6, 7, 8; deploy (Phase 4) and live-test only after all of them.
 4. **Team:** 30–50 seeded Bangla articles; 5–10 experts invited; pick the 6–8 launch topics (categories).
 5. **Nayeem:** fix the Gemini key; roadmap 0.4 (rotate keys, purge history); set `GOOGLE_CLIENT_ID`; make
@@ -45,6 +45,28 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | After deploying 2.3a: start once with `AI_REINDEX_ON_STARTUP=true` (old chunks have no `status`, so retrieval ignores them) | whoever deploys | AI answers on existing posts |
 | Deleting a user with comments/questions/answers fails on foreign keys: decide delete vs anonymise | Nayeem | account deletion |
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
+
+---
+
+## 2026-10-13 (roadmap 5.11)
+
+**Done**
+- `spring.jpa.properties.hibernate.default_batch_fetch_size=50` instead of per-query `@EntityGraph`: a fetch join
+  on `tags` would page in memory. Measured live (show-sql): `GET /api/feed/latest` went from 11 statements for
+  5 posts to 5 statements, and stayed at 5 with 8 posts (audit A2).
+- `spring.jpa.open-in-view=false`. `CommentService` (lazy user/blog/parent) is `@Transactional`;
+  `AnswerService.viewReplies` (lazy replies) is `@Transactional(readOnly = true)`.
+- Fixed in passing: `AuthorService.profileOf` (5.5) attached a lazy `User` proxy, so blog create threw
+  `LazyInitializationException` with open-in-view off. It now loads the user.
+- **Live smoke test** on a local pgvector database (scratch script, not committed): sign-up → 403 on a write
+  before confirmation → confirmation link from the dev mail log → verify → questions, answers, replies, blog
+  draft/publish/update/by-id/by-slug, comments and replies, bookmarks, claps, follows, author profile, search,
+  feeds, AI history. No 500s, no lazy-loading errors. Sanitising (5.9) and excerpts (5.10) checked on the live
+  responses. 182 unit tests pass.
+
+**Known limitations**
+- `contextLoads` and integration tests still need a database in CI (roadmap 4.4); the smoke test was manual.
+- The smoke test left test users, questions and posts in the local database.
 
 ---
 
