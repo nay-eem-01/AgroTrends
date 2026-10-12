@@ -28,7 +28,9 @@ public class AuthorService {
     public Author profileOf(Long userId) {
         return authorRepository.findByUserId(userId).orElseGet(() -> {
             Author author = new Author();
-            author.setUser(userRepository.getReferenceById(userId));
+            // A loaded user, not a lazy reference: responses read the name after the session has closed.
+            author.setUser(userRepository.findById(userId).orElseThrow(() ->
+                    new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_USER_NOT_FOUND)));
             return authorRepository.save(author);
         });
     }
