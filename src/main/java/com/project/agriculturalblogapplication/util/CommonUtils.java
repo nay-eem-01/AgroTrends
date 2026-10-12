@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.project.agriculturalblogapplication.constatnt.AppConstants;
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
-import com.project.agriculturalblogapplication.entities.LocalizedText;
 import com.project.agriculturalblogapplication.enums.AscOrDescType;
 import com.project.agriculturalblogapplication.payloads.PaginationArgs;
 import org.modelmapper.ModelMapper;
@@ -284,34 +283,6 @@ public final class CommonUtils {
 
 		if(sortBy != null && sortBy.trim().length() > 0) {
 			if (ascOrDesc.equals(AscOrDescType.asc)) {
-				pageable = PageRequest.of(pageNo, pageSize, Sort.by(sortBy).ascending());
-			} else {
-				pageable = PageRequest.of(pageNo, pageSize, Sort.by(sortBy).descending());
-			}
-		} else {
-			pageable = PageRequest.of(pageNo, pageSize);
-		}
-
-		return pageable;
-	}
-
-	public static Pageable getLocalizedPageable(PaginationArgs paginationArgs, Class<?> className) {
-		Pageable pageable;
-		String sortBy = paginationArgs.getSortBy();
-		int pageNo = paginationArgs.getPageNo();
-		int pageSize = paginationArgs.getPageSize();
-
-		try {
-			Field field = className.getDeclaredField(sortBy);
-			if (field.getType() == LocalizedText.class) {
-				sortBy = sortBy+".translations.translatedText";
-			}
-		} catch (Exception ex) {
-			sortBy = sortBy;
-		}
-
-		if (sortBy != null && sortBy.length() > 0) {
-			if (paginationArgs.getAscOrDesc().equals(AscOrDescType.asc)) {
 				pageable = PageRequest.of(pageNo, pageSize, Sort.by(sortBy).ascending());
 			} else {
 				pageable = PageRequest.of(pageNo, pageSize, Sort.by(sortBy).descending());
