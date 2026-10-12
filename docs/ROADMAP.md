@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 50 of 84 steps done
+**Progress:** 51 of 84 steps done
 
 **Launch scope (decided 2026-10-13):** Phases 4–8 must all be done before the public launch. Order of work:
 5 → 6 → 7 → 8 → 4 (deploy) → live test → launch. Nothing is deployed until Phases 5–8 are done. After launch, the
@@ -95,7 +95,7 @@ Operability and regression safety. Runs after Phases 5–8 are complete; then de
 
 | # | Step | Status |
 |---|---|---|
-| 4.1 | `dev` / `prod` profiles; `ddl-auto=validate`; CORS origins from `app.frontendUrl` (audit B6) | ⬜ |
+| 4.1 | `dev` / `prod` profiles; `ddl-auto=validate`; CORS origins from `app.frontendUrl` (audit B6); `server.forward-headers-strategy` so per-IP limits see the client IP behind the proxy | ⬜ |
 | 4.2 | Flyway baseline + migrations for the existing schema; then delete `SchemaPatches` (audit O8) | ⬜ |
 | 4.3 | `docker-compose.yml` with `pgvector/pgvector:pg16`; Dockerfile; `uploads/` on a named volume | ⬜ |
 | 4.4 | Testcontainers (pgvector): `contextLoads` passes; `@WebMvcTest` slices for auth and ownership | ⬜ |
@@ -120,7 +120,7 @@ everyone; a confirmed e-mail before any write.
 | 5.5 | One account type: sign-up takes no `userType`; the author profile becomes the user's profile, created on first need; any confirmed user may publish | ✅ |
 | 5.6 | E-mail confirmation: token mailed at sign-up, `POST /api/auth/verify-email`, `POST /api/auth/resend-verification`; Google sign-in counts as confirmed | ✅ |
 | 5.7 | Confirmed-e-mail gate on every write (questions, answers, comments, blogs, votes, images, AI): 403 `EMAIL_NOT_VERIFIED` | ✅ |
-| 5.8 | Per-IP daily cap on `/api/ai/**` and `/api/auth/google` (audit B3 remainder) | ⬜ |
+| 5.8 | Per-IP daily cap on `/api/ai/**` and `/api/auth/google` (audit B3 remainder) | ✅ |
 | 5.9 | Server-side HTML sanitising (jsoup safelist) for blogs, questions and answers | ⬜ |
 | 5.10 | `BlogSummaryResponse` with a 200-character excerpt for every list endpoint (audit A1) | ⬜ |
 | 5.11 | `@EntityGraph` on list queries; `open-in-view=false` (audit A2) | ⬜ |

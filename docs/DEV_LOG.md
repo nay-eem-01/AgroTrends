@@ -20,7 +20,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 ## Next up
 
 1. Merge `docs/product-study` and `docs/launch-plan` into `development`.
-2. Phase 5 on `feat/launch-blockers-base`: 5.1–5.7 done; next 5.8 (per-IP AI cap).
+2. Phase 5 on `feat/launch-blockers-base`: 5.1–5.8 done; next 5.9 (HTML sanitising).
 3. Then Phases 6, 7, 8; deploy (Phase 4) and live-test only after all of them.
 4. **Team:** 30–50 seeded Bangla articles; 5–10 experts invited; pick the 6–8 launch topics (categories).
 5. **Nayeem:** fix the Gemini key; roadmap 0.4 (rotate keys, purge history); set `GOOGLE_CLIENT_ID`; make
@@ -45,6 +45,23 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | After deploying 2.3a: start once with `AI_REINDEX_ON_STARTUP=true` (old chunks have no `status`, so retrieval ignores them) | whoever deploys | AI answers on existing posts |
 | Deleting a user with comments/questions/answers fails on foreign keys: decide delete vs anonymise | Nayeem | account deletion |
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
+
+---
+
+## 2026-10-13 (roadmap 5.8)
+
+**Done**
+- `PaidEndpointRateLimitFilter`: per-IP caps across accounts. AI calls (`POST /api/ai/ask`,
+  `POST /api/ai/blog-assist`, `POST /api/questions/id/*/ai-draft`, `GET /api/blogs/id/*/related`) share
+  `app.ai.daily-ip-limit` (default 200 per day; generous for campus networks). `POST /api/auth/google`: 30 per
+  hour. Over the cap: 429 "Too many requests from your network today…" (audit B3).
+- `HttpResponse.writeError` writes the error envelope from filters; `JwtAuthenticationFilter` uses it too.
+- Tests: `PaidEndpointRateLimitFilterTest` (3). 175 unit tests pass.
+
+**Known limitations**
+- Uses `request.getRemoteAddr()`: behind a reverse proxy every request has the proxy's IP. Roadmap 4.1 now
+  includes `server.forward-headers-strategy`; deploy must not skip it.
+- In-memory counters (single instance only, roadmap 4.8); a restart resets them.
 
 ---
 
