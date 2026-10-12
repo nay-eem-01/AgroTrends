@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 52 of 84 steps done
+**Progress:** 53 of 84 steps done
 
 **Launch scope (decided 2026-10-13):** Phases 4–8 must all be done before the public launch. Order of work:
 5 → 6 → 7 → 8 → 4 (deploy) → live test → launch. Nothing is deployed until Phases 5–8 are done. After launch, the
@@ -122,7 +122,7 @@ everyone; a confirmed e-mail before any write.
 | 5.7 | Confirmed-e-mail gate on every write (questions, answers, comments, blogs, votes, images, AI): 403 `EMAIL_NOT_VERIFIED` | ✅ |
 | 5.8 | Per-IP daily cap on `/api/ai/**` and `/api/auth/google` (audit B3 remainder) | ✅ |
 | 5.9 | Server-side HTML sanitising (jsoup safelist) for blogs, questions and answers | ✅ |
-| 5.10 | `BlogSummaryResponse` with a 200-character excerpt for every list endpoint (audit A1) | ⬜ |
+| 5.10 | `BlogSummaryResponse` with a 200-character excerpt for every list endpoint (audit A1) | ✅ |
 | 5.11 | `@EntityGraph` on list queries; `open-in-view=false` (audit A2) | ⬜ |
 
 ## Phase 6 — Community Q&A and reputation
