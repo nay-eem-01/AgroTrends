@@ -7,7 +7,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class ForgotPasswordRequest {
+public class EmailRequest {
 
     @NotBlank(message = ErrorCode.ERROR_EMAIL_IS_REQUIRED)
     private String email;

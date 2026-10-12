@@ -49,7 +49,7 @@ class GoogleSignInTest {
     private final RefreshTokenService refreshTokenService = mock(RefreshTokenService.class);
     private final JwtUtil jwtUtil = mock(JwtUtil.class);
     private final AuthService authService = new AuthService(jwtUtil, refreshTokenService, mock(AuthenticationManager.class),
-            userService, mock(UserSessionService.class), mock(AttemptLimiter.class), verifier);
+            userService, mock(UserSessionService.class), mock(AttemptLimiter.class), verifier, mock(EmailVerificationService.class));
 
     @BeforeEach
     void setUp() {
