@@ -1,7 +1,7 @@
 # AgroTrends backend
 
-A "Medium for agricultural knowledge, with AI": farmers, agronomists and students publish blogs, ask and
-answer questions, and get AI answers grounded in the platform's own posts (RAG). Spring Boot 3.5 / Java 21,
+A Q&A-first community for Bangladesh's young agriculture people: ask, answer and publish; AI answers instantly
+from the platform's own posts and vetted answers (RAG), and verified experts confirm. Spring Boot 3.5 / Java 21,
 PostgreSQL + pgvector, Spring AI (Gemini). The React frontend lives in `../AGROTRENDS- FrontEnd`.
 
 ## Start of every session
@@ -11,7 +11,8 @@ PostgreSQL + pgvector, Spring AI (Gemini). The React frontend lives in `../AGROT
 
 ## Where things are
 
-- `docs/PLAN.md` - vision, current state, decisions, gaps vs Medium, risks
+- `docs/PLAN.md` - vision, audience, business domains, trust model, launch test, decisions, risks
+- `docs/ARCHITECTURE.md` - how the launch features connect (data model, flows, events), with diagrams
 - `docs/ROADMAP.md` - phased steps, one small PR each, with status
 - `docs/DEV_LOG.md` - dated log of what was done and decided
 - `docs/research/` - primary-source research notes (Spring AI RAG, Gemini embeddings, ...)
