@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 56 of 84 steps done): launch blockers and one account type with
+- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 57 of 84 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -20,7 +20,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 ## Next up
 
 1. Merge `docs/product-study` and `docs/launch-plan` into `development`.
-2. Phase 6 in progress on `feat/qa-reputation-base` (6.1–6.2 done). Next: 6.3 question search.
+2. Phase 6 in progress on `feat/qa-reputation-base` (6.1–6.3 done). Next: 6.4 votes.
 3. Then Phases 6, 7, 8; deploy (Phase 4) and live-test only after all of them.
 4. **Team:** 30–50 seeded Bangla articles; 5–10 experts invited; pick the 6–8 launch topics (categories).
 5. **Nayeem:** fix the Gemini key; roadmap 0.4 (rotate keys, purge history); set `GOOGLE_CLIENT_ID`; make
@@ -47,6 +47,24 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-13 (roadmap 6.3)
+
+**Done**
+- `GET /api/questions/search?q=` (public): full-text over title and text, best match first, with the article
+  search's `'simple'` configuration (Bangla and English alike; quoted phrases and `-exclusions`).
+- `QuestionResponse.answerCount`: direct answers only (replies to answers are not counted).
+- `GET /api/questions/all?unanswered=true`, combinable with the topic, tag and agri filters.
+- Checked live: search, exclusion, blank query 400, answer vs reply counting, the unanswered filter.
+
+**Decisions**
+- `answerCount` is a Hibernate `@Formula` subquery, not a stored counter: nothing to keep in step and nothing to
+  backfill. `shortcut:` one subquery per listed row; switch to a stored counter if question lists get slow.
+- Search is written in HQL (`function('ts_match_vq', …)`) rather than native SQL, so the formula column loads.
+
+**Known limitations**
+- No search index yet (same as articles): a GIN index on the tsvector comes with the Flyway baseline (4.2).
+- Moderated (hidden) answers still count until Phase 8 adds hiding.
 
 ## 2026-10-13 (roadmap 6.2)
 
