@@ -21,4 +21,7 @@ public class AnswerResponse {
     private Instant createdAt;
 
     private Instant updatedAt;
+
+    /** Upvotes minus downvotes. */
+    private long score;
 }

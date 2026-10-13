@@ -35,4 +35,7 @@ public class QuestionResponse {
 
     /** Direct answers, not counting replies. */
     private long answerCount;
+
+    /** Upvotes minus downvotes. */
+    private long score;
 }

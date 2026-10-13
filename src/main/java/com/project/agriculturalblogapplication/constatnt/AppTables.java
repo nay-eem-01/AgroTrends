@@ -100,6 +100,15 @@ public final class AppTables {
         public static final String CLAP_COUNT = "clap_count";
     }
 
+    public static final class VoteTable {
+
+        public static final String NAME = "votes";
+
+        public static final String DIRECTION = "direction";
+
+        public static final String SCORE = "score";
+    }
+
     public static final class TagTable {
 
         public static final String TAG_NAME = "tag_name";
