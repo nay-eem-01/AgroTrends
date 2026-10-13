@@ -9,6 +9,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ImageStorageTest {
@@ -37,5 +38,19 @@ class ImageStorageTest {
         assertTrue(url.matches("https://api\\.example\\.com/uploads/[0-9a-f-]{36}\\.png"), url);
         Path stored = dir.resolve(url.substring(url.lastIndexOf('/') + 1));
         assertArrayEquals(PNG, Files.readAllBytes(stored));
+    }
+
+    @Test
+    void onlyUrlsThisStorageReturnedCountAsStored(@TempDir Path dir) {
+        StorageProperties properties = new StorageProperties();
+        properties.setLocalDir(dir.toString());
+        properties.setPublicBaseUrl("https://api.example.com/uploads/");
+        LocalDiskImageStorage storage = new LocalDiskImageStorage(properties);
+
+        assertTrue(storage.isStored(storage.store(PNG, ImageType.PNG)));
+        assertFalse(storage.isStored("https://tracker.example.net/pixel.png"));
+        assertFalse(storage.isStored("https://api.example.com/uploads.evil.net/a.png"));
+        assertFalse(storage.isStored("https://api.example.com/uploads/../secret/a.png"));
+        assertFalse(storage.isStored(null));
     }
 }

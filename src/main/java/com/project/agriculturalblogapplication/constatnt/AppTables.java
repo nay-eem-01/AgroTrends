@@ -180,6 +180,8 @@ public final class AppTables {
         public static final String TITLE = "title";
 
         public static final String QUESTION_TAGS = "question_tags";
+
+        public static final String IMAGE_URLS = "image_urls";
     }
 
     public static final class RefreshTokenTable {

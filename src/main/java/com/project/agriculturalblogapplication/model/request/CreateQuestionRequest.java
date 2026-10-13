@@ -27,6 +27,10 @@ public class CreateQuestionRequest {
     @Size(max = AppConstants.MAX_TAGS_PER_POST, message = ErrorCode.ERROR_TOO_MANY_TAGS)
     private List<@NotBlank @Size(max = AppConstants.MAX_TAG_LENGTH, message = ErrorCode.ERROR_TAG_TOO_LONG) String> tags;
 
+    /** Up to four photo URLs returned by POST /api/images. */
+    @Size(max = AppConstants.MAX_PHOTOS_PER_QUESTION, message = ErrorCode.ERROR_TOO_MANY_PHOTOS)
+    private List<@NotBlank String> imageUrls;
+
     /** Optional crop, season, region and soil the question is about. */
     @Valid
     private AgriInfo agri;

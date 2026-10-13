@@ -41,6 +41,8 @@ public class QuestionService {
 
     private final TagService tagService;
 
+    private final ImageService imageService;
+
     public QuestionResponse create(CreateQuestionRequest request, String lang) {
         User user = userService.findByIdWithException(authorizationService.currentUserId(lang), lang);
 
@@ -50,6 +52,8 @@ public class QuestionService {
         question.setUser(user);
         question.setCategory(categoryService.findByIdWithException(request.getCategoryId()));
         question.setTags(tagService.resolve(request.getTags() == null ? List.of() : request.getTags()));
+        question.setImageUrls(imageService.requireUploaded(
+                request.getImageUrls() == null ? List.of() : request.getImageUrls(), lang));
         if (request.getAgri() != null) {
             question.setAgri(request.getAgri().toMetadata());
         }
@@ -87,9 +91,12 @@ public class QuestionService {
         question.setTitle(request.getTitle());
         question.setContent(request.getContent());
         question.setCategory(categoryService.findByIdWithException(request.getCategoryId()));
-        // Omitted tags or agri info keep the current values.
+        // Omitted tags, photos or agri info keep the current values.
         if (request.getTags() != null) {
             question.setTags(tagService.resolve(request.getTags()));
+        }
+        if (request.getImageUrls() != null) {
+            question.setImageUrls(imageService.requireUploaded(request.getImageUrls(), lang));
         }
         if (request.getAgri() != null) {
             question.setAgri(request.getAgri().toMetadata());
@@ -124,6 +131,7 @@ public class QuestionService {
         response.setAgri(AgriInfo.from(question.getAgri()));
         response.setCategory(question.getCategory() == null ? null : CategoryResponse.from(question.getCategory()));
         response.setTags(question.getTags().stream().map(Tag::getName).toList());
+        response.setImageUrls(List.copyOf(question.getImageUrls()));
         response.setCreatedAt(CommonUtils.toInstant(question.getCreationDate()));
         response.setUpdatedAt(CommonUtils.toInstant(question.getLastModifiedDate()));
 

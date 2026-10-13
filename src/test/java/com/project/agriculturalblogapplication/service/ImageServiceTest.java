@@ -6,6 +6,8 @@ import com.project.agriculturalblogapplication.storage.ImageType;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -20,6 +22,16 @@ class ImageServiceTest {
 
     private final ImageStorage storage = mock(ImageStorage.class);
     private final ImageService imageService = new ImageService(storage);
+
+    @Test
+    void photosFromAnotherHostAreRefused() {
+        when(storage.isStored("https://cdn/x.png")).thenReturn(true);
+
+        assertEquals(List.of("https://cdn/x.png"), imageService.requireUploaded(List.of("https://cdn/x.png"), "en"));
+        ApplicationException refused = assertThrows(ApplicationException.class, () ->
+                imageService.requireUploaded(List.of("https://cdn/x.png", "https://evil/y.png"), "en"));
+        assertEquals(HttpStatus.BAD_REQUEST, refused.getHttpStatus());
+    }
 
     @Test
     void aPngIsStored() {
