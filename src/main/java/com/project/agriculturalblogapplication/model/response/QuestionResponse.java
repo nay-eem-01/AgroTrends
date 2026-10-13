@@ -38,4 +38,7 @@ public class QuestionResponse {
 
     /** Upvotes minus downvotes. */
     private long score;
+
+    /** The answer the asker accepted, or null. */
+    private Long acceptedAnswerId;
 }

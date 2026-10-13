@@ -24,4 +24,7 @@ public class AnswerResponse {
 
     /** Upvotes minus downvotes. */
     private long score;
+
+    /** True for the answer the asker accepted. */
+    private boolean accepted;
 }

@@ -5,6 +5,7 @@ import com.project.agriculturalblogapplication.entities.Answer;
 import com.project.agriculturalblogapplication.model.request.CreateAnswerRequest;
 import com.project.agriculturalblogapplication.model.request.ReplyToAnswerRequest;
 import com.project.agriculturalblogapplication.model.request.UpdateAnswerRequest;
+import com.project.agriculturalblogapplication.model.response.AnswerResponse;
 import com.project.agriculturalblogapplication.model.response.HttpResponse;
 import com.project.agriculturalblogapplication.service.AnswerService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import static com.project.agriculturalblogapplication.constatnt.AppConstants.DEFAULT_LANGUAGE_CODE;
+import static com.project.agriculturalblogapplication.constatnt.AppConstants.LANG;
 
 @Tag(name = "Answer controller", description = "Answer related operations.")
 @RestController
@@ -31,7 +33,23 @@ public class AnswerController {
 
     private final AnswerService answerService;
 
-    @Operation(summary = "Get all answers by question id")
+    @Operation(summary = "The asker accepts this answer (replaces an earlier accept)", security = @SecurityRequirement(name = "jwtToken"))
+    @ApiResponse(content = @Content(schema = @Schema(implementation = AnswerResponse.class)), responseCode = "200")
+    @PutMapping(value = "/id/{answerId}/accept")
+    public ResponseEntity<HttpResponse> accept(@PathVariable Long answerId,
+                                               @RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        return HttpResponse.getResponseEntity(true, "Answer accepted.", answerService.accept(answerId, lang));
+    }
+
+    @Operation(summary = "The asker takes back accepting this answer", security = @SecurityRequirement(name = "jwtToken"))
+    @ApiResponse(content = @Content(schema = @Schema(implementation = AnswerResponse.class)), responseCode = "200")
+    @DeleteMapping(value = "/id/{answerId}/accept")
+    public ResponseEntity<HttpResponse> unaccept(@PathVariable Long answerId,
+                                                 @RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        return HttpResponse.getResponseEntity(true, "Accept removed.", answerService.unaccept(answerId, lang));
+    }
+
+    @Operation(summary = "Direct answers to a question: the accepted one first, then by score (replies via /replies)")
     @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = Answer.class))), responseCode = "200")
     @GetMapping(value = "/question/{questionId}")
     public ResponseEntity<HttpResponse> getAllByQuestionId(@PathVariable Long questionId) {

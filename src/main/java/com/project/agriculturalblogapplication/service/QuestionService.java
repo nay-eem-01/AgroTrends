@@ -146,6 +146,7 @@ public class QuestionService {
         response.setImageUrls(List.copyOf(question.getImageUrls()));
         response.setAnswerCount(question.getAnswerCount());
         response.setScore(question.getScore());
+        response.setAcceptedAnswerId(question.getAcceptedAnswer() == null ? null : question.getAcceptedAnswer().getId());
         response.setCreatedAt(CommonUtils.toInstant(question.getCreationDate()));
         response.setUpdatedAt(CommonUtils.toInstant(question.getLastModifiedDate()));
 

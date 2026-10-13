@@ -13,6 +13,8 @@ import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.type.SqlTypes;
 
 import java.util.ArrayList;
@@ -56,6 +58,12 @@ public class Question extends AuditModel<String> {
     @ColumnDefault("'{}'")
     @Column(name = QuestionTable.IMAGE_URLS, nullable = false)
     private List<String> imageUrls = new ArrayList<>();
+
+    /** The answer the asker marked as solving it; cleared by the database when that answer is deleted. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = QuestionTable.ACCEPTED_ANSWER_ID)
+    @OnDelete(action = OnDeleteAction.SET_NULL)
+    private Answer acceptedAnswer;
 
     /** Direct answers, not replies to answers; computed by the database so it can never drift. */
     @Formula("(select count(*) from answers a where a.question_id = id and a.answer_id is null)")

@@ -191,6 +191,8 @@ public final class AppTables {
         public static final String QUESTION_TAGS = "question_tags";
 
         public static final String IMAGE_URLS = "image_urls";
+
+        public static final String ACCEPTED_ANSWER_ID = "accepted_answer_id";
     }
 
     public static final class RefreshTokenTable {

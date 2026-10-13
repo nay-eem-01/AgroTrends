@@ -17,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -54,18 +55,59 @@ public class AnswerService {
         return mapToAnswerResponse(answer);
     }
 
+    @Transactional
     public void delete(Long answerId, String lang) {
         Answer answer = findByIdWithException(answerId);
         authorizationService.assertOwnerOrAdmin(answer.getUser().getId(), lang);
+        // The loaded question must not point at a deleted row when the session flushes.
+        if (isAccepted(answer)) {
+            answer.getQuestion().setAcceptedAnswer(null);
+        }
         answerRepository.delete(answer);
     }
 
+    /** Direct answers (replies come from viewReplies): the accepted one first, then highest score, then oldest. */
     public List<AnswerResponse> getAllByQuestionId(Long questionId) {
-        List<Answer> answers = answerRepository.findAllByQuestionId(questionId);
-
-        return answers.stream()
+        return answerRepository.findByQuestionIdAndParentAnswerIsNull(questionId).stream()
+                .sorted(Comparator.comparing((Answer answer) -> !isAccepted(answer))
+                        .thenComparing(Answer::getScore, Comparator.reverseOrder())
+                        .thenComparing(Answer::getId))
                 .map(this::mapToAnswerResponse)
                 .toList();
+    }
+
+    /** The asker marks an answer as the one that solved the question, replacing any earlier pick. */
+    @Transactional
+    public AnswerResponse accept(Long answerId, String lang) {
+        Answer answer = findByIdWithException(answerId);
+        assertAsker(answer.getQuestion(), lang);
+        if (answer.getParentAnswer() != null) {
+            throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_CANNOT_ACCEPT_REPLY, lang);
+        }
+        answer.getQuestion().setAcceptedAnswer(answer);
+        return mapToAnswerResponse(answer);
+    }
+
+    /** The asker takes back their accept; a no-op when this answer is not the accepted one. */
+    @Transactional
+    public AnswerResponse unaccept(Long answerId, String lang) {
+        Answer answer = findByIdWithException(answerId);
+        assertAsker(answer.getQuestion(), lang);
+        if (isAccepted(answer)) {
+            answer.getQuestion().setAcceptedAnswer(null);
+        }
+        return mapToAnswerResponse(answer);
+    }
+
+    private void assertAsker(Question question, String lang) {
+        if (!question.getUser().getId().equals(authorizationService.currentUserId(lang))) {
+            throw new ApplicationException(HttpStatus.FORBIDDEN, ErrorCode.ERROR_ONLY_ASKER_CAN_ACCEPT, lang);
+        }
+    }
+
+    private static boolean isAccepted(Answer answer) {
+        Answer accepted = answer.getQuestion().getAcceptedAnswer();
+        return accepted != null && accepted.getId().equals(answer.getId());
     }
 
     public AnswerResponse replyToAnswer(ReplyToAnswerRequest request, String lang) {
@@ -119,6 +161,7 @@ public class AnswerService {
         response.setCreatedAt(CommonUtils.toInstant(answer.getCreationDate()));
         response.setUpdatedAt(CommonUtils.toInstant(answer.getLastModifiedDate()));
         response.setScore(answer.getScore());
+        response.setAccepted(isAccepted(answer));
 
         return response;
     }
