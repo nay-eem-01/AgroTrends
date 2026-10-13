@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 58 of 84 steps done): launch blockers and one account type with
+- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 59 of 84 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -20,7 +20,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 ## Next up
 
 1. Merge `docs/product-study` and `docs/launch-plan` into `development`.
-2. Phase 6 in progress on `feat/qa-reputation-base` (6.1–6.4 done). Next: 6.5 accepted answer.
+2. Phase 6 in progress on `feat/qa-reputation-base` (6.1–6.5 done). Next: 6.6 reputation ledger.
 3. Then Phases 6, 7, 8; deploy (Phase 4) and live-test only after all of them.
 4. **Team:** 30–50 seeded Bangla articles; 5–10 experts invited; pick the 6–8 launch topics (categories).
 5. **Nayeem:** fix the Gemini key; roadmap 0.4 (rotate keys, purge history); set `GOOGLE_CLIENT_ID`; make
@@ -47,6 +47,23 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-13 (roadmap 6.5)
+
+**Done**
+- `Question.acceptedAnswer` (`ON DELETE SET NULL`). `PUT /api/answers/id/{id}/accept` (asker only, 403 for
+  anyone else; replies 400) replaces any earlier accept; `DELETE` on the same path takes it back.
+- `QuestionResponse.acceptedAnswerId`, `AnswerResponse.accepted`.
+- `GET /api/answers/question/{id}`: accepted first, then highest score, then oldest.
+- Fixed before commit (found live): deleting the accepted answer failed with a 500 because the loaded question
+  still pointed at it; `AnswerService.delete` now clears the accept in the same transaction (regression test).
+
+**Breaking API changes**
+- `GET /api/answers/question/{id}` returns direct answers only; replies were mixed in before and now come only
+  from `GET /api/answers/replies/{answerId}` (matches `answerCount`).
+
+**Decisions**
+- Accepting your own answer is allowed (a self-answer can be the solution); 6.6 gives it no points.
 
 ## 2026-10-13 (roadmap 6.4)
 
