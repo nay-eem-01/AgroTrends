@@ -20,7 +20,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 ## Next up
 
 1. Merge `docs/product-study` and `docs/launch-plan` into `development`.
-2. Phase 5 on `feat/launch-blockers-base`: 5.1–5.2 done; next 5.3 (delete the i18n error stack).
+2. Phase 5 on `feat/launch-blockers-base`: 5.1–5.3 done; next 5.4 (delete dead code).
 3. Then Phases 6, 7, 8; deploy (Phase 4) and live-test only after all of them.
 4. **Team:** 30–50 seeded Bangla articles; 5–10 experts invited; pick the 6–8 launch topics (categories).
 5. **Nayeem:** fix the Gemini key; roadmap 0.4 (rotate keys, purge history); set `GOOGLE_CLIENT_ID`; make
@@ -45,6 +45,25 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | After deploying 2.3a: start once with `AI_REINDEX_ON_STARTUP=true` (old chunks have no `status`, so retrieval ignores them) | whoever deploys | AI answers on existing posts |
 | Deleting a user with comments/questions/answers fails on foreign keys: decide delete vs anonymise | Nayeem | account deletion |
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
+
+---
+
+## 2026-10-13 (roadmap 5.3)
+
+**Done**
+- `ExceptionHandlingController` returns the `ErrorCode` message directly; it no longer queries `error_codes`
+  on every error (audit O1). The latent NullPointerException in `ErrorCodeService` is gone with it (audit B4).
+- Deleted the DB-driven localisation stack: `ErrorCodeEntity`, `Language`, `LocalizedText`, `Translation`,
+  their repositories, services and request/response types, `CommonUtils.getLocalizedPageable`, and their
+  `AppTables` entries. Deleted 100 unused `ErrorCode` constants (audit O3). 163 unit tests pass.
+- Split over two branches to keep each PR under 20 files: `chore/delete-i18n-error-stack`,
+  `chore/delete-i18n-entities`.
+
+**Known limitations**
+- Existing databases keep the empty `error_codes`, `languages`, `localized_texts` and `translations` tables
+  (`ddl-auto=update` never drops). The Flyway baseline (4.2) should leave them out.
+- The `lang` argument is still threaded through services and `ApplicationException`; removing it is audit O2
+  (roadmap **Later**).
 
 ---
 

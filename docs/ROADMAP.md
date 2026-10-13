@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 45 of 84 steps done
+**Progress:** 46 of 84 steps done
 
 **Launch scope (decided 2026-10-13):** Phases 4–8 must all be done before the public launch. Order of work:
 5 → 6 → 7 → 8 → 4 (deploy) → live test → launch. Nothing is deployed until Phases 5–8 are done. After launch, the
@@ -115,7 +115,7 @@ everyone; a confirmed e-mail before any write.
 |---|---|---|
 | 5.1 | AI indexing never fails a blog save: catch + log in `DocumentService.indexBlog`/`reindexBlog`, the re-index runner heals (audit B1) | ✅ |
 | 5.2 | System prompt: drop the "Bangla only if explicitly asked" sentence; test asserts it (audit B2) | ✅ |
-| 5.3 | Delete the DB-driven i18n error stack (`ErrorCodeEntity`, `Language`, `LocalizedText`, `Translation` + services) and unused `ErrorCode` constants (audit O1, O3; fixes B4) | ⬜ |
+| 5.3 | Delete the DB-driven i18n error stack (`ErrorCodeEntity`, `Language`, `LocalizedText`, `Translation` + services) and unused `ErrorCode` constants (audit O1, O3; fixes B4) | ✅ |
 | 5.4 | Delete dead code: `dtos/` + ModelMapper, Thymeleaf, `ForgetPasswordService` and other orphans (audit O4–O6) | ⬜ |
 | 5.5 | One account type: sign-up takes no `userType`; the author profile becomes the user's profile, created on first need; any confirmed user may publish | ⬜ |
 | 5.6 | E-mail confirmation: token mailed at sign-up, `POST /api/auth/verify-email`, `POST /api/auth/resend-verification`; Google sign-in counts as confirmed | ⬜ |
