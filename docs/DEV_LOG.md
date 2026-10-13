@@ -7,37 +7,35 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ## Where we are
 
-- Vision: a Medium for agricultural knowledge with AI (`docs/PLAN.md`). Roughly 65 % there: the publishing core
-  (Phase 2) and the citing AI (Phase 3) are merged into `development`; shipping (Phase 4) and notifications
-  (Phase 5) remain.
+- **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
+  instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
+- Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
+- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 43 of 84 steps done): launch blockers and one account type with
+  e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
+  in-process notifications + moderation (8). The Kafka phase is dropped.
+- How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
 - **Branch model:** `development` -> `staging` -> `production`; feature base off `development`, serial step PRs into
   the base. `main` is frozen. See the `git-workflow` skill.
-- Phases 0 (except 0.4), 1, 2 and 3 are on `development` (PR #51). `staging` is still at PR #19.
-- A new frontend is being built from scratch in its own repo (Medium-style UI against this API); deployment
-  (Phase 4) waits until it is under way.
-- Live-tested on a local pgvector DB except the Gemini **chat** calls (key rejected since 2026-10-06): 3.4–3.8 chat
-  paths, the 3.6 timeout and token counts still need a check with a working key.
 
 ## Next up
 
-1. Open PRs for Google sign-in: `feat/google-token-verifier` -> `feat/google-signin-base`, then
-   `feat/google-signin-endpoint` -> the base, then the base -> `development` (roadmap 2.15). Create the Google
-   OAuth client id and set `GOOGLE_CLIENT_ID`; frontend adds the Google button.
-2. Frontend (`../agrotrends-web`, its own roadmap and log): Phase F0 pushed; F1 accounts next.
-3. **Nayeem:** fix the Gemini key; start once with `AI_REINDEX_ON_STARTUP=true`; roadmap 0.4 (rotate keys, purge
-   history); make `development` the default branch and protect it; delete merged step branches.
-4. Later: test `development` and promote to `staging`; Phase 4 (4.2 Flyway must start from the schema the startup
-   `SchemaPatches` leaves behind; 4.4 Testcontainers so `contextLoads` runs in CI).
+1. Merge `docs/product-study` and `docs/launch-plan` into `development`.
+2. Phase 5 on `feat/launch-blockers-base`: 5.1 (indexing never fails a save) first, then 5.2–5.11.
+3. Then Phases 6, 7, 8; deploy (Phase 4) and live-test only after all of them.
+4. **Team:** 30–50 seeded Bangla articles; 5–10 experts invited; pick the 6–8 launch topics (categories).
+5. **Nayeem:** fix the Gemini key; roadmap 0.4 (rotate keys, purge history); set `GOOGLE_CLIENT_ID`; make
+   `development` the default branch; delete `feature/kafka-impl` (superseded by Phase 8).
 
 ## Open items
 
 | Item | Needs | Blocks |
 |---|---|---|
 | Leaked Gemini keys / DB password in git history — also on `origin/dev` (`f06f456`) and `origin/feature/kafka-impl`, so the purge must cover those branches | Nayeem (revoke, rotate, then purge) | roadmap 0.4 |
-| `feature/kafka-impl`: reference only for Phase 5; delete once Phase 5 is rebuilt | Nayeem | — |
+| `feature/kafka-impl`: no longer needed (Phase 8 uses in-process events); delete it | Nayeem | — |
 | Create a local `.env` from `.env.example` (DB_PASSWORD, GEMINI_API_KEY, JWT_SECRET) — the app no longer starts without them | Nayeem | running the app locally |
 | Any database that still holds `text-embedding-004` vectors: start once with `AI_REINDEX_ON_STARTUP=true` | whoever owns that DB | retrieval on old data |
 | Client errors (400/401) are logged at ERROR by `ExceptionHandlingController` — noisy | roadmap 4.7 | — |
+| Launch topics (categories), reputation numbers, who reviews expert applications and reports | team decision (partner doc) | 6.1, 7.2, 8.4 |
 | Frontend can show `sources` from `/api/ai/ask` as links to `/api/blogs/id/{blogId}` | frontend | — |
 | Frontend must stop sending `userId` / `authorUserId`, use `/api/auth/refresh-token`, and handle 401 vs 403 | frontend | frontend integration |
 | `contextLoads` fails without a local Postgres | roadmap 4.4 | CI |
@@ -47,6 +45,31 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | After deploying 2.3a: start once with `AI_REINDEX_ON_STARTUP=true` (old chunks have no `status`, so retrieval ignores them) | whoever deploys | AI answers on existing posts |
 | Deleting a user with comments/questions/answers fails on foreign keys: decide delete vs anonymise | Nayeem | account deletion |
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
+
+---
+
+## 2026-10-13 (direction reset, launch plan)
+
+**Done**
+- Product study (`docs/research/product-study-2026-10.md`), then a council review of the founder's vision.
+- `docs/PLAN.md` rewritten: positioning, audience, business domains, trust model, launch test, decisions 11–16.
+- `docs/ROADMAP.md`: new Phases 5–8 (launch blockers, Q&A + reputation, experts + AI review, notifications +
+  moderation); Phase 4 gains Actuator and backups; old Kafka Phase 5 dropped; **Later** list for post-launch.
+- `docs/ARCHITECTURE.md`: every launch feature, data model and event flow with Mermaid diagrams.
+- Partner-facing launch plan written as a shared doc (non-technical).
+
+**Decisions**
+- One account type; a confirmed e-mail before any write (supersedes decision 8).
+- Categories are the topics for questions, reputation and expert badges.
+- Reputation is an append-only ledger per topic; Top Contributor is computed; Verified Expert is admin-granted
+  per topic and revocable.
+- Every new question gets a stored AI answer, labelled unchecked; only expert-confirmed or corrected AI answers,
+  accepted answers and expert answers reach RAG.
+- Notifications are in-process after-commit events (supersedes decision 10, Kafka).
+- Launch only after Phases 4–8; the 8-week test then decides on the Academy and paid questions.
+
+**Known limitations**
+- Reputation numbers and thresholds are proposals until the team confirms them.
 
 ---
 
