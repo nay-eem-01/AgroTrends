@@ -109,6 +109,15 @@ public final class AppTables {
         public static final String SCORE = "score";
     }
 
+    public static final class ReputationEventTable {
+
+        public static final String NAME = "reputation_events";
+
+        public static final String REASON = "reason";
+
+        public static final String POINTS = "points";
+    }
+
     public static final class TagTable {
 
         public static final String TAG_NAME = "tag_name";

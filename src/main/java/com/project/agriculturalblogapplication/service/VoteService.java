@@ -42,14 +42,18 @@ public class VoteService {
 
     private final AuthorizationService authorizationService;
 
+    private final ReputationService reputationService;
+
     /** Casts, changes ({@code direction} set) or withdraws ({@code direction} null) the caller's vote on a question. */
     @Transactional
     public VoteResponse voteOnQuestion(Long questionId, VoteDirection direction, String lang) {
         Question question = questionService.findByIdWithException(questionId);
         Long userId = authorizationService.currentUserId(lang);
-        int delta = apply(userId, question.getUser(), voteRepository.findByUserIdAndQuestionId(userId, questionId),
-                direction, vote -> vote.setQuestion(question), lang);
+        VoteDirection before = apply(userId, question.getUser(),
+                voteRepository.findByUserIdAndQuestionId(userId, questionId), direction, vote -> vote.setQuestion(question), lang);
+        int delta = scoreChange(before, direction);
         questionRepository.addToScore(questionId, delta);
+        reputationService.questionVoteChanged(question, before, direction);
         return new VoteResponse(question.getScore() + delta, direction);
     }
 
@@ -58,9 +62,11 @@ public class VoteService {
     public VoteResponse voteOnAnswer(Long answerId, VoteDirection direction, String lang) {
         Answer answer = answerService.findByIdWithException(answerId);
         Long userId = authorizationService.currentUserId(lang);
-        int delta = apply(userId, answer.getUser(), voteRepository.findByUserIdAndAnswerId(userId, answerId),
-                direction, vote -> vote.setAnswer(answer), lang);
+        VoteDirection before = apply(userId, answer.getUser(),
+                voteRepository.findByUserIdAndAnswerId(userId, answerId), direction, vote -> vote.setAnswer(answer), lang);
+        int delta = scoreChange(before, direction);
         answerRepository.addToScore(answerId, delta);
+        reputationService.answerVoteChanged(answer, before, direction);
         return new VoteResponse(answer.getScore() + delta, direction);
     }
 
@@ -79,16 +85,20 @@ public class VoteService {
         return new MyVotesResponse(onQuestion, onAnswers);
     }
 
-    /** Saves or deletes the vote and returns how much the post's score changes. */
-    private int apply(Long userId, User author, Optional<Vote> existing, VoteDirection direction, Consumer<Vote> target,
-                      String lang) {
+    /** Saves or deletes the vote and returns the caller's previous vote (null when there was none). */
+    private VoteDirection apply(Long userId, User author, Optional<Vote> existing, VoteDirection direction,
+                                Consumer<Vote> target, String lang) {
         if (author.getId().equals(userId)) {
             throw new ApplicationException(HttpStatus.FORBIDDEN, ErrorCode.ERROR_CANNOT_VOTE_OWN_POST, lang);
         }
-        int before = existing.map(vote -> vote.getDirection().getValue()).orElse(0);
+        VoteDirection before = existing.map(Vote::getDirection).orElse(null);
+        if (direction == VoteDirection.DOWN && before != VoteDirection.DOWN
+                && reputationService.total(userId) < ReputationService.MIN_REPUTATION_TO_DOWNVOTE) {
+            throw new ApplicationException(HttpStatus.FORBIDDEN, ErrorCode.ERROR_DOWNVOTE_NEEDS_REPUTATION, lang);
+        }
         if (direction == null) {
             existing.ifPresent(voteRepository::delete);
-            return -before;
+            return before;
         }
         Vote vote = existing.orElseGet(() -> {
             Vote created = new Vote();
@@ -98,6 +108,10 @@ public class VoteService {
         });
         vote.setDirection(direction);
         voteRepository.save(vote);
-        return direction.getValue() - before;
+        return before;
+    }
+
+    private static int scoreChange(VoteDirection before, VoteDirection after) {
+        return (after == null ? 0 : after.getValue()) - (before == null ? 0 : before.getValue());
     }
 }

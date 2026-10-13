@@ -92,6 +92,7 @@ public final class ErrorCode {
     public static final String ERROR_CANNOT_CLAP_OWN_BLOG = "You cannot clap for your own blog.";
     public static final String ERROR_INVALID_CLAP_COUNT = "Clap between 1 and 50 times.";
     public static final String ERROR_CANNOT_VOTE_OWN_POST = "You cannot vote on your own post.";
+    public static final String ERROR_DOWNVOTE_NEEDS_REPUTATION = "You need 50 reputation points to downvote.";
     public static final String ERROR_ONLY_ASKER_CAN_ACCEPT = "Only the person who asked can accept an answer.";
     public static final String ERROR_CANNOT_ACCEPT_REPLY = "Only answers, not replies, can be accepted.";
     public static final String ERROR_CANNOT_FOLLOW_YOURSELF = "You cannot follow yourself.";

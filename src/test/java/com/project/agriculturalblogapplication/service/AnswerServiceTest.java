@@ -20,7 +20,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -31,8 +33,9 @@ class AnswerServiceTest {
 
     private final AnswerRepository answerRepository = mock(AnswerRepository.class);
     private final AuthorizationService authorization = mock(AuthorizationService.class);
+    private final ReputationService reputation = mock(ReputationService.class);
     private final AnswerService answerService = new AnswerService(mock(QuestionService.class), mock(UserService.class),
-            authorization, answerRepository);
+            authorization, answerRepository, reputation);
 
     private Question question;
 
@@ -53,6 +56,12 @@ class AnswerServiceTest {
         assertSame(first, question.getAcceptedAnswer());
         answerService.accept(4L, LANG);
         assertSame(second, question.getAcceptedAnswer());
+        answerService.accept(4L, LANG);
+
+        verify(reputation).accepted(first);
+        verify(reputation).unaccepted(first);
+        verify(reputation).accepted(second);
+        verify(reputation, never()).unaccepted(second);
     }
 
     @Test
@@ -86,6 +95,7 @@ class AnswerServiceTest {
         assertSame(accepted, question.getAcceptedAnswer());
         answerService.unaccept(3L, LANG);
         assertNull(question.getAcceptedAnswer());
+        verify(reputation).unaccepted(accepted);
     }
 
     @Test
@@ -99,6 +109,7 @@ class AnswerServiceTest {
 
         assertNull(question.getAcceptedAnswer());
         verify(answerRepository).delete(accepted);
+        verify(reputation, never()).unaccepted(any());
     }
 
     @Test
