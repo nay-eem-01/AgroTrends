@@ -48,6 +48,18 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-13 (Phase 6 review fix)
+
+**Done**
+- Phase-end review of 6.1–6.8 found a lost-update race: editing a question or answer, or accepting an answer,
+  saved the whole row including the `score` it had loaded, undoing a vote cast in between. `score` is now
+  `updatable = false`; only the atomic `UPDATE … score + :delta` changes it (regression test `ScoreColumnTest`).
+- Phase 6 live smoke after the fix: 59/59 against the local Postgres.
+
+**Known limitations**
+- `Blog.clapCount` has the same pattern (an edit could undo a clap made meanwhile); fix it the same way when
+  articles are next touched.
+
 ## 2026-10-13 (roadmap 6.8)
 
 **Done**
