@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 57 of 84 steps done): launch blockers and one account type with
+- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 58 of 84 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -20,7 +20,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 ## Next up
 
 1. Merge `docs/product-study` and `docs/launch-plan` into `development`.
-2. Phase 6 in progress on `feat/qa-reputation-base` (6.1–6.3 done). Next: 6.4 votes.
+2. Phase 6 in progress on `feat/qa-reputation-base` (6.1–6.4 done). Next: 6.5 accepted answer.
 3. Then Phases 6, 7, 8; deploy (Phase 4) and live-test only after all of them.
 4. **Team:** 30–50 seeded Bangla articles; 5–10 experts invited; pick the 6–8 launch topics (categories).
 5. **Nayeem:** fix the Gemini key; roadmap 0.4 (rotate keys, purge history); set `GOOGLE_CLIENT_ID`; make
@@ -47,6 +47,22 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-13 (roadmap 6.4)
+
+**Done**
+- `Vote` (one per user and question or answer; unique per pair; `ON DELETE CASCADE` from user, question and
+  answer). `PUT /api/questions/id/{id}/vote?direction=UP|DOWN` and `PUT /api/answers/id/{id}/vote?direction=…`
+  cast or change a vote; `DELETE` on the same paths withdraws it. Voting on your own post is 403.
+- `score` column on questions and answers, moved by an atomic `UPDATE … SET score = score + :delta` (the clap
+  pattern); shown on `QuestionResponse` and `AnswerResponse`. Votes answer `{score, myVote}`.
+- `GET /api/questions/id/{id}/my-votes`: the caller's votes on the question and each answer, one query.
+- Checked live: self-vote 403, idempotent repeat, up→down, withdraw, anonymous 401, deleting a voted thread.
+
+**Known limitations**
+- Two simultaneous first votes by the same user on the same post: the unique constraint rejects the second
+  with a 500 instead of a clean answer (same as claps). Rare; handle with the 4.7 error clean-up.
+- Downvotes are open to everyone until 6.6 adds the 50-point threshold.
 
 ## 2026-10-13 (roadmap 6.3)
 
