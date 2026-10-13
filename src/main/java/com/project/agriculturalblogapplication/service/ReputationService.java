@@ -6,9 +6,16 @@ import com.project.agriculturalblogapplication.entities.ReputationEvent;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.enums.ReputationReason;
 import com.project.agriculturalblogapplication.enums.VoteDirection;
+import com.project.agriculturalblogapplication.model.response.ReputationResponse;
+import com.project.agriculturalblogapplication.model.response.TopicReputation;
 import com.project.agriculturalblogapplication.repositories.ReputationEventRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Writes the reputation ledger as votes and accepts change. Nothing is updated in place: taking something back
@@ -26,6 +33,20 @@ public class ReputationService {
 
     public long total(Long userId) {
         return reputationEventRepository.totalFor(userId);
+    }
+
+    /** Totals for several users in one query, for lists; users with no events are absent (read them as 0). */
+    public Map<Long, Long> totals(Collection<Long> userIds) {
+        if (userIds.isEmpty()) {
+            return Map.of();
+        }
+        return reputationEventRepository.totalsFor(userIds).stream()
+                .collect(Collectors.toMap(row -> (Long) row[0], row -> (Long) row[1]));
+    }
+
+    public ReputationResponse of(Long userId) {
+        List<TopicReputation> topics = reputationEventRepository.byTopic(userId);
+        return new ReputationResponse(topics.stream().mapToLong(TopicReputation::points).sum(), topics);
     }
 
     public void questionVoteChanged(Question question, VoteDirection before, VoteDirection after) {

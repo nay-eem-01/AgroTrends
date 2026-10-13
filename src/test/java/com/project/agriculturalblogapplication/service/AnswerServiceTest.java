@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -121,8 +122,12 @@ class AnswerServiceTest {
         question.setAcceptedAnswer(accepted);
         when(answerRepository.findByQuestionIdAndParentAnswerIsNull(1L)).thenReturn(List.of(newLow, oldLow, high, accepted));
 
-        assertEquals(List.of(3L, 2L, 1L, 4L),
-                answerService.getAllByQuestionId(1L).stream().map(AnswerResponse::getAnswerId).toList());
+        when(reputation.totals(List.of(23L, 22L, 21L, 24L))).thenReturn(Map.of(22L, 40L));
+
+        List<AnswerResponse> answers = answerService.getAllByQuestionId(1L);
+
+        assertEquals(List.of(3L, 2L, 1L, 4L), answers.stream().map(AnswerResponse::getAnswerId).toList());
+        assertEquals(List.of(0L, 40L, 0L, 0L), answers.stream().map(AnswerResponse::getAuthorReputation).toList());
     }
 
     private Answer answer(long id, long score) {

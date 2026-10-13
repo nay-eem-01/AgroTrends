@@ -18,6 +18,9 @@ public class AnswerResponse {
     /** The author's display name (never their e-mail). */
     private String authorName;
 
+    /** The author's total reputation. */
+    private long authorReputation;
+
     private Instant createdAt;
 
     private Instant updatedAt;
