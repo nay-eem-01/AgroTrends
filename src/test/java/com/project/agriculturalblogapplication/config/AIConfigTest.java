@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -40,6 +41,8 @@ class AIConfigTest {
         // Regression: the prompt only mentioned Bangla, so English questions were sometimes answered in Bangla.
         assertTrue(AIConfig.SYSTEM_PROMPT.contains("English for a question in English"));
         assertTrue(AIConfig.SYSTEM_PROMPT.contains("Bangla for a question in Bangla"));
+        // Regression (audit B2): a trailing "Bangla only if explicitly asked" contradicted the rule above.
+        assertFalse(AIConfig.SYSTEM_PROMPT.contains("explicitly"));
     }
 
     @Test
