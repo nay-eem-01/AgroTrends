@@ -20,7 +20,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 ## Next up
 
 1. Merge `docs/product-study` and `docs/launch-plan` into `development`.
-2. Phase 5 on `feat/launch-blockers-base`: 5.1–5.5 done; next 5.6 (e-mail confirmation).
+2. Phase 5 on `feat/launch-blockers-base`: 5.1–5.6 done; next 5.7 (confirmed-e-mail gate on writes).
 3. Then Phases 6, 7, 8; deploy (Phase 4) and live-test only after all of them.
 4. **Team:** 30–50 seeded Bangla articles; 5–10 experts invited; pick the 6–8 launch topics (categories).
 5. **Nayeem:** fix the Gemini key; roadmap 0.4 (rotate keys, purge history); set `GOOGLE_CLIENT_ID`; make
@@ -45,6 +45,29 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | After deploying 2.3a: start once with `AI_REINDEX_ON_STARTUP=true` (old chunks have no `status`, so retrieval ignores them) | whoever deploys | AI answers on existing posts |
 | Deleting a user with comments/questions/answers fails on foreign keys: decide delete vs anonymise | Nayeem | account deletion |
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
+
+---
+
+## 2026-10-13 (roadmap 5.6)
+
+**Done**
+- Sign-up mails a confirmation link (24 h, single use). `POST /api/auth/verify-email {token}` sets
+  `emailVerifiedAt`; `POST /api/auth/resend-verification {email}` always answers 200 and is rate-limited
+  (3 per e-mail, 10 per IP, per hour). Google sign-in and a completed password reset already confirm.
+- `PasswordResetToken` became `EmailToken` with a `purpose` (`RESET_PASSWORD`, `VERIFY_EMAIL`); token issue,
+  hashing, expiry and rate limiting moved to `EmailTokenService`, used by both flows. A mail failure at sign-up
+  is logged, not thrown (the account exists; the user can resend).
+- `ForgotPasswordRequest` renamed `EmailRequest` (same body), used by forgot-password and resend.
+- Tests: `EmailTokenServiceTest` (5), `EmailVerificationServiceTest` (4). 170 unit tests pass.
+
+**API changes (additive)**
+- New: `POST /api/auth/verify-email`, `POST /api/auth/resend-verification`. The reset-link error now reads
+  "This link is invalid or has expired." The frontend needs a `/verify-email?token=` page.
+
+**Known limitations**
+- Tokens move to a new `email_token` table; reset links issued before the deploy stop working (15-minute
+  lifetime, so harmless). The old `password_reset_token` table stays until the Flyway baseline (4.2).
+- Nothing is gated on confirmation yet; that is 5.7.
 
 ---
 
