@@ -2,15 +2,18 @@ package com.project.agriculturalblogapplication.entities;
 
 import com.project.agriculturalblogapplication.util.SafeHtml;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.project.agriculturalblogapplication.constatnt.AppTables.CategoryTable;
 import com.project.agriculturalblogapplication.constatnt.AppTables.QuestionTable;
+import com.project.agriculturalblogapplication.constatnt.AppTables.TagTable;
 import com.project.agriculturalblogapplication.constatnt.AppTables.UserTable;
 import com.project.agriculturalblogapplication.model.AuditModel;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -29,6 +32,18 @@ public class Question extends AuditModel<String> {
     @ManyToOne
     @JoinColumn(name = UserTable.USER_ID)
     private User user;
+
+    /** The topic; required for new questions, null only on questions asked before topics existed. */
+    @ManyToOne
+    @JoinColumn(name = CategoryTable.CATEGORY_ID)
+    private Category category;
+
+    // Eager for the same reason as Blog.tags: at most five, shown on every response.
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = QuestionTable.QUESTION_TAGS,
+            joinColumns = @JoinColumn(name = QuestionTable.QUESTION_ID),
+            inverseJoinColumns = @JoinColumn(name = TagTable.TAG_ID))
+    private Set<Tag> tags = new LinkedHashSet<>();
 
     @JsonIgnore
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
