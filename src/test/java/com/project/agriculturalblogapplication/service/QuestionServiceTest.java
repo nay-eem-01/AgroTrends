@@ -5,6 +5,7 @@ import com.project.agriculturalblogapplication.entities.Question;
 import com.project.agriculturalblogapplication.entities.Tag;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.enums.CropSeason;
+import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.enums.SoilType;
 import com.project.agriculturalblogapplication.model.AgriInfo;
 import com.project.agriculturalblogapplication.model.request.CreateQuestionRequest;
@@ -13,6 +14,7 @@ import com.project.agriculturalblogapplication.model.response.QuestionResponse;
 import com.project.agriculturalblogapplication.repositories.QuestionRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -22,6 +24,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -95,6 +98,12 @@ class QuestionServiceTest {
         update.setCategoryId(2L);
 
         assertEquals(List.of("rice blast"), questionService.update(update, "en").getTags());
+    }
+
+    @Test
+    void searchNeedsSomethingToSearchFor() {
+        ApplicationException refused = assertThrows(ApplicationException.class, () -> questionService.search("  ", 0, 10, "en"));
+        assertEquals(HttpStatus.BAD_REQUEST, refused.getHttpStatus());
     }
 
     @Test
