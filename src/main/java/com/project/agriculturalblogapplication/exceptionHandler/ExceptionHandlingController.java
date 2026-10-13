@@ -3,11 +3,8 @@ package com.project.agriculturalblogapplication.exceptionHandler;
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import com.project.agriculturalblogapplication.model.response.CustomResponse;
-import com.project.agriculturalblogapplication.model.response.ErrorCodeResponse;
 import com.project.agriculturalblogapplication.model.response.HttpResponse;
-import com.project.agriculturalblogapplication.service.ErrorCodeService;
 import io.swagger.v3.oas.annotations.Hidden;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.ConversionNotSupportedException;
 import org.springframework.beans.TypeMismatchException;
@@ -42,11 +39,8 @@ import java.util.stream.Collectors;
 @Slf4j
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @ControllerAdvice
-@RequiredArgsConstructor
 @Hidden
 public class ExceptionHandlingController extends ResponseEntityExceptionHandler {
-
-	private final ErrorCodeService errorCodeService;
 
 	@Override
 	protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
@@ -144,23 +138,9 @@ public class ExceptionHandlingController extends ResponseEntityExceptionHandler 
 
 	@ExceptionHandler(ApplicationException.class)
 	public ResponseEntity<Object> handleResponseException(ApplicationException ex) {
-		HttpStatus httpStatus = ex.getHttpStatus();
-		String errorCode = ex.getMessage();
-		String lang = ex.getLang();
-		Object payload = ex.getPayload();
-
-		String message = errorCode;
-		ErrorCodeResponse errorCodeResponse = errorCodeService.findByInternalCode(errorCode, lang);
-		if (errorCodeResponse != null) {
-			message = errorCodeResponse.getMessage();
-			if (message == null) {
-				message = errorCodeResponse.getInternalMessage();
-			}
-		}
-
-		log.error("ResponseException: {} : {}", httpStatus, message);
-		HttpResponse errorResponse = new HttpResponse(httpStatus != null ? httpStatus :  HttpStatus.BAD_REQUEST, false, message, payload);
-		return buildResponseEntity(errorResponse);
+		HttpStatus httpStatus = ex.getHttpStatus() != null ? ex.getHttpStatus() : HttpStatus.BAD_REQUEST;
+		log.error("ResponseException: {} : {}", httpStatus, ex.getMessage());
+		return buildResponseEntity(new HttpResponse(httpStatus, false, ex.getMessage(), ex.getPayload()));
 	}
 
 	@ResponseBody
