@@ -5,7 +5,6 @@ import com.project.agriculturalblogapplication.entities.Privilege;
 import com.project.agriculturalblogapplication.entities.Role;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.enums.RoleType;
-import com.project.agriculturalblogapplication.enums.UserType;
 import com.project.agriculturalblogapplication.service.PrivilegeService;
 import com.project.agriculturalblogapplication.service.RoleService;
 import com.project.agriculturalblogapplication.service.UserService;
@@ -96,7 +95,6 @@ public class InitialDataLoader implements ApplicationListener<ApplicationReadyEv
         superAdminUser.setPassword(passwordEncoder.encode(password));
         superAdminUser.setMustChangePassword(true);
         superAdminUser.setRoles(roles);
-        superAdminUser.setUserTypes(Set.of(UserType.AUTHOR.name()));
         userService.saveUser(superAdminUser);
 
         if (generated) {

@@ -11,10 +11,7 @@ import com.project.agriculturalblogapplication.model.request.ChangePasswordReque
 import com.project.agriculturalblogapplication.model.request.UpdateUserRequest;
 import com.project.agriculturalblogapplication.payloads.PaginationArgs;
 import com.project.agriculturalblogapplication.repositories.UserRepository;
-import com.project.agriculturalblogapplication.enums.UserType;
-import com.project.agriculturalblogapplication.model.request.AuthorCreateRequest;
 import com.project.agriculturalblogapplication.model.request.CreateUserRequest;
-import com.project.agriculturalblogapplication.model.request.ProfessionalInfoRequest;
 import com.project.agriculturalblogapplication.security.service.GoogleIdentity;
 import com.project.agriculturalblogapplication.security.service.AttemptLimiter;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
@@ -34,7 +31,6 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -78,11 +74,6 @@ public class UserService {
         String password = createUserRequest.getPassword();
         String mobileNumber = createUserRequest.getCountryCode().concat(createUserRequest.getMobileNumber());
 
-        Set<String> userTypeStrings = createUserRequest.getUserTypes()
-                .stream()
-                .map(Enum::name)
-                .collect(Collectors.toSet());
-
         Role role = roleService.findRoleByNameWithException(AppConstants.USER_ROLE, lang);
 
         User user = new User();
@@ -91,20 +82,14 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(password));
         user.setMobileNumber(mobileNumber);
         user.setRoles(new HashSet<>(Set.of(role)));
-        user.setUserTypes(userTypeStrings);
-
-        user = userRepository.save(user);
-        createAuthorProfileIfAuthor(user, createUserRequest.getProfessionalInfoRequest(), lang);
-        return user;
+        return userRepository.save(user);
     }
 
     /**
      * A new account for a Google identity: no password, no mobile number, e-mail already verified by Google.
-     * {@code userTypes} as at sign-up; null or empty means a reader.
      */
-    public User createGoogleUser(GoogleIdentity google, Set<UserType> userTypes, String lang) {
+    public User createGoogleUser(GoogleIdentity google, String lang) {
         Role role = roleService.findRoleByNameWithException(AppConstants.USER_ROLE, lang);
-        Set<UserType> types = userTypes == null || userTypes.isEmpty() ? Set.of(UserType.CONSUMER) : userTypes;
 
         User user = new User();
         user.setName(StringUtils.hasText(google.name()) ? google.name() : google.email().substring(0, google.email().indexOf('@')));
@@ -112,11 +97,7 @@ public class UserService {
         user.setGoogleSubject(google.subject());
         user.setEmailVerifiedAt(LocalDateTime.now());
         user.setRoles(new HashSet<>(Set.of(role)));
-        user.setUserTypes(types.stream().map(Enum::name).collect(Collectors.toSet()));
-
-        user = userRepository.save(user);
-        createAuthorProfileIfAuthor(user, null, lang);
-        return user;
+        return userRepository.save(user);
     }
 
     /**
@@ -137,15 +118,6 @@ public class UserService {
         return userRepository.findByGoogleSubject(googleSubject);
     }
 
-    private void createAuthorProfileIfAuthor(User user, ProfessionalInfoRequest professionalInfo, String lang) {
-        if (user.getUserTypes().contains(UserType.AUTHOR.name())) {
-            authorService.createAuthorUser(AuthorCreateRequest.builder()
-                    .user(user)
-                    // An author may sign up without professional details (always so through Google).
-                    .professionalInfoRequest(professionalInfo == null ? new ProfessionalInfoRequest() : professionalInfo)
-                    .build(), lang);
-        }
-    }
 
     public User findByEmail(String email) {
         return userRepository.findTopByEmailEqualsIgnoreCase(email).orElse(null);

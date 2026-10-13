@@ -3,7 +3,6 @@ package com.project.agriculturalblogapplication.entities;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.project.agriculturalblogapplication.constatnt.AppTables;
 import com.project.agriculturalblogapplication.constatnt.AppTables.UserTable;
-import com.project.agriculturalblogapplication.enums.UserType;
 import com.project.agriculturalblogapplication.model.AuditModel;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -47,9 +46,6 @@ public class User extends AuditModel<String> {
     /** When the user proved they own the e-mail (Google sign-in or a reset link); null until then. */
     @Column(name = UserTable.EMAIL_VERIFIED_AT)
     private LocalDateTime emailVerifiedAt;
-
-    @Column(name = AppTables.USER_TYPES)
-    private Set<String> userTypes;
 
     /** Set for seeded accounts; blocks every endpoint except change-password until cleared. Null counts as false. */
     @Column(name = "must_change_password")
