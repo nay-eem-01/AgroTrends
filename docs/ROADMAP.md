@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 54 of 84 steps done
+**Progress:** 55 of 84 steps done
 
 **Launch scope (decided 2026-10-13):** Phases 4–8 must all be done before the public launch. Order of work:
 5 → 6 → 7 → 8 → 4 (deploy) → live test → launch. Nothing is deployed until Phases 5–8 are done. After launch, the
@@ -131,7 +131,7 @@ Stack Overflow-style trust. Topics are the existing categories. Point values are
 
 | # | Step | Status |
 |---|---|---|
-| 6.1 | Topic (category, required) and tags on questions; filter by topic and tag | ⬜ |
+| 6.1 | Topic (category, required) and tags on questions; filter by topic and tag | ✅ |
 | 6.2 | Photos on questions (up to 4 image URLs from `POST /api/images`, now open to every confirmed user) | ⬜ |
 | 6.3 | Full-text search over questions; `answerCount`; `unanswered` filter | ⬜ |
 | 6.4 | Votes on questions and answers: up/down, one per user, not on your own, atomic `score` | ⬜ |
