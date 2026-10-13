@@ -1,9 +1,12 @@
 package com.project.agriculturalblogapplication.service;
 
 import com.project.agriculturalblogapplication.entities.Answer;
+import com.project.agriculturalblogapplication.entities.Category;
 import com.project.agriculturalblogapplication.entities.Question;
 import com.project.agriculturalblogapplication.entities.User;
+import com.project.agriculturalblogapplication.enums.Badge;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
+import com.project.agriculturalblogapplication.model.AuthorStanding;
 import com.project.agriculturalblogapplication.model.response.AnswerResponse;
 import com.project.agriculturalblogapplication.repositories.AnswerRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
@@ -14,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -122,12 +126,17 @@ class AnswerServiceTest {
         question.setAcceptedAnswer(accepted);
         when(answerRepository.findByQuestionIdAndParentAnswerIsNull(1L)).thenReturn(List.of(newLow, oldLow, high, accepted));
 
-        when(reputation.totals(List.of(23L, 22L, 21L, 24L))).thenReturn(Map.of(22L, 40L));
+        Category rice = new Category();
+        rice.setId(5L);
+        question.setCategory(rice);
+        when(reputation.standings(List.of(23L, 22L, 21L, 24L))).thenReturn(Map.of(22L, new AuthorStanding(400, Set.of(5L))));
 
         List<AnswerResponse> answers = answerService.getAllByQuestionId(1L);
 
         assertEquals(List.of(3L, 2L, 1L, 4L), answers.stream().map(AnswerResponse::getAnswerId).toList());
-        assertEquals(List.of(0L, 40L, 0L, 0L), answers.stream().map(AnswerResponse::getAuthorReputation).toList());
+        assertEquals(List.of(0L, 400L, 0L, 0L), answers.stream().map(AnswerResponse::getAuthorReputation).toList());
+        assertEquals(List.of(Badge.TOP_CONTRIBUTOR), answers.get(1).getAuthorBadges());
+        assertEquals(List.of(), answers.get(0).getAuthorBadges());
     }
 
     private Answer answer(long id, long score) {

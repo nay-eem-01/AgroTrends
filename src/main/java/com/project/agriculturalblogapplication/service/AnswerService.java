@@ -4,11 +4,13 @@ import com.project.agriculturalblogapplication.util.CommonUtils;
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.entities.Answer;
+import com.project.agriculturalblogapplication.entities.Category;
 import com.project.agriculturalblogapplication.entities.Question;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.model.request.CreateAnswerRequest;
 import com.project.agriculturalblogapplication.model.request.ReplyToAnswerRequest;
 import com.project.agriculturalblogapplication.model.request.UpdateAnswerRequest;
+import com.project.agriculturalblogapplication.model.AuthorStanding;
 import com.project.agriculturalblogapplication.model.response.AnswerResponse;
 import com.project.agriculturalblogapplication.repositories.AnswerRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
@@ -161,23 +163,26 @@ public class AnswerService {
 
 
     private AnswerResponse mapToAnswerResponse(Answer answer) {
-        return mapToAnswerResponse(answer, reputationService.totals(List.of(answer.getUser().getId())));
+        return mapToAnswerResponse(answer, reputationService.standings(List.of(answer.getUser().getId())));
     }
 
     /** One reputation query for the whole list. */
     private List<AnswerResponse> mapToAnswerResponses(List<Answer> answers) {
-        Map<Long, Long> reputation = reputationService.totals(answers.stream().map(a -> a.getUser().getId()).toList());
-        return answers.stream().map(answer -> mapToAnswerResponse(answer, reputation)).toList();
+        Map<Long, AuthorStanding> standings = reputationService.standings(answers.stream().map(a -> a.getUser().getId()).toList());
+        return answers.stream().map(answer -> mapToAnswerResponse(answer, standings)).toList();
     }
 
-    private AnswerResponse mapToAnswerResponse(Answer answer, Map<Long, Long> reputation) {
+    private AnswerResponse mapToAnswerResponse(Answer answer, Map<Long, AuthorStanding> standings) {
         AnswerResponse response = new AnswerResponse();
         response.setAnswerId(answer.getId());
         response.setUserId(answer.getUser().getId());
         response.setQuestionId(answer.getQuestion().getId());
         response.setContent(answer.getContent());
         response.setAuthorName(answer.getUser().getName());
-        response.setAuthorReputation(reputation.getOrDefault(answer.getUser().getId(), 0L));
+        AuthorStanding author = standings.getOrDefault(answer.getUser().getId(), AuthorStanding.NONE);
+        Category topic = answer.getQuestion().getCategory();
+        response.setAuthorReputation(author.reputation());
+        response.setAuthorBadges(author.badgesIn(topic == null ? null : topic.getId()));
         response.setCreatedAt(CommonUtils.toInstant(answer.getCreationDate()));
         response.setUpdatedAt(CommonUtils.toInstant(answer.getLastModifiedDate()));
         response.setScore(answer.getScore());

@@ -4,7 +4,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import com.project.agriculturalblogapplication.enums.Badge;
+
 import java.time.Instant;
+import java.util.List;
 
 @Getter
 @Setter
@@ -20,6 +23,9 @@ public class AnswerResponse {
 
     /** The author's total reputation. */
     private long authorReputation;
+
+    /** The author's badges in this question's topic. */
+    private List<Badge> authorBadges;
 
     private Instant createdAt;
 
