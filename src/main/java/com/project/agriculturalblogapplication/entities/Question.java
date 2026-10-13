@@ -70,8 +70,9 @@ public class Question extends AuditModel<String> {
     private long answerCount;
 
     /** Upvotes minus downvotes, kept in step by VoteService so lists need no count query. */
+    // Not updatable: saving an edited post must not write back the score it loaded over a vote cast meanwhile.
     @ColumnDefault("0")
-    @Column(name = VoteTable.SCORE, nullable = false)
+    @Column(name = VoteTable.SCORE, nullable = false, updatable = false)
     private long score;
 
     @JsonIgnore
