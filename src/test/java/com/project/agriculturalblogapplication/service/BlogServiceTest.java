@@ -146,7 +146,7 @@ class BlogServiceTest {
     @Test
     void aDraftIsSavedWithoutVectorsOrPublishDate() {
         when(categoryService.findByIdWithException(30L)).thenReturn(blog(1L).getCategory());
-        when(authorService.findByUserIdOrForbidden(any(), any())).thenReturn(blog(1L).getAuthor());
+        when(authorService.profileOf(any())).thenReturn(blog(1L).getAuthor());
         when(blogRepositories.save(any(Blog.class))).thenAnswer(call -> call.getArgument(0));
         CreateBlogRequest request = new CreateBlogRequest();
         request.setCategoryId(30L);
@@ -212,7 +212,7 @@ class BlogServiceTest {
     @Test
     void createRetriesWhenTheRandomSlugIsTaken() {
         when(categoryService.findByIdWithException(30L)).thenReturn(blog(1L).getCategory());
-        when(authorService.findByUserIdOrForbidden(any(), any())).thenReturn(blog(1L).getAuthor());
+        when(authorService.profileOf(any())).thenReturn(blog(1L).getAuthor());
         when(blogRepositories.save(any(Blog.class))).thenAnswer(call -> call.getArgument(0));
         when(blogRepositories.existsBySlug(anyString())).thenReturn(true, false);
         CreateBlogRequest request = new CreateBlogRequest();

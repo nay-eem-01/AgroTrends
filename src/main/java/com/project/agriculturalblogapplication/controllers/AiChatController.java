@@ -62,7 +62,7 @@ public class AiChatController {
                 aiService.history(pageNo, pageSize, lang));
     }
 
-    @Operation(summary = "Authors only: a short summary and suggested topic tags for a draft post",
+    @Operation(summary = "A short summary and suggested topic tags for a draft post",
             security = @SecurityRequirement(name = "jwtToken"))
     @ApiResponse(content = @Content(schema = @Schema(implementation = BlogAssistResponse.class)), responseCode = "200")
     @PostMapping(value = "/blog-assist")

@@ -143,7 +143,7 @@ public class BlogController {
                 true, "Data loaded successfully.", blogService.related(blogId, limit, lang));
     }
 
-    @Operation(summary = "Your own drafts - paginated (authors only)", security = @SecurityRequirement(name = "jwtToken"))
+    @Operation(summary = "Your own drafts - paginated", security = @SecurityRequirement(name = "jwtToken"))
     @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogResponse.class))), responseCode = "200")
     @GetMapping(value = "/me/drafts")
     public ResponseEntity<HttpResponse> getMyDrafts(@RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,

@@ -3,7 +3,6 @@ package com.project.agriculturalblogapplication.service;
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.response.BlogAssistResponse;
-import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.http.HttpStatus;
@@ -26,22 +25,12 @@ public class BlogAssistService {
 
     private final ChatClient assistChatClient;
 
-    private final AuthorService authorService;
-
-    private final AuthorizationService authorizationService;
-
     // Builds its own client: the shared chat client adds blog retrieval, which a summary of a draft does not need.
-    public BlogAssistService(ChatClient.Builder chatClientBuilder, AuthorService authorService,
-                             AuthorizationService authorizationService) {
+    public BlogAssistService(ChatClient.Builder chatClientBuilder) {
         this.assistChatClient = chatClientBuilder.defaultSystem(SYSTEM_PROMPT).build();
-        this.authorService = authorService;
-        this.authorizationService = authorizationService;
     }
 
     public BlogAssistResponse assist(String title, String content, String lang) {
-        // Same rule as publishing: only authors.
-        authorService.findByUserIdOrForbidden(authorizationService.currentUserId(lang), lang);
-
         String draft = content.length() > MAX_CONTENT_CHARS ? content.substring(0, MAX_CONTENT_CHARS) : content;
         try {
             return assistChatClient.prompt()
