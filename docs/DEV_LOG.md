@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 55 of 84 steps done): launch blockers and one account type with
+- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 56 of 84 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -20,7 +20,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 ## Next up
 
 1. Merge `docs/product-study` and `docs/launch-plan` into `development`.
-2. Phase 6 in progress on `feat/qa-reputation-base` (6.1 done). Next: 6.2 photos on questions.
+2. Phase 6 in progress on `feat/qa-reputation-base` (6.1–6.2 done). Next: 6.3 question search.
 3. Then Phases 6, 7, 8; deploy (Phase 4) and live-test only after all of them.
 4. **Team:** 30–50 seeded Bangla articles; 5–10 experts invited; pick the 6–8 launch topics (categories).
 5. **Nayeem:** fix the Gemini key; roadmap 0.4 (rotate keys, purge history); set `GOOGLE_CLIENT_ID`; make
@@ -47,6 +47,22 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-13 (roadmap 6.2)
+
+**Done**
+- Questions take `imageUrls`: up to four photos uploaded through `POST /api/images` (omitted on update keeps
+  them). Stored in a `varchar[]` column with a `'{}'` default, so old rows read as an empty list.
+- `ImageStorage.isStored(url)` and `ImageService.requireUploaded`: a URL from any other host is refused with
+  400, so a question cannot embed a tracking pixel.
+- Checked live (local Postgres): the column and `question_tags` are created by `ddl-auto`, foreign and 5+
+  photo URLs are refused, the topic/tag filter returns the right question.
+
+**Decisions**
+- An array column, not a join table: four strings that are always read with the question.
+
+**Known limitations**
+- Article `imageUrl` is still unchecked; apply `requireUploaded` there when articles get the same review.
 
 ## 2026-10-13 (roadmap 6.1)
 
