@@ -2,6 +2,7 @@ package com.project.agriculturalblogapplication.service;
 
 import com.project.agriculturalblogapplication.entities.Answer;
 import com.project.agriculturalblogapplication.entities.Category;
+import com.project.agriculturalblogapplication.entities.ExpertBadge;
 import com.project.agriculturalblogapplication.entities.Question;
 import com.project.agriculturalblogapplication.entities.ReputationEvent;
 import com.project.agriculturalblogapplication.entities.User;
@@ -20,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -34,7 +36,8 @@ import static org.mockito.Mockito.when;
 class ReputationServiceTest {
 
     private final ReputationEventRepository repository = mock(ReputationEventRepository.class);
-    private final ReputationService reputation = new ReputationService(repository);
+    private final ExpertService expertService = mock(ExpertService.class);
+    private final ReputationService reputation = new ReputationService(repository, expertService);
     private final List<ReputationEvent> ledger = new ArrayList<>();
 
     private final User asker = user(1L);
@@ -128,6 +131,44 @@ class ReputationServiceTest {
         assertFalse(standings.containsKey(1L));
         assertEquals(Map.of(), reputation.standings(List.of()));
         verify(repository, never()).topicTotals(List.of());
+    }
+
+    @Test
+    void aVerifiedExpertShowsTheBadgeInTheirTopicEvenWithoutPoints() {
+        when(repository.topicTotals(List.of(1L, 2L))).thenReturn(List.of(new TopicTotals(2L, 1L, "Rice", 300, 6)));
+        when(expertService.verifiedTopics(List.of(1L, 2L))).thenReturn(Map.of(1L, Set.of(3L), 2L, Set.of(1L)));
+
+        Map<Long, AuthorStanding> standings = reputation.standings(List.of(1L, 2L));
+
+        assertEquals(List.of(Badge.VERIFIED_EXPERT), standings.get(1L).badgesIn(3L));
+        assertEquals(0, standings.get(1L).reputation());
+        assertEquals(List.of(Badge.VERIFIED_EXPERT, Badge.TOP_CONTRIBUTOR), standings.get(2L).badgesIn(1L));
+    }
+
+    @Test
+    void aProfileListsExpertTopicsWithTheirFieldIncludingTopicsWithNoPointsYet() {
+        Category fish = new Category();
+        fish.setId(3L);
+        fish.setCategoryName("Fish");
+        Category riceTopic = new Category();
+        riceTopic.setId(1L);
+        when(repository.topicTotals(List.of(2L))).thenReturn(List.of(new TopicTotals(2L, 1L, "Rice", 40, 1)));
+        when(expertService.activeBadges(2L)).thenReturn(List.of(badge(fish, "Fisheries officer"), badge(riceTopic, "Agronomist")));
+
+        ReputationResponse response = reputation.of(2L);
+
+        assertEquals(40, response.total());
+        assertEquals(List.of(
+                        new TopicReputation(1L, "Rice", 40, 1, List.of(Badge.VERIFIED_EXPERT), "Agronomist"),
+                        new TopicReputation(3L, "Fish", 0, 0, List.of(Badge.VERIFIED_EXPERT), "Fisheries officer")),
+                response.topics());
+    }
+
+    private static ExpertBadge badge(Category topic, String field) {
+        ExpertBadge badge = new ExpertBadge();
+        badge.setTopic(topic);
+        badge.setFieldTitle(field);
+        return badge;
     }
 
     @Test

@@ -66,6 +66,7 @@ public final class AppConstants {
             put("CATEGORY_DELETE", "CATEGORY DELETE");
 
             put("NOTIFICATION_SEND", "NOTIFICATION SEND");
+            put("EXPERT_REVIEW", "EXPERT APPLICATION REVIEW");
             put("USER_UPDATE_FROM_ADMIN", "USER UPDATE FROM ADMIN");
         }
     };

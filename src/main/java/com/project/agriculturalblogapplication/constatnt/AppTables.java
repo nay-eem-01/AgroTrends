@@ -141,6 +141,13 @@ public final class AppTables {
         public static final String REVIEW_NOTE = "review_note";
     }
 
+    public static final class ExpertBadgeTable {
+
+        public static final String NAME = "expert_badges";
+
+        public static final String REVOKED_AT = "revoked_at";
+    }
+
     public static final class TagTable {
 
         public static final String TAG_NAME = "tag_name";

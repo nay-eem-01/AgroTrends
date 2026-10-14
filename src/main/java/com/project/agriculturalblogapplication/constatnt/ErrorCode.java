@@ -108,6 +108,12 @@ public final class ErrorCode {
     public static final String ERROR_EXPERT_INVALID_LINK = "Links must start with http:// or https://.";
     public static final String ERROR_EXPERT_PROOF_REQUIRED = "Add at least one proof image or link.";
     public static final String ERROR_EXPERT_APPLICATION_PENDING = "You already have an application waiting for review.";
+    public static final String ERROR_EXPERT_APPLICATION_NOT_FOUND = "Expert application not found.";
+    public static final String ERROR_EXPERT_APPLICATION_DECIDED = "This application has already been decided.";
+    public static final String ERROR_EXPERT_TOPICS_NOT_REQUESTED = "Approve one or more of the topics the applicant asked for.";
+    public static final String ERROR_EXPERT_REJECT_REASON_REQUIRED = "Tell the applicant why the application is rejected.";
+    public static final String ERROR_EXPERT_NOTE_TOO_LONG = "A review note can be at most 500 characters.";
+    public static final String ERROR_EXPERT_BADGE_NOT_FOUND = "This user is not a Verified Expert in that topic.";
     public static final String ERROR_INVALID_REQUEST = "Invalid request.";
     // Formatted with the parameter name (and, for enums, the allowed values) by ExceptionHandlingController.
     public static final String ERROR_INVALID_PARAMETER_VALUE = "Invalid value for '%s'.";

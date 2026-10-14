@@ -129,7 +129,7 @@ class AnswerServiceTest {
         Category rice = new Category();
         rice.setId(5L);
         question.setCategory(rice);
-        when(reputation.standings(List.of(23L, 22L, 21L, 24L))).thenReturn(Map.of(22L, new AuthorStanding(400, Set.of(5L))));
+        when(reputation.standings(List.of(23L, 22L, 21L, 24L))).thenReturn(Map.of(22L, new AuthorStanding(400, Set.of(5L), Set.of())));
 
         List<AnswerResponse> answers = answerService.getAllByQuestionId(1L);
 

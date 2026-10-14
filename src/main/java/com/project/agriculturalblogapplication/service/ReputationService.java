@@ -1,10 +1,10 @@
 package com.project.agriculturalblogapplication.service;
 
 import com.project.agriculturalblogapplication.entities.Answer;
+import com.project.agriculturalblogapplication.entities.ExpertBadge;
 import com.project.agriculturalblogapplication.entities.Question;
 import com.project.agriculturalblogapplication.entities.ReputationEvent;
 import com.project.agriculturalblogapplication.entities.User;
-import com.project.agriculturalblogapplication.enums.Badge;
 import com.project.agriculturalblogapplication.enums.ReputationReason;
 import com.project.agriculturalblogapplication.enums.VoteDirection;
 import com.project.agriculturalblogapplication.model.AuthorStanding;
@@ -15,10 +15,14 @@ import com.project.agriculturalblogapplication.repositories.ReputationEventRepos
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -39,32 +43,50 @@ public class ReputationService {
 
     private final ReputationEventRepository reputationEventRepository;
 
+    private final ExpertService expertService;
+
     public long total(Long userId) {
         return reputationEventRepository.totalFor(userId);
     }
 
-    /** Standings for several users in one query, for lists; users with no events are absent (use NONE). */
+    /** Standings for several users in two queries, for lists; users with no points and no badge are absent (use NONE). */
     public Map<Long, AuthorStanding> standings(Collection<Long> userIds) {
         if (userIds.isEmpty()) {
             return Map.of();
         }
-        return reputationEventRepository.topicTotals(userIds).stream().collect(Collectors.groupingBy(TopicTotals::userId,
-                Collectors.collectingAndThen(Collectors.toList(), ReputationService::standingOf)));
+        Map<Long, List<TopicTotals>> ledger = reputationEventRepository.topicTotals(userIds).stream()
+                .collect(Collectors.groupingBy(TopicTotals::userId));
+        Map<Long, Set<Long>> experts = expertService.verifiedTopics(userIds);
+        Set<Long> ranked = new HashSet<>(ledger.keySet());
+        ranked.addAll(experts.keySet());
+        return ranked.stream().collect(Collectors.toMap(Function.identity(), userId -> standingOf(
+                ledger.getOrDefault(userId, List.of()), experts.getOrDefault(userId, Set.of()))));
     }
 
+    /** Every topic the user has points or a Verified Expert badge in, highest points first. */
     public ReputationResponse of(Long userId) {
-        List<TopicReputation> topics = reputationEventRepository.topicTotals(List.of(userId)).stream()
+        Map<Long, ExpertBadge> badges = expertService.activeBadges(userId).stream()
+                .collect(Collectors.toMap(badge -> badge.getTopic().getId(), Function.identity()));
+        List<TopicTotals> totals = new ArrayList<>(reputationEventRepository.topicTotals(List.of(userId)));
+        Set<Long> withPoints = totals.stream().map(TopicTotals::categoryId).collect(Collectors.toSet());
+        badges.values().stream().filter(badge -> !withPoints.contains(badge.getTopic().getId()))
+                .forEach(badge -> totals.add(new TopicTotals(userId, badge.getTopic().getId(),
+                        badge.getTopic().getCategoryName(), 0, 0)));
+        AuthorStanding standing = standingOf(totals, badges.keySet());
+        List<TopicReputation> topics = totals.stream()
                 .sorted(Comparator.comparingLong(TopicTotals::points).reversed())
                 .map(t -> new TopicReputation(t.categoryId(), t.categoryName(), t.points(), t.acceptedAnswers(),
-                        isTopContributor(t) ? List.of(Badge.TOP_CONTRIBUTOR) : List.of()))
+                        standing.badgesIn(t.categoryId()),
+                        t.categoryId() == null || !badges.containsKey(t.categoryId()) ? null : badges.get(t.categoryId()).getFieldTitle()))
                 .toList();
-        return new ReputationResponse(topics.stream().mapToLong(TopicReputation::points).sum(), topics);
+        return new ReputationResponse(standing.reputation(), topics);
     }
 
-    private static AuthorStanding standingOf(List<TopicTotals> topics) {
+    private static AuthorStanding standingOf(List<TopicTotals> topics, Set<Long> expertTopics) {
         return new AuthorStanding(
                 topics.stream().mapToLong(TopicTotals::points).sum(),
-                topics.stream().filter(ReputationService::isTopContributor).map(TopicTotals::categoryId).collect(Collectors.toSet()));
+                topics.stream().filter(ReputationService::isTopContributor).map(TopicTotals::categoryId).collect(Collectors.toSet()),
+                expertTopics);
     }
 
     /** Computed on read, so the badge comes and goes with the points. Never for the "no topic" bucket. */
