@@ -9,6 +9,7 @@ import com.project.agriculturalblogapplication.model.response.CommentResponse;
 import com.project.agriculturalblogapplication.repositories.CommentRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import com.project.agriculturalblogapplication.model.request.ReplyCommentRequest;
+import com.project.agriculturalblogapplication.enums.BlogStatus;
 import com.project.agriculturalblogapplication.enums.NotificationTarget;
 import com.project.agriculturalblogapplication.enums.NotificationType;
 import com.project.agriculturalblogapplication.notification.NotificationMessage;
@@ -91,6 +92,22 @@ class CommentServiceTest {
 
         verify(notifications).publish(new NotificationMessage(7L, 8L, NotificationType.COMMENT_REPLY,
                 NotificationTarget.BLOG, 3L));
+    }
+
+    @Test
+    void aCommentOnAHiddenOrDraftPostOrUnderAHiddenCommentIsNotFound() {
+        blog.setStatus(BlogStatus.HIDDEN);
+        when(commentRepository.findById(10L)).thenReturn(Optional.of(comment(10L, null)));
+        assertThrows(ApplicationException.class, () -> commentService.findById(10L));
+
+        blog.setStatus(BlogStatus.DRAFT);
+        assertThrows(ApplicationException.class, () -> commentService.findById(10L));
+
+        blog.setStatus(BlogStatus.PUBLISHED);
+        Comment parent = comment(9L, null);
+        parent.setHidden(true);
+        when(commentRepository.findById(11L)).thenReturn(Optional.of(comment(11L, parent)));
+        assertThrows(ApplicationException.class, () -> commentService.findById(11L));
     }
 
     @Test

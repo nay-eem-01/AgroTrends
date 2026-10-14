@@ -49,17 +49,11 @@ public class SchemaPatches implements ApplicationRunner {
             CREATE INDEX IF NOT EXISTS blogs_search_idx ON blogs
             USING gin (to_tsvector('simple', coalesce(title, '') || ' ' || coalesce(content, '')))""";
 
-    // Enum CHECK constraints that ddl-auto never widens: dropped before Hibernate runs. New databases get a CHECK
-    // that already lists every value. Idempotent.
-    static final List<String> DROP_ENUM_CHECKS = List.of(
-            "ALTER TABLE IF EXISTS blogs DROP CONSTRAINT IF EXISTS blogs_status_check");
-
     private final JdbcTemplate jdbcTemplate;
 
     /** Runs before Hibernate; does nothing on a new database (no tables yet) or once the columns are text. */
     @PostConstruct
     void convertColumns() {
-        DROP_ENUM_CHECKS.forEach(jdbcTemplate::execute);
         for (String[] column : OID_TO_TEXT) {
             if ("oid".equals(columnType(column[0], column[1]))) {
                 oidToText(column[0], column[1]);

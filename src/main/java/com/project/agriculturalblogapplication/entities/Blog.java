@@ -8,6 +8,7 @@ import com.project.agriculturalblogapplication.constatnt.AppTables.AuthorTable;
 import com.project.agriculturalblogapplication.constatnt.AppTables.TagTable;
 import com.project.agriculturalblogapplication.enums.BlogStatus;
 import com.project.agriculturalblogapplication.model.AuditModel;
+import com.project.agriculturalblogapplication.model.EnumNameConverter;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
@@ -47,10 +48,18 @@ public class Blog extends AuditModel<String> {
     private String slug;
 
     // Rows that existed before drafts were introduced were all public, so the column defaults to PUBLISHED.
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = StatusConverter.class)
     @ColumnDefault("'PUBLISHED'")
-    @Column(name = BlogTable.STATUS, nullable = false)
+    @Column(name = BlogTable.STATUS, nullable = false, length = 40)
     private BlogStatus status = BlogStatus.PUBLISHED;
+
+    // Converted, not @Enumerated: Hibernate's enum CHECK is never widened by ddl-auto (HIDDEN came later).
+    @Converter
+    static class StatusConverter extends EnumNameConverter<BlogStatus> {
+        StatusConverter() {
+            super(BlogStatus.class);
+        }
+    }
 
     /** Set the first time the post is published; kept when it is unpublished and published again. */
     @Column(name = BlogTable.PUBLISHED_AT)

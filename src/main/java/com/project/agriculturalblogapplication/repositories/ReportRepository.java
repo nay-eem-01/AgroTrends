@@ -21,13 +21,14 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     Page<Report> findAllByStatus(ReportStatus status, Pageable pageable);
 
     /**
-     * Closes every open report on one target as actioned, keeping what the content said. Bulk updates skip the
+     * Closes every open report on one target as actioned, keeping what the content said (the snapshot taken when it
+     * was hidden wins: the post may have been deleted since). Bulk updates skip the
      * auditing listener, so the moderator and time are set here.
      */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("""
             update Report r set r.status = com.project.agriculturalblogapplication.enums.ReportStatus.ACTIONED,
-                   r.snapshot = :snapshot, r.lastModifiedBy = :by, r.lastModifiedDate = :at
+                   r.snapshot = coalesce(r.snapshot, :snapshot), r.lastModifiedBy = :by, r.lastModifiedDate = :at
             where r.targetType = :targetType and r.targetId = :targetId
               and r.status = com.project.agriculturalblogapplication.enums.ReportStatus.OPEN""")
     int closeAsActioned(@Param("targetType") ReportTarget targetType, @Param("targetId") Long targetId,

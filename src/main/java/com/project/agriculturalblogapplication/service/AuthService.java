@@ -66,11 +66,6 @@ public class AuthService {
 		String email = request.getEmail();
 		String password = request.getPassword();
 		String mobileNumber = request.getCountryCode() + request.getMobileNumber();
-		// A banned account's e-mail gets the ban, not "already registered" (it would say as much anyway).
-		User existing = userService.findByEmail(email);
-		if (existing != null && existing.getBannedAt() != null) {
-			throw new ApplicationException(HttpStatus.FORBIDDEN, ErrorCode.ERROR_ACCOUNT_BANNED, lang);
-		}
 		userService.validateEmail(email, lang);
 		userService.validateMobile(mobileNumber, lang);
 
