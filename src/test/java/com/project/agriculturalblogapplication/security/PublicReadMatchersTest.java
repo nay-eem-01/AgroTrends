@@ -37,7 +37,7 @@ class PublicReadMatchersTest {
     @ValueSource(strings = {
             "/api/blogs/me/drafts", "/api/blogs/id/9/related", "/api/blogs/id/9/claps", "/api/feed/following",
             "/api/bookmarks", "/api/me/following/authors", "/api/me/following/tags", "/api/ai/history",
-            "/api/user/me", "/api/user/paginated", "/api/user/id/7", "/api/questions/id/5/ai-draft",
+            "/api/user/me", "/api/user/paginated", "/api/user/id/7",
     })
     void privateOrPaidReadsStillNeedAToken(String path) {
         assertFalse(isPublicGet(path), path);

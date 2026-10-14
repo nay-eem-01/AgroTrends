@@ -10,7 +10,6 @@ import com.project.agriculturalblogapplication.enums.AiAnswerStatus;
 import com.project.agriculturalblogapplication.events.QuestionCreated;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.response.AiAnswerResponse;
-import com.project.agriculturalblogapplication.model.response.AiDraftAnswerResponse;
 import com.project.agriculturalblogapplication.model.response.AiHistoryItemResponse;
 import com.project.agriculturalblogapplication.model.response.AiSourceResponse;
 import com.project.agriculturalblogapplication.model.response.QuestionAiAnswerResponse;
@@ -58,10 +57,9 @@ class AiServiceTest {
     private final AuthorizationService authorization = mock(AuthorizationService.class);
     private final AiProperties aiProperties = new AiProperties();
     private final QuestionService questionService = mock(QuestionService.class);
-    private final AnswerService answerService = mock(AnswerService.class);
     private final QuestionAiAnswerRepository questionAiAnswers = mock(QuestionAiAnswerRepository.class);
-    private final AiService aiService = new AiService(aiRepositories, chatClient, authorization, aiProperties,
-            questionService, answerService, questionAiAnswers);
+    private final AiService aiService =
+            new AiService(aiRepositories, chatClient, authorization, aiProperties, questionService, questionAiAnswers);
 
     @Test
     void askReturnsTheAnswerWithItsSourcesAndStoresItForTheCaller() {
@@ -143,31 +141,6 @@ class AiServiceTest {
         AiHistoryItemResponse item = page.getContent().get(0);
         assertEquals("Use resistant varieties.", item.answer());
         assertEquals(LocalDateTime.of(2026, 10, 6, 12, 0).atZone(ZoneId.systemDefault()).toInstant(), item.askedAt());
-    }
-
-    @Test
-    void draftAnswerAsksTheModelAndLabelsTheResult() {
-        when(questionService.findByIdWithException(4L)).thenReturn(question("Yellow leaves", "My paddy leaves turn yellow."));
-        when(authorization.currentUserId("en")).thenReturn(7L);
-        when(chatClient.prompt().user("Yellow leaves\n\nMy paddy leaves turn yellow.").call().chatClientResponse())
-                .thenReturn(response("Check nitrogen.", List.of(chunk(2, "Rice nutrition"))));
-
-        AiDraftAnswerResponse draft = aiService.draftAnswer(4L, "en");
-
-        assertEquals(AiService.AI_DRAFT_LABEL, draft.label());
-        assertEquals("Check nitrogen.", draft.answer());
-        assertEquals(List.of(new AiSourceResponse(2L, "Rice nutrition")), draft.sources());
-    }
-
-    @Test
-    void answeredQuestionsGetNoDraft() {
-        when(questionService.findByIdWithException(4L)).thenReturn(question("Yellow leaves", "Why?"));
-        when(answerService.hasAnswers(4L)).thenReturn(true);
-
-        ApplicationException e = assertThrows(ApplicationException.class, () -> aiService.draftAnswer(4L, "en"));
-
-        assertEquals(HttpStatus.CONFLICT, e.getHttpStatus());
-        verify(chatClient, never()).prompt();
     }
 
     @Test

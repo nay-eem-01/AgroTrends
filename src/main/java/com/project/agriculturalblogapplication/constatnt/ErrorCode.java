@@ -77,7 +77,6 @@ public final class ErrorCode {
     public static final String ERROR_QUESTION_TOO_LONG = "Question must be at most 1000 characters.";
     public static final String ERROR_AI_DAILY_LIMIT_REACHED = "You have reached today's limit of AI questions. Please try again tomorrow.";
     public static final String ERROR_AI_UNAVAILABLE = "The AI advisor is not available right now. Please try again later.";
-    public static final String ERROR_QUESTION_ALREADY_ANSWERED = "This question already has answers; AI drafts are only for unanswered questions.";
     public static final String ERROR_AI_ANSWER_NOT_FOUND = "This question has no AI answer.";
     public static final String ERROR_INVALID_SORT_FIELD = "This list cannot be sorted by that field.";
     public static final String ERROR_BLOG_ALREADY_PUBLISHED = "This blog is already published.";
