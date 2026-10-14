@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 74 of 87 steps done): launch blockers and one account type with
+- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 75 of 87 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -48,6 +48,21 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-14 (roadmap 8.3)
+
+**Done**
+- `Report`: reporter (`ON DELETE CASCADE`), `targetType` (`BLOG`, `QUESTION`, `ANSWER`, `AI_ANSWER` by its
+  question's id, `COMMENT`, `USER`), `targetId` (no foreign key: targets live in several tables), `reason`
+  (`HARMFUL_ADVICE`, `SPAM`, `ABUSE`, `FALSE_CREDENTIALS`, `OTHER`; converted, no CHECK), `details` (≤ 500),
+  `status` (`OPEN`, `ACTIONED`, `DISMISSED`). Unique per reporter and target.
+- `POST /api/reports`: target must exist (404; a hidden or missing AI answer counts as missing), once per
+  target (409), not yourself (400).
+- Checked live: 11/11.
+
+**Known limitations**
+- Two simultaneous reports of the same target by one user: the unique constraint turns the second into a
+  500 (as with votes; 4.7 error clean-up).
 
 ## 2026-10-14 (roadmap 8.2)
 
