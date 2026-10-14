@@ -21,7 +21,8 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 1. Merge `docs/product-study` and `docs/launch-plan` into `development`.
 2. Phases 5, 6 and 7 are on `development`; Phase 8 is done on `feat/notifications-moderation-base` (not yet
-   merged). Next: Phase 4 (ship it: profiles, Flyway, Docker, Testcontainers, CI), then deploy and live-test.
+   merged; includes the 8.5 report-threshold redesign). Next: Phase 4 (ship it: profiles, Flyway, Docker,
+   Testcontainers, CI), then deploy and live-test.
 3. Then Phases 6, 7, 8; deploy (Phase 4) and live-test only after all of them.
 4. **Team:** 30–50 seeded Bangla articles; 5–10 experts invited; pick the 6–8 launch topics (categories).
 5. **Nayeem:** fix the Gemini key; roadmap 0.4 (rotate keys, purge history); set `GOOGLE_CLIENT_ID`; make
@@ -48,6 +49,36 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-14 (Phase 8 review fixes, round 3: hiding and restoring)
+
+**Done** — review of 8.5a–c (15 findings), each with a regression test:
+- `QuestionAiAnswer.statusBeforeHide`: the threshold hide remembers the status, a dismiss restores it
+  (`unhide`), so a confirmed AI answer comes back confirmed and re-indexed; an expert's own flag (no
+  remembered status) is never undone. (Was: only never-reviewed AI answers came back.)
+- `closeAsActioned` keeps an existing snapshot (`coalesce`): the text saved at hide time survives an author
+  deleting the hidden post before the admin confirms.
+- `CommentService.findByIdWithException`: 404 unless the comment, its parent and its post (PUBLISHED) are
+  visible; `AnswerService` also hides replies under a hidden answer.
+- `POST /api/blogs/create` refuses `status: HIDDEN` (400); AI answers of hidden questions cannot be reported;
+  `app.moderation.auto-hide-reports` is `@Min(1)` (0 stopped one report from being enough to hide anything:
+  startup now fails).
+- Moderation notices skip the user who caused them (moderator on their own post, author whose own report
+  tipped the threshold).
+- `Blog.status` uses `EnumNameConverter`; the boot-time `DROP CONSTRAINT` patch from 8.5a is removed.
+- The banned-e-mail check moved into `UserService.validateEmail` (one lookup on sign-up); dead
+  `AuthorizationService.isSignedInOwnerOrAdmin` removed.
+- Checked live: 14/14 (confirmed AI answer hidden and restored with reviewer and vectors, snapshot kept after
+  author delete, comment on hidden blog 404 for read/edit/report, HIDDEN create 400, banned sign-up 403;
+  threshold 0 refuses to start) and every Phase 8 run again.
+
+**Not changed, with reasons**
+- Threshold race (two reports at the same instant can both count below, or both above, the threshold): the
+  worst case is a hide one report late or a duplicate CONTENT_HIDDEN notice. Logged, not locked.
+- Hiding a blog drops its vectors before commit: the vector store is the same Postgres, so it cannot be
+  down while the report insert succeeds.
+- One Hibernate `@Filter` for hidden rows instead of per-path checks: a larger change; the rule lives in each
+  service's `findByIdWithException` and list query, pinned by tests.
 
 ## 2026-10-14 (Phase 8 review fixes, round 2)
 
