@@ -43,8 +43,9 @@ class VoteServiceTest {
     private final AnswerRepository answerRepository = mock(AnswerRepository.class);
     private final UserService userService = mock(UserService.class);
     private final AuthorizationService authorization = mock(AuthorizationService.class);
+    private final ReputationService reputation = mock(ReputationService.class);
     private final VoteService voteService = new VoteService(voteRepository, questionService, answerService,
-            questionRepository, answerRepository, userService, authorization);
+            questionRepository, answerRepository, userService, authorization, reputation);
 
     private Question question;
 
@@ -57,6 +58,7 @@ class VoteServiceTest {
         when(questionService.findByIdWithException(1L)).thenReturn(question);
         when(authorization.currentUserId(LANG)).thenReturn(VOTER);
         when(userService.findByIdWithException(VOTER, LANG)).thenReturn(user(VOTER));
+        when(reputation.total(VOTER)).thenReturn(50L);
     }
 
     @Test
@@ -74,6 +76,19 @@ class VoteServiceTest {
 
         assertEquals(new VoteResponse(2, VoteDirection.DOWN), voteService.voteOnQuestion(1L, VoteDirection.DOWN, LANG));
         verify(questionRepository).addToScore(1L, -2);
+        verify(reputation).questionVoteChanged(question, VoteDirection.UP, VoteDirection.DOWN);
+    }
+
+    @Test
+    void downvotingNeedsFiftyPointsButUpvotingDoesNot() {
+        when(reputation.total(VOTER)).thenReturn(49L);
+
+        ApplicationException refused = assertThrows(ApplicationException.class,
+                () -> voteService.voteOnQuestion(1L, VoteDirection.DOWN, LANG));
+
+        assertEquals(HttpStatus.FORBIDDEN, refused.getHttpStatus());
+        verify(voteRepository, never()).save(any());
+        assertEquals(5, voteService.voteOnQuestion(1L, VoteDirection.UP, LANG).score());
     }
 
     @Test
@@ -93,6 +108,7 @@ class VoteServiceTest {
 
         assertEquals(new VoteResponse(5, null), response);
         verify(voteRepository).delete(down);
+        verify(reputation).questionVoteChanged(question, VoteDirection.DOWN, null);
     }
 
     @Test

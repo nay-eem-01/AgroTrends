@@ -32,6 +32,8 @@ public class AnswerService {
 
     private final AnswerRepository answerRepository;
 
+    private final ReputationService reputationService;
+
     public AnswerResponse create(CreateAnswerRequest request, String lang) {
         Question question = questionService.findByIdWithException(request.getQuestionId());
 
@@ -59,7 +61,8 @@ public class AnswerService {
     public void delete(Long answerId, String lang) {
         Answer answer = findByIdWithException(answerId);
         authorizationService.assertOwnerOrAdmin(answer.getUser().getId(), lang);
-        // The loaded question must not point at a deleted row when the session flushes.
+        // The loaded question must not point at a deleted row when the session flushes. The answer's reputation
+        // events go with it (ON DELETE CASCADE), so nothing is written to the ledger here.
         if (isAccepted(answer)) {
             answer.getQuestion().setAcceptedAnswer(null);
         }
@@ -84,7 +87,14 @@ public class AnswerService {
         if (answer.getParentAnswer() != null) {
             throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_CANNOT_ACCEPT_REPLY, lang);
         }
-        answer.getQuestion().setAcceptedAnswer(answer);
+        Answer previous = answer.getQuestion().getAcceptedAnswer();
+        if (!isAccepted(answer)) {
+            if (previous != null) {
+                reputationService.unaccepted(previous);
+            }
+            answer.getQuestion().setAcceptedAnswer(answer);
+            reputationService.accepted(answer);
+        }
         return mapToAnswerResponse(answer);
     }
 
@@ -95,6 +105,7 @@ public class AnswerService {
         assertAsker(answer.getQuestion(), lang);
         if (isAccepted(answer)) {
             answer.getQuestion().setAcceptedAnswer(null);
+            reputationService.unaccepted(answer);
         }
         return mapToAnswerResponse(answer);
     }

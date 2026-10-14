@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 59 of 84 steps done): launch blockers and one account type with
+- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 60 of 84 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -20,7 +20,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 ## Next up
 
 1. Merge `docs/product-study` and `docs/launch-plan` into `development`.
-2. Phase 6 in progress on `feat/qa-reputation-base` (6.1–6.5 done). Next: 6.6 reputation ledger.
+2. Phase 6 in progress on `feat/qa-reputation-base` (6.1–6.6 done). Next: 6.7 reputation on profiles and posts.
 3. Then Phases 6, 7, 8; deploy (Phase 4) and live-test only after all of them.
 4. **Team:** 30–50 seeded Bangla articles; 5–10 experts invited; pick the 6–8 launch topics (categories).
 5. **Nayeem:** fix the Gemini key; roadmap 0.4 (rotate keys, purge history); set `GOOGLE_CLIENT_ID`; make
@@ -47,6 +47,29 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-13 (roadmap 6.6)
+
+**Done**
+- `ReputationEvent` ledger (decision 16): user, topic (the question's category), the question or answer that
+  earned it, `reason`, `points`. `ReputationReason` holds the PLAN §5 numbers: question upvoted +5, answer
+  upvoted +10, downvoted −2, answer accepted +15, accepting an answer +2.
+- `ReputationService` is called by `VoteService` and `AnswerService`: a changed or withdrawn vote, a switched
+  accept or an unaccept appends the reversal (same reason, negated points) and then the new event.
+- Downvoting needs 50 points (403 `ERROR_DOWNVOTE_NEEDS_REPUTATION`); upvoting is open.
+- Checked live: +5/+10, up→down nets −2, accept +15/+2, unaccept reverses, events carry the topic, deleting
+  the answer removes what it earned.
+
+**Decisions**
+- Events are foreign-keyed to their post with `ON DELETE CASCADE`: deleting a post (by its author now, by a
+  moderator in Phase 8) takes back exactly what it earned, with no extra code.
+- No points for accepting your own answer; the voter earns or loses nothing.
+- Totals are summed on read (`shortcut:` in `ReputationService`); cache per user and topic when reads get slow.
+
+**Known limitations**
+- Nobody has 50 points on day one, so nobody can downvote until upvotes and accepts accumulate (intended,
+  as on Stack Overflow). Launch experts can be seeded points by hand if needed.
+- Votes cast before 6.6 (dev data only) have no ledger rows.
 
 ## 2026-10-13 (roadmap 6.5)
 
