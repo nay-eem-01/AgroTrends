@@ -17,6 +17,7 @@ import com.project.agriculturalblogapplication.exceptionHandler.ApplicationExcep
 import com.project.agriculturalblogapplication.notification.NotificationMessage;
 import com.project.agriculturalblogapplication.notification.NotificationPublisher;
 import com.project.agriculturalblogapplication.repositories.ReportRepository;
+import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import org.junit.jupiter.api.Test;
 import jakarta.persistence.EntityManager;
 import org.mockito.InOrder;
@@ -52,10 +53,11 @@ class ModerationServiceTest {
     private final UserService userService = mock(UserService.class);
     private final EntityManager entityManager = mock(EntityManager.class);
     private final DocumentService documentService = mock(DocumentService.class);
+    private final AuthorizationService authorization = mock(AuthorizationService.class);
     private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
     private final ModerationService moderation = new ModerationService(repository, blogService, questionService,
             answerService, commentService, reviewService, documentService, notifications, events, userService,
-            entityManager, () -> Optional.of("mod@agrotrends.test"));
+            entityManager, () -> Optional.of("mod@agrotrends.test"), authorization);
 
     @Test
     void removingAnAnswerSnapshotsItClosesItsReportsDeletesItAndTellsTheAuthor() {
@@ -129,6 +131,16 @@ class ModerationServiceTest {
         verify(repository).recordSnapshot(ReportTarget.QUESTION, 4L, "Why?\n\nLeaves are yellow");
         verify(notifications).publish(new NotificationMessage(30L, null, NotificationType.CONTENT_HIDDEN,
                 NotificationTarget.QUESTION, 4L));
+    }
+
+    @Test
+    void anAuthorWhoseOwnReportTippedTheThresholdIsNotNotified() {
+        when(entityManager.find(Question.class, 4L)).thenReturn(question(4L, 30L));
+        when(authorization.signedInUserId()).thenReturn(Optional.of(30L));
+
+        moderation.hideForReview(ReportTarget.QUESTION, 4L);
+
+        verifyNoInteractions(notifications);
     }
 
     @Test

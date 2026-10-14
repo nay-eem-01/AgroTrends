@@ -79,7 +79,7 @@ public class ReportService {
             case QUESTION -> questionService.findByIdWithException(id);
             case ANSWER -> answerService.findByIdWithException(id);
             case AI_ANSWER -> {
-                if (!aiAnswerRepository.existsByQuestionIdAndStatusNot(id, AiAnswerStatus.FLAGGED)) {
+                if (!aiAnswerRepository.existsByQuestionIdAndStatusNotAndQuestionHiddenFalse(id, AiAnswerStatus.FLAGGED)) {
                     throw new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_AI_ANSWER_NOT_FOUND, lang);
                 }
             }

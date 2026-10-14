@@ -192,6 +192,17 @@ class ReviewServiceTest {
     }
 
     @Test
+    void dismissedReportsRestoreTheStatusBeforeTheHideButLeaveAnExpertsFlag() {
+        when(repository.unhide(4L)).thenReturn(1);
+        reviewService.restore(4L);
+        verify(events).publishEvent(new AiAnswerReviewed(4L));
+
+        when(repository.unhide(5L)).thenReturn(0);
+        reviewService.restore(5L);
+        verify(events, never()).publishEvent(new AiAnswerReviewed(5L));
+    }
+
+    @Test
     void noAiAnswerIsNotFound() {
         assertEquals(HttpStatus.NOT_FOUND,
                 assertThrows(ApplicationException.class, () -> reviewService.confirm(5L, LANG)).getHttpStatus());

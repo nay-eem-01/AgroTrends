@@ -18,6 +18,7 @@ import com.project.agriculturalblogapplication.model.response.ReportResponse;
 import com.project.agriculturalblogapplication.notification.NotificationMessage;
 import com.project.agriculturalblogapplication.notification.NotificationPublisher;
 import com.project.agriculturalblogapplication.repositories.ReportRepository;
+import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import com.project.agriculturalblogapplication.util.CommonUtils;
 import com.project.agriculturalblogapplication.util.SafeHtml;
 import jakarta.persistence.EntityManager;
@@ -68,6 +69,8 @@ public class ModerationService {
     private final EntityManager entityManager;
 
     private final AuditorAware<String> auditorAware;
+
+    private final AuthorizationService authorizationService;
 
     /** Reports in one status, oldest first. An open report with a snapshot is on a post that is hidden. */
     @Transactional(readOnly = true)
@@ -245,9 +248,12 @@ public class ModerationService {
         return true;
     }
 
-    // No actor: authors are not told which moderator acted.
+    // No actor: authors are not told which moderator acted. That disables the store's self-skip, so it is done here:
+    // a moderator acting on their own post, or an author whose own report tipped the threshold, is not notified.
     private void notify(Post post, NotificationType type) {
-        notificationPublisher.publish(new NotificationMessage(post.authorId(), null, type, post.link(), post.linkId()));
+        if (authorizationService.signedInUserId().filter(post.authorId()::equals).isEmpty()) {
+            notificationPublisher.publish(new NotificationMessage(post.authorId(), null, type, post.link(), post.linkId()));
+        }
     }
 
     private Report open(Long reportId, String lang) {

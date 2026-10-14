@@ -29,14 +29,26 @@ public interface QuestionAiAnswerRepository extends JpaRepository<QuestionAiAnsw
             + " and a.status = :status")
     List<Long> reviewedBy(@Param("userId") Long userId, @Param("topicId") Long topicId, @Param("status") AiAnswerStatus status);
 
-    /** Moderator hide: only the status changes, so who reviewed it (and any correction) stays on record. */
+    /**
+     * Moderator hide: FLAGGED, remembering the status it had; who reviewed it (and any correction) stays on record.
+     */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("""
-            update QuestionAiAnswer a set a.status = com.project.agriculturalblogapplication.enums.AiAnswerStatus.FLAGGED
-            where a.question.id = :questionId""")
+            update QuestionAiAnswer a set a.statusBeforeHide = a.status,
+                   a.status = com.project.agriculturalblogapplication.enums.AiAnswerStatus.FLAGGED
+            where a.question.id = :questionId
+              and a.status <> com.project.agriculturalblogapplication.enums.AiAnswerStatus.FLAGGED""")
     int hide(@Param("questionId") Long questionId);
 
-    boolean existsByQuestionIdAndStatusNot(Long questionId, AiAnswerStatus status);
+    /** Undoes a moderation hide; 0 when it was not hidden by moderation (an expert's own flag stays). */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("""
+            update QuestionAiAnswer a set a.status = a.statusBeforeHide, a.statusBeforeHide = null
+            where a.question.id = :questionId and a.statusBeforeHide is not null
+              and a.status = com.project.agriculturalblogapplication.enums.AiAnswerStatus.FLAGGED""")
+    int unhide(@Param("questionId") Long questionId);
+
+    boolean existsByQuestionIdAndStatusNotAndQuestionHiddenFalse(Long questionId, AiAnswerStatus status);
 
     /** Puts these AI answers back to UNCHECKED. */
     @Modifying(flushAutomatically = true)
