@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 70 of 86 steps done): launch blockers and one account type with
+- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 71 of 86 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -47,6 +47,17 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-14 (roadmap 7.7)
+
+**Done**
+- The AI answer on a question ends its prompt with `Farm details: crop …; season kharif-2; region …; soil …`
+  (only the fields the asker filled), after the 1000-character cap on the question text, so the details are
+  never cut off and also steer retrieval.
+- Unit-tested; not observable live until the Gemini chat key is fixed (same listener path as 7.3).
+
+**Decisions**
+- Private asks (`/api/ai/ask`) take no farm details: they have no structured fields; the asker writes them.
 
 ## 2026-10-14 (roadmap 7.6b)
 
