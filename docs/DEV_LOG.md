@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 73 of 87 steps done): launch blockers and one account type with
+- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 74 of 87 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -48,6 +48,18 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-14 (roadmap 8.2)
+
+**Done**
+- `GET /api/notifications?unreadOnly=&pageNo=&pageSize=` (newest first): `{id, type, targetType, targetId,
+  actorId, actorName, read, createdAt}`; `GET /api/notifications/unread-count` → `{count}`;
+  `POST /api/notifications/{id}/read` (404 for anyone else's); `POST /api/notifications/read-all` →
+  `{updated}`. The first read time is kept.
+- Checked live: 14/14.
+
+**Known limitations**
+- Polling only (no push/WebSocket); the frontend polls `unread-count`.
 
 ## 2026-10-14 (roadmap 8.1b)
 
