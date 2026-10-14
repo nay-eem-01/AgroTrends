@@ -9,8 +9,21 @@ import com.project.agriculturalblogapplication.repositories.NotificationReposito
 import com.project.agriculturalblogapplication.repositories.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
+import com.project.agriculturalblogapplication.security.service.AuthorizationService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
@@ -23,7 +36,8 @@ class NotificationServiceTest {
 
     private final NotificationRepository repository = mock(NotificationRepository.class);
     private final UserRepository userRepository = mock(UserRepository.class);
-    private final NotificationService notificationService = new NotificationService(repository, userRepository);
+    private final AuthorizationService authorization = mock(AuthorizationService.class);
+    private final NotificationService notificationService = new NotificationService(repository, userRepository, authorization);
 
     @Test
     void aNotificationIsStoredUnreadForItsRecipient() {
@@ -42,6 +56,45 @@ class NotificationServiceTest {
         assertEquals(NotificationType.ANSWER_ON_YOUR_QUESTION, saved.getValue().getType());
         assertEquals(9L, saved.getValue().getTargetId());
         assertNull(saved.getValue().getReadAt());
+    }
+
+    @Test
+    void markingReadOnlyFindsTheCallersOwnAndKeepsTheFirstReadTime() {
+        when(authorization.currentUserId("en")).thenReturn(1L);
+        Notification mine = new Notification();
+        LocalDateTime firstRead = LocalDateTime.of(2026, 10, 1, 9, 0);
+        mine.setReadAt(firstRead);
+        when(repository.findByIdAndRecipientId(5L, 1L)).thenReturn(Optional.of(mine));
+
+        assertTrue(notificationService.markRead(5L, "en").read());
+        assertEquals(firstRead, mine.getReadAt());
+        assertEquals(HttpStatus.NOT_FOUND,
+                assertThrows(ApplicationException.class, () -> notificationService.markRead(6L, "en")).getHttpStatus());
+    }
+
+    @Test
+    void anUnreadNotificationIsStampedWhenRead() {
+        when(authorization.currentUserId("en")).thenReturn(1L);
+        Notification unread = new Notification();
+        when(repository.findByIdAndRecipientId(5L, 1L)).thenReturn(Optional.of(unread));
+
+        notificationService.markRead(5L, "en");
+
+        assertNotNull(unread.getReadAt());
+    }
+
+    @Test
+    void theListIsTheCallersNewestFirstAndCanBeLimitedToUnread() {
+        when(authorization.currentUserId("en")).thenReturn(1L);
+        when(repository.findAllByRecipientIdAndReadAtIsNull(eq(1L), any())).thenReturn(Page.empty());
+
+        notificationService.mine(true, 0, 500, "en");
+
+        ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
+        verify(repository).findAllByRecipientIdAndReadAtIsNull(eq(1L), pageable.capture());
+        assertEquals(100, pageable.getValue().getPageSize());
+        assertEquals(Sort.by(Sort.Direction.DESC, "creationDate"), pageable.getValue().getSort());
+        verify(repository, never()).findAllByRecipientId(any(), any());
     }
 
     @Test
