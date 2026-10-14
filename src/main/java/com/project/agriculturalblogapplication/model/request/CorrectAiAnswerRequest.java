@@ -1,6 +1,8 @@
 package com.project.agriculturalblogapplication.model.request;
 
+import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -9,6 +11,7 @@ import lombok.Setter;
 @Setter
 public class CorrectAiAnswerRequest {
 
-    @NotBlank
+    @NotBlank(message = ErrorCode.ERROR_CORRECTION_REQUIRED)
+    @Size(max = 5000, message = ErrorCode.ERROR_CORRECTION_TOO_LONG)
     private String content;
 }

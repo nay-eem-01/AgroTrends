@@ -14,6 +14,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public interface QuestionAiAnswerRepository extends JpaRepository<QuestionAiAnswer, Long> {
@@ -23,7 +24,26 @@ public interface QuestionAiAnswerRepository extends JpaRepository<QuestionAiAnsw
 
     boolean existsByQuestionId(Long questionId);
 
-    long countByQuestionUserIdAndCreationDateGreaterThanEqual(Long userId, LocalDateTime since);
+    /** Questions whose AI answer this user confirmed in this topic (to reopen when their badge is revoked). */
+    @Query("select a.question.id from QuestionAiAnswer a where a.reviewedBy.id = :userId and a.question.category.id = :topicId"
+            + " and a.status = :status")
+    List<Long> reviewedBy(@Param("userId") Long userId, @Param("topicId") Long topicId, @Param("status") AiAnswerStatus status);
+
+    /** Puts these AI answers back to UNCHECKED. */
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            update QuestionAiAnswer a set a.status = com.project.agriculturalblogapplication.enums.AiAnswerStatus.UNCHECKED,
+                   a.reviewedBy = null, a.reviewedAt = null, a.correction = null
+            where a.question.id in :questionIds""")
+    int reopen(@Param("questionIds") Collection<Long> questionIds);
+
+    /** Puts the AI answer this answer corrected back to UNCHECKED: without the correction it needs a new review. */
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            update QuestionAiAnswer a set a.status = com.project.agriculturalblogapplication.enums.AiAnswerStatus.UNCHECKED,
+                   a.reviewedBy = null, a.reviewedAt = null, a.correction = null
+            where a.correction.id = :answerId""")
+    int reopenCorrectedBy(@Param("answerId") Long answerId);
 
     @EntityGraph(attributePaths = "question")
     Page<QuestionAiAnswer> findAllByStatusAndQuestionCategoryIdIn(AiAnswerStatus status, Collection<Long> topicIds,

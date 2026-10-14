@@ -23,6 +23,9 @@ public class AppConfig {
         executor.setCorePoolSize(1);
         executor.setMaxPoolSize(1);
         executor.setThreadNamePrefix("indexing-");
+        // Finish queued index updates on shutdown: a lost removal would keep a deleted answer in AI answers.
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(30);
         return executor;
     }
 

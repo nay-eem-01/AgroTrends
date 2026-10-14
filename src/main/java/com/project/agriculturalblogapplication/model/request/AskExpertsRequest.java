@@ -15,6 +15,6 @@ public class AskExpertsRequest {
     private Long categoryId;
 
     /** Optional; defaults to the start of the asked text. */
-    @Size(max = 150)
+    @Size(max = 150, message = ErrorCode.ERROR_QUESTION_TITLE_TOO_LONG)
     private String title;
 }

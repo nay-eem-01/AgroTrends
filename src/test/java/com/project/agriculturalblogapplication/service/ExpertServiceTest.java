@@ -4,7 +4,9 @@ import com.project.agriculturalblogapplication.entities.Category;
 import com.project.agriculturalblogapplication.entities.ExpertApplication;
 import com.project.agriculturalblogapplication.entities.ExpertBadge;
 import com.project.agriculturalblogapplication.entities.User;
+import com.project.agriculturalblogapplication.enums.AiAnswerStatus;
 import com.project.agriculturalblogapplication.enums.ApplicationStatus;
+import com.project.agriculturalblogapplication.events.AiAnswerReviewed;
 import com.project.agriculturalblogapplication.enums.CredentialType;
 import com.project.agriculturalblogapplication.events.ExpertBadgeChanged;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
@@ -13,6 +15,7 @@ import com.project.agriculturalblogapplication.model.request.ExpertDecisionReque
 import com.project.agriculturalblogapplication.model.response.ExpertApplicationResponse;
 import com.project.agriculturalblogapplication.repositories.ExpertApplicationRepository;
 import com.project.agriculturalblogapplication.repositories.ExpertBadgeRepository;
+import com.project.agriculturalblogapplication.repositories.QuestionAiAnswerRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,9 +54,10 @@ class ExpertServiceTest {
     private final ImageService imageService = mock(ImageService.class);
     private final AuthorizationService authorization = mock(AuthorizationService.class);
     private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
+    private final QuestionAiAnswerRepository aiAnswers = mock(QuestionAiAnswerRepository.class);
     private final ExpertBadgeRepository badgeRepository = mock(ExpertBadgeRepository.class);
-    private final ExpertService expertService = new ExpertService(repository, badgeRepository, userService, categoryService,
-            imageService, authorization, events);
+    private final ExpertService expertService = new ExpertService(repository, badgeRepository, aiAnswers,
+            userService, categoryService, imageService, authorization, events);
 
     @BeforeEach
     void setUp() {
@@ -65,6 +69,7 @@ class ExpertServiceTest {
         when(categoryService.findByIdWithException(3L)).thenReturn(category(3L, "Poultry"));
         when(imageService.requireUploaded(any(), any())).thenAnswer(call -> call.getArgument(0));
         when(repository.save(any(ExpertApplication.class))).thenAnswer(call -> call.getArgument(0));
+        when(repository.decide(any(), any(), any())).thenReturn(1);
     }
 
     @Test
@@ -177,6 +182,29 @@ class ExpertServiceTest {
 
         assertEquals(HttpStatus.CONFLICT, e.getHttpStatus());
         verify(badgeRepository, never()).save(any());
+    }
+
+    @Test
+    void anotherAdminDecidingFirstIsAConflictAndGrantsNothing() {
+        // Regression: two admins could both pass the PENDING check, one approving and one rejecting.
+        pendingApplication(category(3L, "Poultry"));
+        when(repository.decide(9L, ApplicationStatus.APPROVED, null)).thenReturn(0);
+
+        assertEquals(HttpStatus.CONFLICT,
+                assertThrows(ApplicationException.class, () -> expertService.approve(9L, decision(null, null), LANG)).getHttpStatus());
+        verify(badgeRepository, never()).save(any());
+    }
+
+    @Test
+    void revokingReopensTheAiAnswersTheyConfirmedInThatTopic() {
+        when(badgeRepository.findByUserIdAndTopicId(APPLICANT, 3L)).thenReturn(Optional.of(new ExpertBadge()));
+        when(aiAnswers.reviewedBy(APPLICANT, 3L, AiAnswerStatus.CONFIRMED)).thenReturn(List.of(40L, 41L));
+
+        expertService.revoke(APPLICANT, 3L, LANG);
+
+        verify(aiAnswers).reopen(List.of(40L, 41L));
+        verify(events).publishEvent(new AiAnswerReviewed(40L));
+        verify(events).publishEvent(new AiAnswerReviewed(41L));
     }
 
     @Test

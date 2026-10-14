@@ -4,7 +4,9 @@ import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import com.project.agriculturalblogapplication.entities.Category;
 import com.project.agriculturalblogapplication.entities.ExpertApplication;
 import com.project.agriculturalblogapplication.entities.ExpertBadge;
+import com.project.agriculturalblogapplication.enums.AiAnswerStatus;
 import com.project.agriculturalblogapplication.enums.ApplicationStatus;
+import com.project.agriculturalblogapplication.events.AiAnswerReviewed;
 import com.project.agriculturalblogapplication.events.ExpertBadgeChanged;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.request.ExpertApplicationRequest;
@@ -12,6 +14,7 @@ import com.project.agriculturalblogapplication.model.request.ExpertDecisionReque
 import com.project.agriculturalblogapplication.model.response.ExpertApplicationResponse;
 import com.project.agriculturalblogapplication.repositories.ExpertApplicationRepository;
 import com.project.agriculturalblogapplication.repositories.ExpertBadgeRepository;
+import com.project.agriculturalblogapplication.repositories.QuestionAiAnswerRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import com.project.agriculturalblogapplication.util.CommonUtils;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +41,8 @@ public class ExpertService {
     private final ExpertApplicationRepository applicationRepository;
 
     private final ExpertBadgeRepository badgeRepository;
+
+    private final QuestionAiAnswerRepository aiAnswerRepository;
 
     private final UserService userService;
 
@@ -102,6 +107,7 @@ public class ExpertService {
                 throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_EXPERT_TOPICS_NOT_REQUESTED, lang);
             }
         }
+        ExpertApplicationResponse decided = decide(application, ApplicationStatus.APPROVED, decision.getNote(), lang);
         for (Category topic : granted) {
             ExpertBadge badge = badgeRepository.findByUserIdAndTopicId(application.getUser().getId(), topic.getId())
                     .orElseGet(ExpertBadge::new);
@@ -112,7 +118,7 @@ public class ExpertService {
             badgeRepository.save(badge);
             eventPublisher.publishEvent(new ExpertBadgeChanged(application.getUser().getId(), topic.getId()));
         }
-        return decide(application, ApplicationStatus.APPROVED, decision.getNote());
+        return decided;
     }
 
     @Transactional
@@ -121,10 +127,13 @@ public class ExpertService {
         if (decision.getNote() == null || decision.getNote().isBlank()) {
             throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_EXPERT_REJECT_REASON_REQUIRED, lang);
         }
-        return decide(application, ApplicationStatus.REJECTED, decision.getNote());
+        return decide(application, ApplicationStatus.REJECTED, decision.getNote(), lang);
     }
 
-    /** Takes a Verified Expert badge away (harmful advice, false proof); the user may apply again. */
+    /**
+     * Takes a Verified Expert badge away (harmful advice, false proof); the user may apply again. AI answers they
+     * confirmed in the topic go back to UNCHECKED.
+     */
     @Transactional
     public void revoke(Long userId, Long topicId, String lang) {
         ExpertBadge badge = badgeRepository.findByUserIdAndTopicId(userId, topicId)
@@ -133,6 +142,12 @@ public class ExpertService {
         badge.setRevokedAt(LocalDateTime.now());
         badgeRepository.save(badge);
         eventPublisher.publishEvent(new ExpertBadgeChanged(userId, topicId));
+        // What they confirmed in this topic is no longer expert-checked: back to the review queue and out of the index.
+        List<Long> confirmed = aiAnswerRepository.reviewedBy(userId, topicId, AiAnswerStatus.CONFIRMED);
+        if (!confirmed.isEmpty()) {
+            aiAnswerRepository.reopen(confirmed);
+            confirmed.forEach(questionId -> eventPublisher.publishEvent(new AiAnswerReviewed(questionId)));
+        }
     }
 
     /** The user's active badges, with their topics loaded. */
@@ -158,9 +173,14 @@ public class ExpertService {
         return application;
     }
 
-    private static ExpertApplicationResponse decide(ExpertApplication application, ApplicationStatus status, String note) {
+    /** Conditional on the application still being pending, so two admins at once cannot both decide it. */
+    private ExpertApplicationResponse decide(ExpertApplication application, ApplicationStatus status, String note, String lang) {
+        String reviewNote = note == null || note.isBlank() ? null : note.strip();
+        if (applicationRepository.decide(application.getId(), status, reviewNote) == 0) {
+            throw new ApplicationException(HttpStatus.CONFLICT, ErrorCode.ERROR_EXPERT_APPLICATION_DECIDED, lang);
+        }
         application.setStatus(status);
-        application.setReviewNote(note == null || note.isBlank() ? null : note.strip());
+        application.setReviewNote(reviewNote);
         return ExpertApplicationResponse.from(application);
     }
 }

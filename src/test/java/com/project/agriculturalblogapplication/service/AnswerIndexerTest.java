@@ -9,6 +9,7 @@ import com.project.agriculturalblogapplication.enums.AiAnswerStatus;
 import com.project.agriculturalblogapplication.events.AiAnswerReviewed;
 import com.project.agriculturalblogapplication.events.AnswerChanged;
 import com.project.agriculturalblogapplication.events.ExpertBadgeChanged;
+import com.project.agriculturalblogapplication.events.QuestionChanged;
 import com.project.agriculturalblogapplication.events.QuestionDeleted;
 import com.project.agriculturalblogapplication.repositories.AnswerRepository;
 import com.project.agriculturalblogapplication.repositories.QuestionAiAnswerRepository;
@@ -56,6 +57,9 @@ class AnswerIndexerTest {
         question = new Question();
         question.setId(4L);
         question.setCategory(topic);
+        User asker = new User();
+        asker.setId(1L);
+        question.setUser(asker);
         User author = new User();
         author.setId(AUTHOR);
         answer = new Answer();
@@ -70,10 +74,13 @@ class AnswerIndexerTest {
     }
 
     @Test
-    void theAcceptedAnswerIsVetted() {
+    void theAcceptedAnswerIsVettedUnlessTheAskerAcceptedTheirOwn() {
         question.setAcceptedAnswer(answer);
-
         assertTrue(indexer.isVetted(answer));
+
+        // Regression: anyone could put text into the AI's knowledge by answering their own question and accepting it.
+        question.setUser(answer.getUser());
+        assertFalse(indexer.isVetted(answer));
     }
 
     @Test
@@ -147,6 +154,19 @@ class AnswerIndexerTest {
                 }
             }
         }
+    }
+
+    @Test
+    void anEditedQuestionResyncsItsAnswersAndItsAiAnswer() {
+        when(answerRepository.findByQuestionIdAndParentAnswerIsNull(4L)).thenReturn(List.of(answer));
+        QuestionAiAnswer aiAnswer = new QuestionAiAnswer();
+        aiAnswer.setStatus(AiAnswerStatus.CONFIRMED);
+        when(aiAnswerRepository.findByQuestionId(4L)).thenReturn(Optional.of(aiAnswer));
+
+        indexer.on(new QuestionChanged(4L));
+
+        verify(documentService).syncAnswer(answer, false);
+        verify(documentService).syncAiAnswer(aiAnswer, true);
     }
 
     @Test

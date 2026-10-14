@@ -10,6 +10,7 @@ import com.project.agriculturalblogapplication.exceptionHandler.ApplicationExcep
 import com.project.agriculturalblogapplication.model.AuthorStanding;
 import com.project.agriculturalblogapplication.model.response.AnswerResponse;
 import com.project.agriculturalblogapplication.repositories.AnswerRepository;
+import com.project.agriculturalblogapplication.repositories.QuestionAiAnswerRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,9 +43,10 @@ class AnswerServiceTest {
     private final AnswerRepository answerRepository = mock(AnswerRepository.class);
     private final AuthorizationService authorization = mock(AuthorizationService.class);
     private final ReputationService reputation = mock(ReputationService.class);
+    private final QuestionAiAnswerRepository aiAnswers = mock(QuestionAiAnswerRepository.class);
     private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
     private final AnswerService answerService = new AnswerService(mock(QuestionService.class), mock(UserService.class),
-            authorization, answerRepository, reputation, events);
+            authorization, answerRepository, aiAnswers, reputation, events);
 
     private Question question;
 
@@ -121,6 +123,8 @@ class AnswerServiceTest {
 
         assertNull(question.getAcceptedAnswer());
         verify(answerRepository).delete(accepted);
+        // Had it corrected an AI answer, that answer goes back to the review queue.
+        verify(aiAnswers).reopenCorrectedBy(accepted.getId());
         verify(reputation, never()).unaccepted(any());
     }
 

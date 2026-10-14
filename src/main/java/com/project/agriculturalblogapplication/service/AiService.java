@@ -19,6 +19,7 @@ import com.project.agriculturalblogapplication.model.response.QuestionAiAnswerRe
 import com.project.agriculturalblogapplication.model.response.QuestionResponse;
 import com.project.agriculturalblogapplication.repositories.AiRepositories;
 import com.project.agriculturalblogapplication.repositories.QuestionAiAnswerRepository;
+import com.project.agriculturalblogapplication.security.service.AttemptLimiter;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import com.project.agriculturalblogapplication.util.CommonUtils;
 import com.project.agriculturalblogapplication.util.SafeHtml;
@@ -39,6 +40,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -53,6 +55,8 @@ public class AiService {
 
     static final int TITLE_LENGTH = 120;
 
+    static final String QUESTION_ANSWERS_KEY = "ai-question-answers:";
+
     private final AiRepositories aiRepositories;
 
     private final ChatClient chatClient;
@@ -64,6 +68,8 @@ public class AiService {
     private final QuestionService questionService;
 
     private final QuestionAiAnswerRepository questionAiAnswerRepository;
+
+    private final AttemptLimiter attemptLimiter;
 
     public AiAnswerResponse ask(String question, String lang) {
         Long userId = authorizationService.currentUserId(lang);
@@ -134,12 +140,14 @@ public class AiService {
                 return; // sent from a private ask (askExperts): it already has its answer
             }
             Question question = questionService.findByIdWithException(event.questionId());
-            long answeredToday = questionAiAnswerRepository.countByQuestionUserIdAndCreationDateGreaterThanEqual(
-                    question.getUser().getId(), LocalDate.now().atStartOfDay());
-            if (answeredToday >= aiProperties.getDailyQuestionLimit()) {
+            // Counted in memory, not from stored answers: deleting questions must not give the allowance back, and
+            // recording before the slow model call stops parallel questions from all slipping under the limit.
+            String allowance = QUESTION_ANSWERS_KEY + question.getUser().getId();
+            if (attemptLimiter.isBlocked(allowance)) {
                 log.info("No AI answer for question {}: the asker reached today's limit", question.getId());
                 return;
             }
+            attemptLimiter.record(allowance, aiProperties.getDailyQuestionLimit(), Duration.ofDays(1));
             ChatClientResponse response = chatClient.prompt().user(promptFor(question)).call().chatClientResponse();
             ChatResponse chatResponse = response.chatResponse();
             Usage usage = chatResponse.getMetadata().getUsage();
