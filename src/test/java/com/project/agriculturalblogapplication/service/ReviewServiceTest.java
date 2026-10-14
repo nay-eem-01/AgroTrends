@@ -44,11 +44,12 @@ class ReviewServiceTest {
     private final QuestionAiAnswerRepository repository = mock(QuestionAiAnswerRepository.class);
     private final AnswerService answerService = mock(AnswerService.class);
     private final ReputationService reputation = mock(ReputationService.class);
+    private final ExpertService expertService = mock(ExpertService.class);
     private final UserService userService = mock(UserService.class);
     private final AuthorizationService authorization = mock(AuthorizationService.class);
     private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
-    private final ReviewService reviewService = new ReviewService(repository, answerService, reputation, userService,
-            authorization, events);
+    private final ReviewService reviewService = new ReviewService(repository, answerService, reputation, expertService,
+            userService, authorization, events);
 
     private final User reviewer = new User();
     private QuestionAiAnswer aiAnswer;
@@ -73,6 +74,7 @@ class ReviewServiceTest {
     private void standing(Set<Long> topContributorIn, Set<Long> expertIn) {
         when(reputation.standings(List.of(REVIEWER)))
                 .thenReturn(Map.of(REVIEWER, new AuthorStanding(0, topContributorIn, expertIn)));
+        when(expertService.verifiedTopics(List.of(REVIEWER))).thenReturn(Map.of(REVIEWER, expertIn));
     }
 
     @Test

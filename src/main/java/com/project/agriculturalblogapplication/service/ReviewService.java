@@ -40,6 +40,8 @@ public class ReviewService {
 
     private final ReputationService reputationService;
 
+    private final ExpertService expertService;
+
     private final UserService userService;
 
     private final AuthorizationService authorizationService;
@@ -49,7 +51,7 @@ public class ReviewService {
     /** Unchecked AI answers in the caller's expert topics, oldest first. */
     @Transactional(readOnly = true)
     public Page<ReviewItemResponse> queue(int pageNo, int pageSize, String lang) {
-        Set<Long> topics = standing(authorizationService.currentUserId(lang)).expertTopics();
+        Set<Long> topics = expertTopicsOf(authorizationService.currentUserId(lang));
         if (topics.isEmpty()) {
             throw new ApplicationException(HttpStatus.FORBIDDEN, ErrorCode.ERROR_NOT_AN_EXPERT, lang);
         }
@@ -112,7 +114,7 @@ public class ReviewService {
     private User expertIn(QuestionAiAnswer aiAnswer, String lang) {
         Long userId = authorizationService.currentUserId(lang);
         Long topicId = topicOf(aiAnswer);
-        if (topicId == null || !standing(userId).expertTopics().contains(topicId)) {
+        if (topicId == null || !expertTopicsOf(userId).contains(topicId)) {
             throw new ApplicationException(HttpStatus.FORBIDDEN, ErrorCode.ERROR_NOT_EXPERT_IN_TOPIC, lang);
         }
         return userService.findByIdWithException(userId, lang);
@@ -122,6 +124,11 @@ public class ReviewService {
         return aiAnswer.getQuestion().getCategory() == null ? null : aiAnswer.getQuestion().getCategory().getId();
     }
 
+    private Set<Long> expertTopicsOf(Long userId) {
+        return expertService.verifiedTopics(List.of(userId)).getOrDefault(userId, Set.of());
+    }
+
+    /** Badges and points; only flag needs it, since Top Contributors may flag too. */
     private AuthorStanding standing(Long userId) {
         return reputationService.standings(List.of(userId)).getOrDefault(userId, AuthorStanding.NONE);
     }

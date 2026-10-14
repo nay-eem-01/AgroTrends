@@ -1,6 +1,7 @@
 package com.project.agriculturalblogapplication.service;
 
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
+import com.project.agriculturalblogapplication.events.QuestionChanged;
 import com.project.agriculturalblogapplication.events.QuestionCreated;
 import com.project.agriculturalblogapplication.events.QuestionDeleted;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
@@ -109,6 +110,7 @@ public class QuestionService {
         return mapToQuestionResponses(questions);
     }
 
+    @Transactional
     public QuestionResponse update(UpdateQuestionRequest request, String lang) {
         Question question = findByIdWithException(request.getQuestionId());
         authorizationService.assertOwnerOrAdmin(question.getUser().getId(), lang);
@@ -127,6 +129,7 @@ public class QuestionService {
             question.setAgri(request.getAgri().toMetadata());
         }
         question = questionRepository.save(question);
+        eventPublisher.publishEvent(new QuestionChanged(question.getId()));
 
         return mapToQuestionResponse(question);
     }

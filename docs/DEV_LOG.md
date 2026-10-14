@@ -20,7 +20,8 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 ## Next up
 
 1. Merge `docs/product-study` and `docs/launch-plan` into `development`.
-2. Phases 5 and 6 are done. Phase 7 (verified experts and AI review) is in progress on `feat/experts-review-base`.
+2. Phases 5, 6 and 7 are done (Phase 7 on `feat/experts-review-base`, not yet merged into `development`).
+   Next: Phase 8 (notifications and moderation), 8.1 first.
 3. Then Phases 6, 7, 8; deploy (Phase 4) and live-test only after all of them.
 4. **Team:** 30–50 seeded Bangla articles; 5–10 experts invited; pick the 6–8 launch topics (categories).
 5. **Nayeem:** fix the Gemini key; roadmap 0.4 (rotate keys, purge history); set `GOOGLE_CLIENT_ID`; make
@@ -36,17 +37,52 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | Any database that still holds `text-embedding-004` vectors: start once with `AI_REINDEX_ON_STARTUP=true` | whoever owns that DB | retrieval on old data |
 | Client errors (400/401) are logged at ERROR by `ExceptionHandlingController` — noisy | roadmap 4.7 | — |
 | Launch topics (categories), reputation numbers, who reviews expert applications and reports | team decision (partner doc) | 6.1, 7.2, 8.4 |
-| Frontend can show `sources` from `/api/ai/ask` as links to `/api/blogs/id/{blogId}` | frontend | — |
+| Frontend: `sources[].type` is `blog` (link `/api/blogs/id/{blogId}`) or `answer` (link the question `questionId`); `ai-draft` is gone — poll `GET /api/questions/id/{id}/ai-answer` and show its `disclaimer` and `status` | frontend | — |
 | Frontend must stop sending `userId` / `authorUserId`, use `/api/auth/refresh-token`, and handle 401 vs 403 | frontend | frontend integration |
 | `contextLoads` fails without a local Postgres | roadmap 4.4 | CI |
 | No SMTP configured: reset links are written to the log (dev only) | an SMTP account | production password reset |
 | Hotfix path is not defined yet (proposal: branch off `production`, PR into `production`, then back-merge into `development`) | Nayeem to confirm | — |
-| Gemini chat calls fail with "API key not valid" since 2026-10-06 evening (embeddings still work); `.env` key is 53 chars (a key is 39) — check the line for quotes/comments | Nayeem | live checks of 3.6–3.8 |
+| Gemini chat calls fail with "API key not valid" since 2026-10-06 evening (embeddings still work); `.env` key is 53 chars (a key is 39) — check the line for quotes/comments | Nayeem | live checks of 3.6–3.8, 7.3a generation, 7.6b answer citations, 7.7 farm details |
 | After deploying 2.3a: start once with `AI_REINDEX_ON_STARTUP=true` (old chunks have no `status`, so retrieval ignores them) | whoever deploys | AI answers on existing posts |
 | Deleting a user with comments/questions/answers fails on foreign keys: decide delete vs anonymise | Nayeem | account deletion |
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-14 (Phase 7 review fixes)
+
+**Done** — a phase-end review of 7.1–7.7 (17 findings) led to these fixes, each with a regression test:
+- A self-accepted answer is not vetted (anyone could have fed the AI by answering and accepting their own
+  question).
+- The daily cap on AI answers for questions moved to `AttemptLimiter` (key `ai-question-answers:<userId>`),
+  recorded before the model call: deleting questions no longer resets it, parallel questions cannot all pass,
+  and failed calls count.
+- Approve/reject is one conditional `UPDATE … WHERE status = PENDING` before any badge is granted: a second
+  admin gets 409 (was: approved and rejected at once, or a 500).
+- `QuestionService.update` publishes `QuestionChanged`: the question's answers and AI answer are re-synced
+  (new title; expert vetting follows a topic change).
+- Revoking a badge puts the AI answers that expert `CONFIRMED` in the topic back to `UNCHECKED` (and out of
+  the index); deleting an expert's correction puts the corrected AI answer back to `UNCHECKED`.
+- `indexingExecutor` waits up to 30 s for queued updates on shutdown.
+- `CorrectAiAnswerRequest.content` (max 5000, was a 500 above that) and `AskExpertsRequest.title` carry
+  `ErrorCode` messages. Review checks read expert topics directly instead of the reputation aggregation;
+  a badge change looks up the expert's topics once, not per answer.
+- Checked live: 17/17 fix checks (self-accept, topic move out and back, revoke reopens, correction delete
+  reopens, 409 on a second decision, over-long correction 400) and all earlier Phase 7 runs again
+  (15 + 31 + 37 + 16 + 23).
+
+**Deferred, with reasons**
+- Per-IP cap on the AI answers that questions trigger: an IP rule on `POST /api/questions/create` would
+  block asking itself; accounts need a confirmed e-mail and each has its own daily cap. Revisit if abuse shows.
+- Editing an accepted answer keeps it vetted with the new text (Stack Overflow keeps the accept too);
+  reports and hiding (8.3, 8.4) are the remedy.
+- Two simultaneous expert applications from one user can both be pending (harmless; admin decides each).
+- Admin-only services (approve, reject, revoke, reopen) rely on `@PreAuthorize`, like `CategoryService`.
+- Eager tags/users on review-queue and application pages load per row, as on the existing question lists.
+- `AiService.ask` and `answerQuestion` keep separate response mapping; they differ in error handling.
+
+**Known limitations**
+- The AI-answer cap is in memory: a restart resets it (same as the other limits; 4.8).
 
 ## 2026-10-14 (roadmap 7.7)
 

@@ -19,6 +19,7 @@ import com.project.agriculturalblogapplication.model.response.QuestionAiAnswerRe
 import com.project.agriculturalblogapplication.model.response.QuestionResponse;
 import com.project.agriculturalblogapplication.repositories.AiRepositories;
 import com.project.agriculturalblogapplication.repositories.QuestionAiAnswerRepository;
+import com.project.agriculturalblogapplication.security.service.AttemptLimiter;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -44,6 +45,7 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -65,7 +67,8 @@ class AiServiceTest {
     private final QuestionService questionService = mock(QuestionService.class);
     private final QuestionAiAnswerRepository questionAiAnswers = mock(QuestionAiAnswerRepository.class);
     private final AiService aiService =
-            new AiService(aiRepositories, chatClient, authorization, aiProperties, questionService, questionAiAnswers);
+            new AiService(aiRepositories, chatClient, authorization, aiProperties, questionService, questionAiAnswers,
+                    new AttemptLimiter());
 
     @Test
     void askReturnsTheAnswerWithItsSourcesAndStoresItForTheCaller() {
@@ -269,15 +272,22 @@ class AiServiceTest {
     }
 
     @Test
-    void anAskerOverTheDailyLimitGetsNoAiAnswerAndTheModelIsNotCalled() {
-        aiProperties.setDailyQuestionLimit(20);
+    void anAskerOverTheDailyLimitGetsNoAiAnswerEvenAfterDeletingQuestions() {
+        // Regression: the limit counted stored AI answers, which go with their question, so deleting questions
+        // gave the allowance back. Failed calls count too, so a broken model cannot be hammered.
+        aiProperties.setDailyQuestionLimit(2);
         when(questionService.findByIdWithException(4L)).thenReturn(question("Yellow leaves", "Why?"));
-        when(questionAiAnswers.countByQuestionUserIdAndCreationDateGreaterThanEqual(9L, LocalDate.now().atStartOfDay()))
-                .thenReturn(20L);
+        AtomicInteger modelCalls = new AtomicInteger();
+        when(chatClient.prompt().user(any(String.class)).call().chatClientResponse()).thenAnswer(call -> {
+            modelCalls.incrementAndGet();
+            throw new RuntimeException("503");
+        });
 
         aiService.answerQuestion(new QuestionCreated(4L));
+        aiService.answerQuestion(new QuestionCreated(4L));
+        aiService.answerQuestion(new QuestionCreated(4L));
 
-        verify(chatClient, never()).prompt();
+        assertEquals(2, modelCalls.get());
         verify(questionAiAnswers, never()).save(any());
     }
 

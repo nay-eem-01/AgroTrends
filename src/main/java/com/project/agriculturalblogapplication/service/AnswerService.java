@@ -14,6 +14,7 @@ import com.project.agriculturalblogapplication.model.request.UpdateAnswerRequest
 import com.project.agriculturalblogapplication.model.AuthorStanding;
 import com.project.agriculturalblogapplication.model.response.AnswerResponse;
 import com.project.agriculturalblogapplication.repositories.AnswerRepository;
+import com.project.agriculturalblogapplication.repositories.QuestionAiAnswerRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -36,6 +37,8 @@ public class AnswerService {
     private final AuthorizationService authorizationService;
 
     private final AnswerRepository answerRepository;
+
+    private final QuestionAiAnswerRepository aiAnswerRepository;
 
     private final ReputationService reputationService;
 
@@ -77,6 +80,7 @@ public class AnswerService {
         if (isAccepted(answer)) {
             answer.getQuestion().setAcceptedAnswer(null);
         }
+        aiAnswerRepository.reopenCorrectedBy(answerId);
         answerRepository.delete(answer);
         eventPublisher.publishEvent(new AnswerChanged(answerId));
     }

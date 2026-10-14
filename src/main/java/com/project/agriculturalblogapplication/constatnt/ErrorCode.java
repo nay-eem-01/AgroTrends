@@ -83,6 +83,9 @@ public final class ErrorCode {
     public static final String ERROR_AI_ANSWER_ALREADY_REVIEWED = "This AI answer has already been reviewed.";
     public static final String ERROR_AI_ANSWER_NOT_REVIEWED = "This AI answer has not been reviewed yet.";
     public static final String ERROR_AI_ASK_ALREADY_PUBLISHED = "This AI answer has already been sent to the experts as a question.";
+    public static final String ERROR_CORRECTION_REQUIRED = "Write your corrected answer.";
+    public static final String ERROR_CORRECTION_TOO_LONG = "An answer can be at most 5000 characters.";
+    public static final String ERROR_QUESTION_TITLE_TOO_LONG = "A title can be at most 150 characters.";
     public static final String ERROR_AI_ANSWER_NOT_FOUND = "This question has no AI answer.";
     public static final String ERROR_INVALID_SORT_FIELD = "This list cannot be sorted by that field.";
     public static final String ERROR_BLOG_ALREADY_PUBLISHED = "This blog is already published.";
