@@ -8,6 +8,10 @@ import com.project.agriculturalblogapplication.enums.AiAnswerStatus;
 import com.project.agriculturalblogapplication.enums.ApplicationStatus;
 import com.project.agriculturalblogapplication.events.AiAnswerReviewed;
 import com.project.agriculturalblogapplication.events.ExpertBadgeChanged;
+import com.project.agriculturalblogapplication.enums.NotificationTarget;
+import com.project.agriculturalblogapplication.enums.NotificationType;
+import com.project.agriculturalblogapplication.notification.NotificationMessage;
+import com.project.agriculturalblogapplication.notification.NotificationPublisher;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.request.ExpertApplicationRequest;
 import com.project.agriculturalblogapplication.model.request.ExpertDecisionRequest;
@@ -53,6 +57,8 @@ public class ExpertService {
     private final AuthorizationService authorizationService;
 
     private final ApplicationEventPublisher eventPublisher;
+
+    private final NotificationPublisher notificationPublisher;
 
     /** One application waits at a time; after a decision the user may apply again. */
     @Transactional
@@ -155,6 +161,11 @@ public class ExpertService {
         return badgeRepository.findAllByUserIdAndRevokedAtIsNull(userId);
     }
 
+    /** Users who are Verified Experts in this topic now. */
+    public List<Long> expertsIn(Long topicId) {
+        return badgeRepository.activeExpertIds(topicId);
+    }
+
     /** For each of these users who holds any, the topics they are a Verified Expert in. */
     public Map<Long, Set<Long>> verifiedTopics(Collection<Long> userIds) {
         if (userIds.isEmpty()) {
@@ -181,6 +192,9 @@ public class ExpertService {
         }
         application.setStatus(status);
         application.setReviewNote(reviewNote);
+        notificationPublisher.publish(new NotificationMessage(application.getUser().getId(),
+                authorizationService.currentUserId(lang), NotificationType.APPLICATION_DECIDED,
+                NotificationTarget.EXPERT_APPLICATION, application.getId()));
         return ExpertApplicationResponse.from(application);
     }
 }
