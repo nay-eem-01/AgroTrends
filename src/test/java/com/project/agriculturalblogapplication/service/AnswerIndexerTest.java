@@ -96,6 +96,17 @@ class AnswerIndexerTest {
     }
 
     @Test
+    void aHiddenAnswerOrAnAnswerOnAHiddenQuestionIsNeverIndexedEvenWhenAccepted() {
+        question.setAcceptedAnswer(answer);
+        answer.setHidden(true);
+        assertFalse(indexer.isVetted(answer));
+
+        answer.setHidden(false);
+        question.setHidden(true);
+        assertFalse(indexer.isVetted(answer));
+    }
+
+    @Test
     void aReplyIsNeverVettedEvenByAnExpert() {
         when(expertService.verifiedTopics(List.of(AUTHOR))).thenReturn(Map.of(AUTHOR, Set.of(TOPIC)));
         answer.setParentAnswer(new Answer());
@@ -129,6 +140,7 @@ class AnswerIndexerTest {
     @Test
     void onlyAConfirmedAiAnswerIsIndexed() {
         QuestionAiAnswer aiAnswer = new QuestionAiAnswer();
+        aiAnswer.setQuestion(question);
         when(aiAnswerRepository.findByQuestionId(4L)).thenReturn(Optional.of(aiAnswer));
 
         aiAnswer.setStatus(AiAnswerStatus.CONFIRMED);
@@ -160,6 +172,7 @@ class AnswerIndexerTest {
     void anEditedQuestionResyncsItsAnswersAndItsAiAnswer() {
         when(answerRepository.findByQuestionIdAndParentAnswerIsNull(4L)).thenReturn(List.of(answer));
         QuestionAiAnswer aiAnswer = new QuestionAiAnswer();
+        aiAnswer.setQuestion(question);
         aiAnswer.setStatus(AiAnswerStatus.CONFIRMED);
         when(aiAnswerRepository.findByQuestionId(4L)).thenReturn(Optional.of(aiAnswer));
 

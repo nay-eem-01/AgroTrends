@@ -55,8 +55,9 @@ public interface QuestionAiAnswerRepository extends JpaRepository<QuestionAiAnsw
     int reopenCorrectedBy(@Param("answerId") Long answerId);
 
     @EntityGraph(attributePaths = "question")
-    Page<QuestionAiAnswer> findAllByStatusAndQuestionCategoryIdIn(AiAnswerStatus status, Collection<Long> topicIds,
-                                                                 Pageable pageable);
+    Page<QuestionAiAnswer> findAllByStatusAndQuestionCategoryIdInAndQuestionHiddenFalse(AiAnswerStatus status,
+                                                                                    Collection<Long> topicIds,
+                                                                                    Pageable pageable);
 
     /** Moves the review state only if it is still in {@code from}: two reviewers at once cannot both win. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)

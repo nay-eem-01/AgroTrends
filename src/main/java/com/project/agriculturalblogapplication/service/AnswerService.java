@@ -81,7 +81,9 @@ public class AnswerService {
 
     @Transactional
     public void delete(Long answerId, String lang) {
-        Answer answer = findByIdWithException(answerId);
+        // Hidden answers can still be deleted, by their author or a moderator confirming the reports.
+        Answer answer = answerRepository.findById(answerId).orElseThrow(() ->
+                new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_ANSWER_NOT_FOUND));
         authorizationService.assertOwnerAdminOrModerator(answer.getUser().getId(), lang);
         // The loaded question must not point at a deleted row when the session flushes. The answer's reputation
         // events go with it (ON DELETE CASCADE), so nothing is written to the ledger here.
@@ -95,7 +97,8 @@ public class AnswerService {
 
     /** Direct answers (replies come from viewReplies): the accepted one first, then highest score, then oldest. */
     public List<AnswerResponse> getAllByQuestionId(Long questionId) {
-        return mapToAnswerResponses(answerRepository.findByQuestionIdAndParentAnswerIsNull(questionId).stream()
+        questionService.findByIdWithException(questionId);
+        return mapToAnswerResponses(answerRepository.findByQuestionIdAndParentAnswerIsNullAndHiddenFalse(questionId).stream()
                 .sorted(Comparator.comparing((Answer answer) -> !isAccepted(answer))
                         .thenComparing(Answer::getScore, Comparator.reverseOrder())
                         .thenComparing(Answer::getId))
@@ -175,12 +178,14 @@ public class AnswerService {
     public List<AnswerResponse> viewReplies(Long parentAnswerId) {
         Answer parentAnswer = findByIdWithException(parentAnswerId);
 
-        return mapToAnswerResponses(parentAnswer.getReplies());
+        return mapToAnswerResponses(parentAnswer.getReplies().stream().filter(reply -> !reply.isHidden()).toList());
     }
 
+    /** Hidden, or on a hidden question: a 404, so it cannot be read, edited, accepted or voted on meanwhile. */
     public Answer findByIdWithException(Long answerId) {
-        return answerRepository.findById(answerId).orElseThrow(() ->
-                new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_ANSWER_NOT_FOUND));
+        return answerRepository.findById(answerId)
+                .filter(answer -> !answer.isHidden() && !answer.getQuestion().isHidden())
+                .orElseThrow(() -> new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_ANSWER_NOT_FOUND));
     }
 
     public AnswerResponse findById(Long answerId) {

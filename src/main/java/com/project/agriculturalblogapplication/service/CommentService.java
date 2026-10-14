@@ -64,7 +64,9 @@ public class CommentService {
     }
 
     public void delete(Long commentId, String lang) {
-        Comment comment = findByIdWithException(commentId);
+        // Hidden comments can still be deleted, by their author or a moderator confirming the reports.
+        Comment comment = commentRepository.findById(commentId).orElseThrow(() ->
+                new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_COMMENT_NOT_FOUND));
         authorizationService.assertOwnerAdminOrModerator(comment.getUser().getId(), lang);
         commentRepository.delete(comment);
     }
@@ -72,7 +74,7 @@ public class CommentService {
     public List<CommentResponse> getAllByBlogId(Long blogId, String lang) {
         blogService.findVisibleBlog(blogId, lang);
 
-        List<Comment> comments = commentRepository.findByBlogIdAndParentCommentIsNull(blogId);
+        List<Comment> comments = commentRepository.findByBlogIdAndParentCommentIsNullAndHiddenFalse(blogId);
 
         return comments.stream()
                 .map(this::mapToCommentResponse)
@@ -107,12 +109,14 @@ public class CommentService {
         Comment parentComment = findByIdWithException(parentCommentId);
 
         return parentComment.getReplies().stream()
+                .filter(reply -> !reply.isHidden())
                 .map(this::mapToCommentResponse)
                 .toList();
     }
 
+    /** A hidden comment is a 404 here: it cannot be read, edited or replied to while under review. */
     public Comment findByIdWithException(Long commentId) {
-        return commentRepository.findById(commentId).orElseThrow(() ->
+        return commentRepository.findById(commentId).filter(comment -> !comment.isHidden()).orElseThrow(() ->
                 new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_COMMENT_NOT_FOUND));
     }
 

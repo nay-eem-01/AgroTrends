@@ -48,6 +48,11 @@ public class Answer extends AuditModel<String> {
     private List<Answer> replies = new ArrayList<>();
 
     /** Stored HTML is always safe, whichever endpoint wrote it. */
+    /** Set while enough reports about it await a moderator (roadmap 8.5): invisible to everyone, frozen. */
+    @ColumnDefault("false")
+    @Column(name = "hidden", nullable = false)
+    private boolean hidden;
+
     @PrePersist
     @PreUpdate
     void sanitize() {

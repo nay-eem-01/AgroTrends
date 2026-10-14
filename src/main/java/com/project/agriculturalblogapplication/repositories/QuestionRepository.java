@@ -17,12 +17,12 @@ import java.util.List;
 public interface QuestionRepository extends JpaRepository<Question, Long>, JpaSpecificationExecutor<Question> {
     List<Question> findAllByUser(User user);
 
-    Page<Question> findAllByUser(User user, Pageable pageable);
+    Page<Question> findAllByUserAndHiddenFalse(User user, Pageable pageable);
 
     /** Questions matching a web-style query ("rice blast" -wheat), best match first; same text setup as blog search. */
     @Query("""
             select q from Question q
-            where function('ts_match_vq',
+            where q.hidden = false and function('ts_match_vq',
                            function('to_tsvector', 'simple', concat(coalesce(q.title, ''), ' ', coalesce(q.content, ''))),
                            function('websearch_to_tsquery', 'simple', :query)) = true
             order by function('ts_rank',
