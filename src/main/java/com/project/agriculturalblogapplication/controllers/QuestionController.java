@@ -38,7 +38,7 @@ public class QuestionController {
 
     private final AiService aiService;
 
-    @Operation(summary = "All questions - paginated; optional filters crop, season, region, soil")
+    @Operation(summary = "All questions - paginated; optional filters categoryId (topic), tag, crop, season, region, soil")
     @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = QuestionResponse.class))), responseCode = "200")
     @GetMapping(value = "/all")
     public ResponseEntity<HttpResponse> getAll(
@@ -47,6 +47,8 @@ public class QuestionController {
             @RequestParam(name = SORT_BY, defaultValue = SORT_BY_VALUE) String sortBy,
             @RequestParam(name = ASC_OR_DESC, defaultValue = ASC_OR_DESC_VALUE) AscOrDescType ascOrDesc,
             @RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang,
+            @RequestParam(name = "categoryId", required = false) Long categoryId,
+            @RequestParam(name = "tag", required = false) String tag,
             @RequestParam(name = "crop", required = false) String crop,
             @RequestParam(name = "season", required = false) CropSeason season,
             @RequestParam(name = "region", required = false) String region,
@@ -55,7 +57,7 @@ public class QuestionController {
         return HttpResponse.getResponseEntity(
                 true,
                 "Data loaded successfully.",
-                questionService.getAll(paginationArgs, new AgriInfo(crop, season, region, soil), lang));
+                questionService.getAll(paginationArgs, categoryId, tag, new AgriInfo(crop, season, region, soil), lang));
     }
 
     @Operation(summary = "Get all questions by user - paginated")

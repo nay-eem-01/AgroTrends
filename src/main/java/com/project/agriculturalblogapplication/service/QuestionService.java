@@ -7,8 +7,10 @@ import com.project.agriculturalblogapplication.model.request.UpdateQuestionReque
 import com.project.agriculturalblogapplication.model.response.QuestionResponse;
 import com.project.agriculturalblogapplication.payloads.PaginationArgs;
 import com.project.agriculturalblogapplication.entities.Question;
+import com.project.agriculturalblogapplication.entities.Tag;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.model.AgriInfo;
+import com.project.agriculturalblogapplication.model.response.CategoryResponse;
 import com.project.agriculturalblogapplication.repositories.AgriSpecifications;
 import com.project.agriculturalblogapplication.repositories.QuestionRepository;
 import com.project.agriculturalblogapplication.util.CommonUtils;
@@ -16,11 +18,13 @@ import com.project.agriculturalblogapplication.security.service.AuthorizationSer
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-
+import java.util.List;
 import java.util.Set;
+
 @Service
 @RequiredArgsConstructor
 public class QuestionService {
@@ -33,6 +37,10 @@ public class QuestionService {
 
     private final AuthorizationService authorizationService;
 
+    private final CategoryService categoryService;
+
+    private final TagService tagService;
+
     public QuestionResponse create(CreateQuestionRequest request, String lang) {
         User user = userService.findByIdWithException(authorizationService.currentUserId(lang), lang);
 
@@ -40,6 +48,8 @@ public class QuestionService {
         question.setTitle(request.getTitle());
         question.setContent(request.getContent());
         question.setUser(user);
+        question.setCategory(categoryService.findByIdWithException(request.getCategoryId()));
+        question.setTags(tagService.resolve(request.getTags() == null ? List.of() : request.getTags()));
         if (request.getAgri() != null) {
             question.setAgri(request.getAgri().toMetadata());
         }
@@ -48,11 +58,19 @@ public class QuestionService {
         return mapToQuestionResponse(question);
     }
 
-    /** All questions, optionally filtered by crop, season, region and soil. */
-    public Page<QuestionResponse> getAll(PaginationArgs paginationArgs, AgriInfo filter, String lang) {
+    /** All questions, optionally filtered by topic, tag, crop, season, region and soil. */
+    public Page<QuestionResponse> getAll(PaginationArgs paginationArgs, Long categoryId, String tag, AgriInfo filter,
+                                         String lang) {
         Pageable pageable = CommonUtils.getPageable(paginationArgs, SORTABLE_FIELDS, lang);
-        Page<Question> questions = questionRepository.findAll(AgriSpecifications.matches(filter), pageable);
-        return questions.map(this::mapToQuestionResponse);
+        Specification<Question> spec = AgriSpecifications.<Question>matches(filter).and(inTopicWithTag(categoryId, tag));
+        return questionRepository.findAll(spec, pageable).map(this::mapToQuestionResponse);
+    }
+
+    static Specification<Question> inTopicWithTag(Long categoryId, String tag) {
+        String tagName = TagService.normalize(tag);
+        return (root, query, cb) -> cb.and(
+                categoryId == null ? cb.conjunction() : cb.equal(root.get("category").get("id"), categoryId),
+                tagName.isEmpty() ? cb.conjunction() : cb.equal(root.join("tags").get("name"), tagName));
     }
 
     public Page<QuestionResponse> getAllByUser(PaginationArgs paginationArgs, Long userId, String lang) {
@@ -68,7 +86,11 @@ public class QuestionService {
 
         question.setTitle(request.getTitle());
         question.setContent(request.getContent());
-        // Omitted agri info keeps the current values.
+        question.setCategory(categoryService.findByIdWithException(request.getCategoryId()));
+        // Omitted tags or agri info keep the current values.
+        if (request.getTags() != null) {
+            question.setTags(tagService.resolve(request.getTags()));
+        }
         if (request.getAgri() != null) {
             question.setAgri(request.getAgri().toMetadata());
         }
@@ -100,6 +122,8 @@ public class QuestionService {
         response.setContent(question.getContent());
         response.setAuthorName(question.getUser().getName());
         response.setAgri(AgriInfo.from(question.getAgri()));
+        response.setCategory(question.getCategory() == null ? null : CategoryResponse.from(question.getCategory()));
+        response.setTags(question.getTags().stream().map(Tag::getName).toList());
         response.setCreatedAt(CommonUtils.toInstant(question.getCreationDate()));
         response.setUpdatedAt(CommonUtils.toInstant(question.getLastModifiedDate()));
 

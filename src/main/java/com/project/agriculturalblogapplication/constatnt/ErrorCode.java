@@ -49,7 +49,7 @@ public final class ErrorCode {
 
     public static final String ERROR_TITLE_IS_REQUIRED = "Blog title is required.";
     public static final String ERROR_CONTENT_IS_REQUIRED = "Blog content is required.";
-    public static final String ERROR_CATEGORY_IS_REQUIRED = "Blog category is required.";
+    public static final String ERROR_CATEGORY_IS_REQUIRED = "Category is required.";
     public static final String ERROR_BLOG_ID_IS_REQUIRED = "Blog id is required.";
 
     public static final String ERROR_CATEGORY_NOT_FOUND = "Category not found";
