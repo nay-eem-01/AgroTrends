@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 66 of 85 steps done): launch blockers and one account type with
+- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 67 of 85 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -47,6 +47,34 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-14 (roadmap 7.4)
+
+**Done**
+- `QuestionAiAnswer` gains `reviewedBy`, `reviewedAt` and `correction` (the expert's answer; both
+  `ON DELETE SET NULL`).
+- `GET /api/review-queue`: `UNCHECKED` AI answers in the caller's Verified Expert topics, oldest first, with
+  the question title, text and topic (403 for non-experts).
+- `POST /api/questions/id/{id}/ai-answer/confirm` and `.../correct {content}` (Verified Expert in the
+  question's topic): correct posts the expert's answer on the question through `AnswerService.create` and
+  links it as `correctionAnswerId`. `.../flag` (Verified Expert or Top Contributor in the topic) hides it.
+  `POST /api/admin/questions/{id}/ai-answer/reopen` (`EXPERT_REVIEW`) puts any decision back to `UNCHECKED`.
+- Every move is one conditional `UPDATE … WHERE status IN (…)`: a second reviewer gets 409, and a lost
+  correction race rolls back the posted answer too.
+- `QuestionAiAnswerResponse` gains `reviewerName`, `reviewedAt`, `correctionAnswerId`.
+- Checked live: 37/37 with seeded AI answers (Gemini chat key still invalid): role checks (other topic,
+  Top Contributor confirm, revoked expert all 403), double confirm 409, correction posted with the expert
+  badge, flag hides, reopen restores, deleting a linked correction or the question works. Also fixed the 7.3
+  smoke script, whose question-delete check had used a wrong path and passed vacuously; the cascade is now
+  verified.
+
+**Decisions**
+- Only `UNCHECKED` answers can be confirmed, corrected or flagged; disagreements go through an admin reopen.
+- Reopening a correction keeps the expert's answer as an ordinary answer.
+
+**Known limitations**
+- A flagged AI answer is 404 for everyone, admins included; moderators see it through the 8.4 queue.
+- Reviewers are not notified of new items yet (8.1).
 
 ## 2026-10-14 (roadmap 7.3b)
 
