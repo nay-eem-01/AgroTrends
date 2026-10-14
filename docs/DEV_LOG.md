@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 63 of 84 steps done): launch blockers and one account type with
+- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 64 of 84 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -47,6 +47,31 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-14 (roadmap 7.2)
+
+**Done**
+- `ExpertBadge`: one row per user and topic, with the field title; revoking stamps `revokedAt`, approving
+  again clears it. `createdBy` / `lastModifiedBy` record which admin granted or revoked it.
+- New privilege `EXPERT_REVIEW` (added to the super-admin role on startup):
+  `GET /api/admin/expert-applications?status=PENDING` (oldest first, paged),
+  `POST /api/admin/expert-applications/{id}/approve {categoryIds?, note?}` (all requested topics or a subset),
+  `POST /api/admin/expert-applications/{id}/reject {note}` (reason required),
+  `DELETE /api/admin/users/{userId}/expert-badges/{categoryId}` (revoke). Deciding twice is 409.
+- `Badge.VERIFIED_EXPERT` in `authorBadges` on questions and answers in that topic (before
+  `TOP_CONTRIBUTOR`). `GET /api/users/{id}/reputation` lists expert topics too, even with 0 points, and each
+  topic gains `expertField` (e.g. "Veterinarian", null where not an expert).
+- Checked live: 31/31 (403 for non-admins, subset approval, badge on answers/questions only in its topic,
+  revoke and re-approve keep one row, applicant sees the note).
+
+**Decisions**
+- No separate public "expert badges" endpoint: the reputation endpoint already lists a profile's topics.
+- Approving a subset does not record which topics were left out; the badges themselves are the record.
+
+**Known limitations**
+- Two admins deciding the same application at the same instant: the second badge insert fails with a 500
+  (unique constraint). Rare; revisit with the 4.7 error clean-up.
+- Decisions do not notify the applicant yet (8.1).
 
 ## 2026-10-14 (roadmap 7.1)
 
