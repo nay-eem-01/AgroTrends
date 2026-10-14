@@ -7,14 +7,17 @@ import com.project.agriculturalblogapplication.entities.Answer;
 import com.project.agriculturalblogapplication.entities.Category;
 import com.project.agriculturalblogapplication.entities.Question;
 import com.project.agriculturalblogapplication.entities.User;
+import com.project.agriculturalblogapplication.events.AnswerChanged;
 import com.project.agriculturalblogapplication.model.request.CreateAnswerRequest;
 import com.project.agriculturalblogapplication.model.request.ReplyToAnswerRequest;
 import com.project.agriculturalblogapplication.model.request.UpdateAnswerRequest;
 import com.project.agriculturalblogapplication.model.AuthorStanding;
 import com.project.agriculturalblogapplication.model.response.AnswerResponse;
 import com.project.agriculturalblogapplication.repositories.AnswerRepository;
+import com.project.agriculturalblogapplication.repositories.QuestionAiAnswerRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,8 +38,13 @@ public class AnswerService {
 
     private final AnswerRepository answerRepository;
 
+    private final QuestionAiAnswerRepository aiAnswerRepository;
+
     private final ReputationService reputationService;
 
+    private final ApplicationEventPublisher eventPublisher;
+
+    @Transactional
     public AnswerResponse create(CreateAnswerRequest request, String lang) {
         Question question = questionService.findByIdWithException(request.getQuestionId());
 
@@ -47,15 +55,18 @@ public class AnswerService {
         answer.setUser(user);
         answer.setQuestion(question);
         answer = answerRepository.save(answer);
+        eventPublisher.publishEvent(new AnswerChanged(answer.getId()));
 
         return mapToAnswerResponse(answer);
     }
 
+    @Transactional
     public AnswerResponse update(UpdateAnswerRequest request, String lang) {
         Answer answer = findByIdWithException(request.getAnswerId());
         authorizationService.assertOwnerOrAdmin(answer.getUser().getId(), lang);
         answer.setContent(request.getContent());
         answer = answerRepository.save(answer);
+        eventPublisher.publishEvent(new AnswerChanged(answer.getId()));
 
         return mapToAnswerResponse(answer);
     }
@@ -69,7 +80,9 @@ public class AnswerService {
         if (isAccepted(answer)) {
             answer.getQuestion().setAcceptedAnswer(null);
         }
+        aiAnswerRepository.reopenCorrectedBy(answerId);
         answerRepository.delete(answer);
+        eventPublisher.publishEvent(new AnswerChanged(answerId));
     }
 
     /** Direct answers (replies come from viewReplies): the accepted one first, then highest score, then oldest. */
@@ -93,9 +106,11 @@ public class AnswerService {
         if (!isAccepted(answer)) {
             if (previous != null) {
                 reputationService.unaccepted(previous);
+                eventPublisher.publishEvent(new AnswerChanged(previous.getId()));
             }
             answer.getQuestion().setAcceptedAnswer(answer);
             reputationService.accepted(answer);
+            eventPublisher.publishEvent(new AnswerChanged(answer.getId()));
         }
         return mapToAnswerResponse(answer);
     }
@@ -108,6 +123,7 @@ public class AnswerService {
         if (isAccepted(answer)) {
             answer.getQuestion().setAcceptedAnswer(null);
             reputationService.unaccepted(answer);
+            eventPublisher.publishEvent(new AnswerChanged(answer.getId()));
         }
         return mapToAnswerResponse(answer);
     }
@@ -189,9 +205,5 @@ public class AnswerService {
         response.setAccepted(isAccepted(answer));
 
         return response;
-    }
-
-    public boolean hasAnswers(Long questionId) {
-        return answerRepository.existsByQuestionId(questionId);
     }
 }

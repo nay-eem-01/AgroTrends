@@ -1,12 +1,14 @@
 package com.project.agriculturalblogapplication.controllers;
 
 import com.project.agriculturalblogapplication.config.CommonApiResponses;
+import com.project.agriculturalblogapplication.model.request.AskExpertsRequest;
 import com.project.agriculturalblogapplication.model.request.AskQuestionRequest;
 import com.project.agriculturalblogapplication.model.request.BlogAssistRequest;
 import com.project.agriculturalblogapplication.model.response.AiAnswerResponse;
 import com.project.agriculturalblogapplication.model.response.AiHistoryItemResponse;
 import com.project.agriculturalblogapplication.model.response.BlogAssistResponse;
 import com.project.agriculturalblogapplication.model.response.HttpResponse;
+import com.project.agriculturalblogapplication.model.response.QuestionResponse;
 import com.project.agriculturalblogapplication.service.AiService;
 import com.project.agriculturalblogapplication.service.BlogAssistService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -60,6 +62,15 @@ public class AiChatController {
                 true,
                 "Data loaded successfully.",
                 aiService.history(pageNo, pageSize, lang));
+    }
+
+    @Operation(summary = "Ask an expert to check this: send one of your private AI questions to the experts as a public "
+            + "question in a topic; its AI answer goes into their review queue", security = @SecurityRequirement(name = "jwtToken"))
+    @ApiResponse(content = @Content(schema = @Schema(implementation = QuestionResponse.class)), responseCode = "200")
+    @PostMapping(value = "/history/{aiAnswerId}/ask-experts")
+    public ResponseEntity<HttpResponse> askExperts(@PathVariable Long aiAnswerId, @Valid @RequestBody AskExpertsRequest request,
+                                                   @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        return HttpResponse.getResponseEntity(true, "Question posted for the experts.", aiService.askExperts(aiAnswerId, request, lang));
     }
 
     @Operation(summary = "A short summary and suggested topic tags for a draft post",

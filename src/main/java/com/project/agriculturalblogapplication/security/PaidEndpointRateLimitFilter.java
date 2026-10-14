@@ -38,7 +38,7 @@ public class PaidEndpointRateLimitFilter extends OncePerRequestFilter {
     public PaidEndpointRateLimitFilter(AttemptLimiter attemptLimiter, AiProperties aiProperties) {
         this.attemptLimiter = attemptLimiter;
         this.rules = List.of(
-                new Rule("ai", List.of("POST /api/ai/ask", "POST /api/ai/blog-assist", "POST /api/questions/id/*/ai-draft",
+                new Rule("ai", List.of("POST /api/ai/ask", "POST /api/ai/blog-assist",
                         "GET /api/blogs/id/*/related"), aiProperties.getDailyIpLimit(), Duration.ofDays(1)),
                 new Rule("google", List.of("POST /api/auth/google"), GOOGLE_SIGN_INS_PER_HOUR, Duration.ofHours(1)));
     }

@@ -25,7 +25,7 @@ class PaidEndpointRateLimitFilterTest {
         assertEquals(200, status("POST", "/api/ai/ask", "1.1.1.1"));
         assertEquals(200, status("GET", "/api/blogs/id/9/related", "1.1.1.1"));
 
-        assertEquals(429, status("POST", "/api/questions/id/4/ai-draft", "1.1.1.1"));
+        assertEquals(429, status("POST", "/api/ai/blog-assist", "1.1.1.1"));
         assertEquals(200, status("POST", "/api/ai/ask", "2.2.2.2"));
     }
 

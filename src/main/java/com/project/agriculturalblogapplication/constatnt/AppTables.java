@@ -118,6 +118,36 @@ public final class AppTables {
         public static final String POINTS = "points";
     }
 
+    public static final class ExpertApplicationTable {
+
+        public static final String NAME = "expert_applications";
+
+        public static final String EXPERT_APPLICATION_ID = "expert_application_id";
+
+        public static final String TOPICS = "expert_application_topics";
+
+        public static final String FIELD_TITLE = "field_title";
+
+        public static final String CREDENTIAL_TYPE = "credential_type";
+
+        public static final String INSTITUTION = "institution";
+
+        public static final String PROOF_IMAGE_URLS = "proof_image_urls";
+
+        public static final String LINKS = "links";
+
+        public static final String STATUS = "status";
+
+        public static final String REVIEW_NOTE = "review_note";
+    }
+
+    public static final class ExpertBadgeTable {
+
+        public static final String NAME = "expert_badges";
+
+        public static final String REVOKED_AT = "revoked_at";
+    }
+
     public static final class TagTable {
 
         public static final String TAG_NAME = "tag_name";
@@ -248,6 +278,27 @@ public final class AppTables {
         public static final String USER_ID = "user_id";
     }
 
+    public static final class QuestionAiAnswerTable {
+
+        public static final String NAME = "question_ai_answers";
+
+        public static final String ANSWER = "answer";
+
+        public static final String SOURCES = "sources";
+
+        public static final String STATUS = "status";
+
+        public static final String PROMPT_TOKENS = "prompt_tokens";
+
+        public static final String COMPLETION_TOKENS = "completion_tokens";
+
+        public static final String REVIEWED_BY = "reviewed_by";
+
+        public static final String REVIEWED_AT = "reviewed_at";
+
+        public static final String CORRECTION_ANSWER_ID = "correction_answer_id";
+    }
+
     public static final class AiAnswerTable {
 
         private AiAnswerTable() {}
@@ -263,5 +314,9 @@ public final class AppTables {
         public static final String COMPLETION_TOKENS = "completion_tokens";
 
         public static final String AI_ANSWER = "ai_answer";
+
+        public static final String SOURCES = "sources";
+
+        public static final String PUBLISHED_QUESTION_ID = "published_question_id";
     }
 }

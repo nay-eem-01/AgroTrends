@@ -15,7 +15,7 @@ public interface AnswerRepository extends JpaRepository<Answer, Long> {
 
     List<Answer> findByQuestionIdAndParentAnswerIsNull(Long questionId);
 
-    boolean existsByQuestionId(Long questionId);
+    List<Answer> findAllByUserIdAndQuestionCategoryIdAndParentAnswerIsNull(Long userId, Long categoryId);
 
     /** Atomic, so two votes at once cannot overwrite each other. */
     @Modifying

@@ -3,15 +3,18 @@ package com.project.agriculturalblogapplication.service;
 import com.project.agriculturalblogapplication.entities.Answer;
 import com.project.agriculturalblogapplication.entities.Category;
 import com.project.agriculturalblogapplication.entities.Question;
+import com.project.agriculturalblogapplication.events.AnswerChanged;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.enums.Badge;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.AuthorStanding;
 import com.project.agriculturalblogapplication.model.response.AnswerResponse;
 import com.project.agriculturalblogapplication.repositories.AnswerRepository;
+import com.project.agriculturalblogapplication.repositories.QuestionAiAnswerRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 
 import java.util.List;
@@ -28,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -39,8 +43,10 @@ class AnswerServiceTest {
     private final AnswerRepository answerRepository = mock(AnswerRepository.class);
     private final AuthorizationService authorization = mock(AuthorizationService.class);
     private final ReputationService reputation = mock(ReputationService.class);
+    private final QuestionAiAnswerRepository aiAnswers = mock(QuestionAiAnswerRepository.class);
+    private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
     private final AnswerService answerService = new AnswerService(mock(QuestionService.class), mock(UserService.class),
-            authorization, answerRepository, reputation);
+            authorization, answerRepository, aiAnswers, reputation, events);
 
     private Question question;
 
@@ -67,6 +73,9 @@ class AnswerServiceTest {
         verify(reputation).unaccepted(first);
         verify(reputation).accepted(second);
         verify(reputation, never()).unaccepted(second);
+        // The switch re-checks both answers' place in the AI index.
+        verify(events, times(2)).publishEvent(new AnswerChanged(3L));
+        verify(events).publishEvent(new AnswerChanged(4L));
     }
 
     @Test
@@ -114,6 +123,8 @@ class AnswerServiceTest {
 
         assertNull(question.getAcceptedAnswer());
         verify(answerRepository).delete(accepted);
+        // Had it corrected an AI answer, that answer goes back to the review queue.
+        verify(aiAnswers).reopenCorrectedBy(accepted.getId());
         verify(reputation, never()).unaccepted(any());
     }
 
@@ -129,7 +140,7 @@ class AnswerServiceTest {
         Category rice = new Category();
         rice.setId(5L);
         question.setCategory(rice);
-        when(reputation.standings(List.of(23L, 22L, 21L, 24L))).thenReturn(Map.of(22L, new AuthorStanding(400, Set.of(5L))));
+        when(reputation.standings(List.of(23L, 22L, 21L, 24L))).thenReturn(Map.of(22L, new AuthorStanding(400, Set.of(5L), Set.of())));
 
         List<AnswerResponse> answers = answerService.getAllByQuestionId(1L);
 

@@ -60,6 +60,16 @@ class AIConfigTest {
     }
 
     @Test
+    void retrievedCommunityAnswersAreLabelledByTheirQuestion() {
+        Document chunk = new Document("Yellow leaves\n\nAdd urea in two splits.", Map.of(DocumentService.TITLE, "Yellow leaves",
+                DocumentService.TYPE, DocumentService.ANSWER_TYPE));
+
+        String prompt = AIConfig.blogQueryAugmenter().augment(new Query("Why are my leaves yellow?"), List.of(chunk)).text();
+
+        assertTrue(prompt.contains("Community answer to: Yellow leaves\nYellow leaves"));
+    }
+
+    @Test
     void questionPassesThroughUnchangedWhenNoPostMatches() {
         String prompt = AIConfig.blogQueryAugmenter().augment(new Query("What is crop rotation?"), List.of()).text();
 
