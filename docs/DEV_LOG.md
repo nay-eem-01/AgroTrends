@@ -20,8 +20,8 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 ## Next up
 
 1. Merge `docs/product-study` and `docs/launch-plan` into `development`.
-2. Phases 5, 6 and 7 are on `development`. Phase 8 (notifications and moderation) is in progress on
-   `feat/notifications-moderation-base`.
+2. Phases 5, 6 and 7 are on `development`; Phase 8 is done on `feat/notifications-moderation-base` (not yet
+   merged). Next: Phase 4 (ship it: profiles, Flyway, Docker, Testcontainers, CI), then deploy and live-test.
 3. Then Phases 6, 7, 8; deploy (Phase 4) and live-test only after all of them.
 4. **Team:** 30–50 seeded Bangla articles; 5–10 experts invited; pick the 6–8 launch topics (categories).
 5. **Nayeem:** fix the Gemini key; roadmap 0.4 (rotate keys, purge history); set `GOOGLE_CLIENT_ID`; make
@@ -48,6 +48,38 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-14 (Phase 8 review fixes)
+
+**Done** — a phase-end review of 8.1a–8.4b (21 findings) led to these fixes, with regression tests:
+- `AuthorizationService.assertOwnerAdminOrModerator` on the blog/question/answer/comment deletes: a moderator
+  role without `ADMIN` (holding `CONTENT_MODERATE`) can remove content (was 403 and a rollback).
+- Remove-content on a target that is already gone closes its reports as `ACTIONED` with "(already removed)":
+  answers removed with their question, posts deleted by their author, AI answers already hidden. Targets are
+  looked up with `EntityManager.find` so no exception marks the transaction rollback-only.
+- Bans are enforced per request (`CustomUserDetails.banned`, refused in `JwtAuthenticationFilter`), closing
+  the race with a sign-in in flight; Google sign-in refuses a banned account before linking it.
+- `dismissIfOpen` and `closeAsActioned` are conditional and set `lastModifiedBy`/`lastModifiedDate` (bulk
+  updates skip auditing).
+- `ReviewService.hide` only changes the status: `reviewedBy` and any correction stay on record.
+- Drafts cannot be reported (404, so their existence is not confirmed); AI-answer reports use
+  `existsByQuestionIdAndStatusNot` instead of pulling in `AiService`.
+- `APPLICATION_DECIDED` has no actor (admins stay anonymous, as moderators do). `deliver` catches failures,
+  so an inline notification never fails a comment reply or stops the expert loop.
+- `EnumNameConverter<E>` replaces three copied converters; `Report.targetType` and `status` are converted too.
+  Databases created before this keep their old CHECK on those two columns (none deployed; drop by hand).
+- `NOTIFICATIONS_TRANSPORT` added to `.env.example` (another value needs its implementation, or startup fails).
+- Checked live: 13/13 fix checks (a non-admin moderator removes and is recorded; orphaned report closes;
+  reviewer kept; hidden AI answer not reportable; dismiss audited; draft 404; banned live session 403) and
+  every Phase 8 run again (12 + 12 + 14 + 11 + 25 + 12).
+
+**Deferred, with reasons**
+- A double-tapped report: 500 from the unique constraint (as votes; 4.7 error clean-up).
+- An expert's correction still notifies the asker twice (logged in 8.1a).
+- `CONTENT_REMOVED` on a removed blog or question links to a page that is gone; the UI shows the type.
+- Replies under answers notify nobody (not in the 8.1 trigger list).
+- Admin-only service methods rely on `@PreAuthorize`, as `CategoryService` does.
+- One transaction per expert notification (`shortcut:` in `AiService.notifyReviewers`).
 
 ## 2026-10-14 (roadmap 8.4b)
 
