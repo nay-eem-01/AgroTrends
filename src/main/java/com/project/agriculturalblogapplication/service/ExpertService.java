@@ -5,6 +5,7 @@ import com.project.agriculturalblogapplication.entities.Category;
 import com.project.agriculturalblogapplication.entities.ExpertApplication;
 import com.project.agriculturalblogapplication.entities.ExpertBadge;
 import com.project.agriculturalblogapplication.enums.ApplicationStatus;
+import com.project.agriculturalblogapplication.events.ExpertBadgeChanged;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.request.ExpertApplicationRequest;
 import com.project.agriculturalblogapplication.model.request.ExpertDecisionRequest;
@@ -14,6 +15,7 @@ import com.project.agriculturalblogapplication.repositories.ExpertBadgeRepositor
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import com.project.agriculturalblogapplication.util.CommonUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -44,6 +46,8 @@ public class ExpertService {
     private final ImageService imageService;
 
     private final AuthorizationService authorizationService;
+
+    private final ApplicationEventPublisher eventPublisher;
 
     /** One application waits at a time; after a decision the user may apply again. */
     @Transactional
@@ -106,6 +110,7 @@ public class ExpertService {
             badge.setFieldTitle(application.getFieldTitle());
             badge.setRevokedAt(null);
             badgeRepository.save(badge);
+            eventPublisher.publishEvent(new ExpertBadgeChanged(application.getUser().getId(), topic.getId()));
         }
         return decide(application, ApplicationStatus.APPROVED, decision.getNote());
     }
@@ -127,6 +132,7 @@ public class ExpertService {
                 .orElseThrow(() -> new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_EXPERT_BADGE_NOT_FOUND, lang));
         badge.setRevokedAt(LocalDateTime.now());
         badgeRepository.save(badge);
+        eventPublisher.publishEvent(new ExpertBadgeChanged(userId, topicId));
     }
 
     /** The user's active badges, with their topics loaded. */

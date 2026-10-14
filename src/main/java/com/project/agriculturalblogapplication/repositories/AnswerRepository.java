@@ -15,6 +15,8 @@ public interface AnswerRepository extends JpaRepository<Answer, Long> {
 
     List<Answer> findByQuestionIdAndParentAnswerIsNull(Long questionId);
 
+    List<Answer> findAllByUserIdAndQuestionCategoryIdAndParentAnswerIsNull(Long userId, Long categoryId);
+
     /** Atomic, so two votes at once cannot overwrite each other. */
     @Modifying
     @Query("UPDATE Answer x SET x.score = x.score + :delta WHERE x.id = :id")

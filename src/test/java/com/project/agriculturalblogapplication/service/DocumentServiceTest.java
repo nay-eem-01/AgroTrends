@@ -2,9 +2,12 @@ package com.project.agriculturalblogapplication.service;
 
 import com.project.agriculturalblogapplication.config.AIConfig;
 import com.project.agriculturalblogapplication.config.AiProperties;
+import com.project.agriculturalblogapplication.entities.Answer;
 import com.project.agriculturalblogapplication.entities.Author;
 import com.project.agriculturalblogapplication.entities.Blog;
 import com.project.agriculturalblogapplication.entities.Category;
+import com.project.agriculturalblogapplication.entities.Question;
+import com.project.agriculturalblogapplication.entities.QuestionAiAnswer;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
@@ -99,6 +102,66 @@ class DocumentServiceTest {
     // pgvector returns metadata numbers as Integers.
     private static Document chunkOf(int blogId) {
         return new Document("excerpt", java.util.Map.of(DocumentService.BLOG_ID, blogId));
+    }
+
+    @Test
+    void aVettedAnswerReplacesItsChunksWithQuestionTitlePlainTextAndAnswerMetadata() {
+        documentService.syncAnswer(answer(), true);
+
+        InOrder order = inOrder(vectorStore);
+        order.verify(vectorStore).delete(new FilterExpressionBuilder().eq(DocumentService.ANSWER_ID, 8L).build());
+        order.verify(vectorStore).add(anyList());
+        Document chunk = indexedChunks().getFirst();
+        assertEquals("Yellow leaves\n\nAdd urea in two splits.", chunk.getText());
+        assertEquals(8L, chunk.getMetadata().get(DocumentService.ANSWER_ID));
+        assertEquals(4L, chunk.getMetadata().get(DocumentService.QUESTION_ID));
+        assertEquals(DocumentService.ANSWER_TYPE, chunk.getMetadata().get(DocumentService.TYPE));
+        assertEquals("PUBLISHED", chunk.getMetadata().get(DocumentService.STATUS));
+        assertEquals(30L, chunk.getMetadata().get(DocumentService.CATEGORY_ID));
+    }
+
+    @Test
+    void anAnswerThatIsNoLongerVettedIsOnlyRemoved() {
+        documentService.syncAnswer(answer(), false);
+
+        verify(vectorStore).delete(new FilterExpressionBuilder().eq(DocumentService.ANSWER_ID, 8L).build());
+        verify(vectorStore, never()).add(anyList());
+    }
+
+    @Test
+    void aConfirmedAiAnswerIsIndexedUnderItsOwnIdAndAQuestionDeleteDropsEverythingUnderIt() {
+        QuestionAiAnswer aiAnswer = new QuestionAiAnswer();
+        aiAnswer.setId(5L);
+        aiAnswer.setQuestion(answer().getQuestion());
+        aiAnswer.setAnswer("Check nitrogen.");
+
+        documentService.syncAiAnswer(aiAnswer, true);
+        documentService.deleteQuestion(4L);
+
+        verify(vectorStore).delete(new FilterExpressionBuilder().eq(DocumentService.AI_ANSWER_ID, 5L).build());
+        assertEquals(5L, indexedChunks().getFirst().getMetadata().get(DocumentService.AI_ANSWER_ID));
+        verify(vectorStore).delete(new FilterExpressionBuilder().eq(DocumentService.QUESTION_ID, 4L).build());
+    }
+
+    @Test
+    void aVectorStoreFailureWhileSyncingAnAnswerIsSwallowed() {
+        doThrow(new RuntimeException("db down")).when(vectorStore).delete(any(Filter.Expression.class));
+
+        assertDoesNotThrow(() -> documentService.syncAnswer(answer(), true));
+    }
+
+    private static Answer answer() {
+        Category category = new Category();
+        category.setId(30L);
+        Question question = new Question();
+        question.setId(4L);
+        question.setTitle("Yellow leaves");
+        question.setCategory(category);
+        Answer answer = new Answer();
+        answer.setId(8L);
+        answer.setQuestion(question);
+        answer.setContent("<p>Add <b>urea</b> in two splits.</p>");
+        return answer;
     }
 
     private static Filter.Expression blogFilter(Long blogId) {

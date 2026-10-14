@@ -5,6 +5,7 @@ import com.project.agriculturalblogapplication.entities.Answer;
 import com.project.agriculturalblogapplication.entities.QuestionAiAnswer;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.enums.AiAnswerStatus;
+import com.project.agriculturalblogapplication.events.AiAnswerReviewed;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.AuthorStanding;
 import com.project.agriculturalblogapplication.model.request.CreateAnswerRequest;
@@ -14,6 +15,7 @@ import com.project.agriculturalblogapplication.repositories.QuestionAiAnswerRepo
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import com.project.agriculturalblogapplication.util.CommonUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -41,6 +43,8 @@ public class ReviewService {
     private final UserService userService;
 
     private final AuthorizationService authorizationService;
+
+    private final ApplicationEventPublisher eventPublisher;
 
     /** Unchecked AI answers in the caller's expert topics, oldest first. */
     @Transactional(readOnly = true)
@@ -129,6 +133,7 @@ public class ReviewService {
         if (moved == 0) {
             throw new ApplicationException(HttpStatus.CONFLICT, conflict, lang);
         }
+        eventPublisher.publishEvent(new AiAnswerReviewed(aiAnswer.getQuestion().getId()));
         return QuestionAiAnswerResponse.from(find(aiAnswer.getQuestion().getId(), lang));
     }
 }

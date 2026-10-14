@@ -2,6 +2,7 @@ package com.project.agriculturalblogapplication.service;
 
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import com.project.agriculturalblogapplication.events.QuestionCreated;
+import com.project.agriculturalblogapplication.events.QuestionDeleted;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.request.CreateQuestionRequest;
 import com.project.agriculturalblogapplication.model.request.UpdateQuestionRequest;
@@ -130,10 +131,12 @@ public class QuestionService {
         return mapToQuestionResponse(question);
     }
 
+    @Transactional
     public void delete(Long id, String lang) {
         Question question = findByIdWithException(id);
         authorizationService.assertOwnerOrAdmin(question.getUser().getId(), lang);
         questionRepository.delete(question);
+        eventPublisher.publishEvent(new QuestionDeleted(id));
     }
 
     public Question findByIdWithException(Long questionId) {
