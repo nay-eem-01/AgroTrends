@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 77 of 88 steps done): launch blockers and one account type with
+- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 78 of 91 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -48,6 +48,27 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-14 (roadmap 8.5a)
+
+**Done** — moderation redesign (Nayeem, 2026-10-14): a post is hidden once enough users report it and deleted
+only when an admin confirms the reports; 8.5a–c. This step sets the visibility rules:
+- `BlogService.findVisibleBlog`: `PUBLISHED` for everyone; `DRAFT` for its author only (admins no longer);
+  new `HIDDEN` for nobody, not even the author. A hidden post cannot be edited or republished (409
+  `ERROR_UNDER_REVIEW`).
+- `SchemaPatches.DROP_ENUM_CHECKS` drops `blogs_status_check` before Hibernate runs, so existing databases
+  accept `HIDDEN` (new ones get a CHECK that already lists it).
+- Comments: create, reply and the per-post list use `findVisibleBlog`. Fixed on the way: anyone could
+  comment on, or list the comments of, someone else's draft by its id.
+- Sign-up with a banned account's e-mail answers 403 with the ban (sign-in, Google and refresh already did).
+- Checked live: 17/17.
+
+**Breaking API changes**
+- `GET /api/comments/blog/{blogId}` and comment create/reply answer 404 for a draft that is not yours.
+- Admins no longer see other users' drafts.
+
+**Known limitations**
+- A banned person can still sign up with a different e-mail address.
 
 ## 2026-10-14 (Phase 8 review fixes)
 
