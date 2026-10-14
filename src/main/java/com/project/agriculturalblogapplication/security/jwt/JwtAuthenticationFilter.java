@@ -6,7 +6,6 @@ import com.project.agriculturalblogapplication.model.response.HttpResponse;
 import com.project.agriculturalblogapplication.security.service.CustomUserDetailService;
 import com.project.agriculturalblogapplication.security.service.CustomUserDetails;
 import com.project.agriculturalblogapplication.security.service.UserSessionService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,7 +13,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -22,7 +20,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Set;
 
 @Slf4j
@@ -47,7 +44,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final CustomUserDetailService userDetailsService;
     private final JwtUtil jwtUtil;
     private final UserSessionService userSessionService;
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
@@ -63,7 +59,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (userDetails != null) {
                 String refusal = refusal(userDetails, request);
                 if (refusal != null) {
-                    writeError(response, HttpStatus.FORBIDDEN, refusal);
+                    HttpResponse.writeError(response, HttpStatus.FORBIDDEN, refusal);
                     return;
                 }
 
@@ -116,12 +112,5 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             log.debug("Rejected bearer token: {}", e.getClass().getSimpleName());
             return null;
         }
-    }
-
-    private void writeError(HttpServletResponse response, HttpStatus status, String message) throws IOException {
-        response.setStatus(status.value());
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        response.getWriter().write(objectMapper.writeValueAsString(new HttpResponse(status, false, message)));
     }
 }
