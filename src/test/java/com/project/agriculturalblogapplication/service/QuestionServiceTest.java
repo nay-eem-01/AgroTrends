@@ -2,6 +2,7 @@ package com.project.agriculturalblogapplication.service;
 
 import com.project.agriculturalblogapplication.entities.Category;
 import com.project.agriculturalblogapplication.entities.Question;
+import com.project.agriculturalblogapplication.events.QuestionCreated;
 import com.project.agriculturalblogapplication.entities.Tag;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.enums.CropSeason;
@@ -14,6 +15,7 @@ import com.project.agriculturalblogapplication.model.response.QuestionResponse;
 import com.project.agriculturalblogapplication.repositories.QuestionRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDateTime;
@@ -27,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class QuestionServiceTest {
@@ -37,9 +40,10 @@ class QuestionServiceTest {
     private final CategoryService categoryService = mock(CategoryService.class);
     private final TagService tagService = mock(TagService.class);
     private final ImageService imageService = mock(ImageService.class);
+    private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
     private final QuestionService questionService =
             new QuestionService(questionRepository, userService, authorization, categoryService, tagService, imageService,
-                    mock(ReputationService.class));
+                    mock(ReputationService.class), events);
 
     @Test
     void questionShowsItsAuthorsNameAndIsoTimestamps() {
@@ -83,7 +87,14 @@ class QuestionServiceTest {
         create.setCategoryId(2L);
         create.setTags(List.of("Rice Blast"));
 
+        when(questionRepository.save(any(Question.class))).thenAnswer(call -> {
+            Question saved = call.getArgument(0);
+            saved.setId(11L);
+            return saved;
+        });
+
         QuestionResponse created = questionService.create(create, "en");
+        verify(events).publishEvent(new QuestionCreated(11L));
         assertEquals("Rice", created.getCategory().categoryName());
         assertEquals(List.of("rice blast"), created.getTags());
 

@@ -5,14 +5,20 @@ import com.project.agriculturalblogapplication.constatnt.AppConstants;
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import com.project.agriculturalblogapplication.entities.AiAnswer;
 import com.project.agriculturalblogapplication.entities.Question;
+import com.project.agriculturalblogapplication.entities.QuestionAiAnswer;
+import com.project.agriculturalblogapplication.enums.AiAnswerStatus;
+import com.project.agriculturalblogapplication.events.QuestionCreated;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.response.AiAnswerResponse;
 import com.project.agriculturalblogapplication.model.response.AiDraftAnswerResponse;
 import com.project.agriculturalblogapplication.model.response.AiHistoryItemResponse;
 import com.project.agriculturalblogapplication.model.response.AiSourceResponse;
+import com.project.agriculturalblogapplication.model.response.QuestionAiAnswerResponse;
 import com.project.agriculturalblogapplication.repositories.AiRepositories;
+import com.project.agriculturalblogapplication.repositories.QuestionAiAnswerRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import com.project.agriculturalblogapplication.util.CommonUtils;
+import com.project.agriculturalblogapplication.util.SafeHtml;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -25,7 +31,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -51,6 +59,8 @@ public class AiService {
     private final QuestionService questionService;
 
     private final AnswerService answerService;
+
+    private final QuestionAiAnswerRepository questionAiAnswerRepository;
 
     public AiAnswerResponse ask(String question, String lang) {
         Long userId = authorizationService.currentUserId(lang);
@@ -85,6 +95,52 @@ public class AiService {
         AiAnswerResponse answer = ask(text.length() > AppConstants.AI_MAX_QUESTION_LENGTH
                 ? text.substring(0, AppConstants.AI_MAX_QUESTION_LENGTH) : text, lang);
         return new AiDraftAnswerResponse(AI_DRAFT_LABEL, answer.answer(), answer.sources());
+    }
+
+    /**
+     * Answers a new community question once it is committed, off the request thread. Never throws: a failure or
+     * the asker's daily limit just leaves the question without an AI answer.
+     */
+    // shortcut: a failed generation is not retried; add a retry sweep if Gemini outages leave many questions bare.
+    @Async
+    @TransactionalEventListener
+    public void answerQuestion(QuestionCreated event) {
+        try {
+            Question question = questionService.findByIdWithException(event.questionId());
+            long answeredToday = questionAiAnswerRepository.countByQuestionUserIdAndCreationDateGreaterThanEqual(
+                    question.getUser().getId(), LocalDate.now().atStartOfDay());
+            if (answeredToday >= aiProperties.getDailyQuestionLimit()) {
+                log.info("No AI answer for question {}: the asker reached today's limit", question.getId());
+                return;
+            }
+            ChatClientResponse response = chatClient.prompt().user(promptFor(question)).call().chatClientResponse();
+            ChatResponse chatResponse = response.chatResponse();
+            Usage usage = chatResponse.getMetadata().getUsage();
+
+            QuestionAiAnswer aiAnswer = new QuestionAiAnswer();
+            aiAnswer.setQuestion(question);
+            aiAnswer.setAnswer(chatResponse.getResult().getOutput().getText());
+            aiAnswer.setSources(sourcesOf(response.context().get(RetrievalAugmentationAdvisor.DOCUMENT_CONTEXT)));
+            aiAnswer.setPromptTokens(usage.getPromptTokens());
+            aiAnswer.setCompletionTokens(usage.getCompletionTokens());
+            questionAiAnswerRepository.save(aiAnswer);
+        } catch (RuntimeException e) {
+            log.error("AI answer for question {} failed", event.questionId(), e);
+        }
+    }
+
+    /** Title and plain text, capped like a private question so one long post cannot run up the bill. */
+    static String promptFor(Question question) {
+        String text = question.getTitle() + "\n\n" + SafeHtml.plainText(question.getContent());
+        return text.length() > AppConstants.AI_MAX_QUESTION_LENGTH ? text.substring(0, AppConstants.AI_MAX_QUESTION_LENGTH) : text;
+    }
+
+    /** The question's AI answer; 404 while it is being generated, when there is none, or when it was flagged. */
+    public QuestionAiAnswerResponse questionAnswer(Long questionId, String lang) {
+        return questionAiAnswerRepository.findByQuestionId(questionId)
+                .filter(aiAnswer -> aiAnswer.getStatus() != AiAnswerStatus.FLAGGED)
+                .map(aiAnswer -> QuestionAiAnswerResponse.from(aiAnswer, questionId))
+                .orElseThrow(() -> new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_AI_ANSWER_NOT_FOUND, lang));
     }
 
     /** Only answered questions count, so a failed or timed-out call does not use up the allowance. */

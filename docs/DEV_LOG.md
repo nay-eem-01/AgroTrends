@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 64 of 84 steps done): launch blockers and one account type with
+- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 65 of 85 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -47,6 +47,29 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-14 (roadmap 7.3a)
+
+**Done**
+- `QuestionAiAnswer` (one per question, `ON DELETE CASCADE`): answer text, `sources` (jsonb), `status`
+  (`UNCHECKED`, `CONFIRMED`, `CORRECTED`, `FLAGGED` — all four created now so the column's CHECK never needs
+  widening), token usage.
+- `QuestionService.create` is now transactional and publishes `QuestionCreated`; `AiService.answerQuestion`
+  (`@Async @TransactionalEventListener`, `@EnableAsync` in `AppConfig`) generates the answer after the commit
+  with the same RAG chat client, from the title and the plain text of the question (capped at 1000 chars).
+- `GET /api/questions/id/{id}/ai-answer` (public): `{id, questionId, answer, sources, status, disclaimer,
+  createdAt}`; 404 until generated, when generation failed, or when flagged.
+- Each asker gets at most `app.ai.daily-question-limit` (20) generated answers a day, counted separately
+  from private asks; beyond that the question simply has no AI answer.
+- Checked live: the listener runs on a task thread after the commit; with the current invalid Gemini chat key
+  it logs the failure and the question stays usable (404 on ai-answer). The jsonb `sources` round-trip was
+  checked with a seeded row; flagged → 404; deleting the question deletes its AI answer.
+- Roadmap 7.3 split into 7.3a/7.3b to keep each PR within 20 files.
+
+**Known limitations**
+- A failed generation is not retried (`shortcut:` in `AiService.answerQuestion`).
+- Editing a question does not regenerate its AI answer.
+- End-to-end generation is unverified live until the Gemini chat key is fixed (open item).
 
 ## 2026-10-14 (roadmap 7.2)
 
