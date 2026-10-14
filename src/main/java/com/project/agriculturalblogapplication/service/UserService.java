@@ -5,6 +5,7 @@ import com.project.agriculturalblogapplication.model.response.UserResponse;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.constatnt.AppConstants;
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
+import com.project.agriculturalblogapplication.enums.RoleType;
 import com.project.agriculturalblogapplication.entities.Role;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.model.request.ChangePasswordRequest;
@@ -22,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -240,6 +242,28 @@ public class UserService {
         user.setMustChangePassword(false);
         userRepository.save(user);
         revokeAllCredentials(user.getId());
+    }
+
+    /** Suspends an account and signs it out everywhere; admin accounts cannot be banned. */
+    @Transactional
+    public void ban(Long userId, String reason, String lang) {
+        User user = findByIdWithException(userId, lang);
+        if (user.getRoles() != null && user.getRoles().stream()
+                .anyMatch(role -> role.getRoleType() == RoleType.ADMIN || role.getRoleType() == RoleType.SUPER_ADMIN)) {
+            throw new ApplicationException(HttpStatus.FORBIDDEN, ErrorCode.ERROR_CANNOT_BAN_ADMIN, lang);
+        }
+        user.setBannedAt(LocalDateTime.now());
+        user.setBanReason(reason.strip());
+        userRepository.save(user);
+        revokeAllCredentials(userId);
+    }
+
+    @Transactional
+    public void unban(Long userId, String lang) {
+        User user = findByIdWithException(userId, lang);
+        user.setBannedAt(null);
+        user.setBanReason(null);
+        userRepository.save(user);
     }
 
     /** Kills every access session and refresh token of the user. */

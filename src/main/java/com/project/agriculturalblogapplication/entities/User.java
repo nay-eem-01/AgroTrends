@@ -58,5 +58,12 @@ public class User extends AuditModel<String> {
             inverseJoinColumns = @JoinColumn(name = AppTables.RoleTable.ROLE_ID)
     )
     private Set<Role> roles ;
+
+    /** Set by a moderator: sign-in and token refresh are refused while it is set. */
+    @Column(name = UserTable.BANNED_AT)
+    private LocalDateTime bannedAt;
+
+    @Column(name = UserTable.BAN_REASON, length = 500)
+    private String banReason;
 }
 

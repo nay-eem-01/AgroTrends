@@ -41,8 +41,9 @@ class ModerationServiceTest {
     private final CommentService commentService = mock(CommentService.class);
     private final ReviewService reviewService = mock(ReviewService.class);
     private final NotificationPublisher notifications = mock(NotificationPublisher.class);
+    private final UserService userService = mock(UserService.class);
     private final ModerationService moderation = new ModerationService(repository, blogService, questionService,
-            answerService, commentService, reviewService, notifications);
+            answerService, commentService, reviewService, notifications, userService);
 
     @Test
     void removingAnAnswerSnapshotsItClosesItsReportsDeletesItAndTellsTheAuthor() {
@@ -82,6 +83,14 @@ class ModerationServiceTest {
         assertEquals(HttpStatus.BAD_REQUEST,
                 assertThrows(ApplicationException.class, () -> moderation.removeContent(1L, LANG)).getHttpStatus());
         verify(repository, never()).closeAsActioned(any(), anyLong(), anyString());
+    }
+
+    @Test
+    void banningSuspendsTheAccountAndClosesTheReportsAboutIt() {
+        moderation.ban(30L, " Spam bot ", LANG);
+
+        verify(userService).ban(30L, " Spam bot ", LANG);
+        verify(repository).closeAsActioned(ReportTarget.USER, 30L, "Banned: Spam bot");
     }
 
     @Test
