@@ -4,6 +4,10 @@ import com.project.agriculturalblogapplication.entities.Answer;
 import com.project.agriculturalblogapplication.entities.Category;
 import com.project.agriculturalblogapplication.entities.Question;
 import com.project.agriculturalblogapplication.events.AnswerChanged;
+import com.project.agriculturalblogapplication.enums.NotificationTarget;
+import com.project.agriculturalblogapplication.enums.NotificationType;
+import com.project.agriculturalblogapplication.notification.NotificationMessage;
+import com.project.agriculturalblogapplication.notification.NotificationPublisher;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.enums.Badge;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
@@ -45,8 +49,9 @@ class AnswerServiceTest {
     private final ReputationService reputation = mock(ReputationService.class);
     private final QuestionAiAnswerRepository aiAnswers = mock(QuestionAiAnswerRepository.class);
     private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
+    private final NotificationPublisher notifications = mock(NotificationPublisher.class);
     private final AnswerService answerService = new AnswerService(mock(QuestionService.class), mock(UserService.class),
-            authorization, answerRepository, aiAnswers, reputation, events);
+            authorization, answerRepository, aiAnswers, reputation, events, notifications);
 
     private Question question;
 
@@ -76,6 +81,8 @@ class AnswerServiceTest {
         // The switch re-checks both answers' place in the AI index.
         verify(events, times(2)).publishEvent(new AnswerChanged(3L));
         verify(events).publishEvent(new AnswerChanged(4L));
+        verify(notifications).publish(new NotificationMessage(first.getUser().getId(), ASKER,
+                NotificationType.ANSWER_ACCEPTED, NotificationTarget.QUESTION, 1L));
     }
 
     @Test
