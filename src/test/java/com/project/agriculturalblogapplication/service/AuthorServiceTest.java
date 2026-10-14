@@ -34,7 +34,7 @@ class AuthorServiceTest {
     void aUserWithoutAProfileGetsOneOnFirstNeed() {
         User user = new User();
         when(authors.findByUserId(7L)).thenReturn(Optional.empty());
-        when(users.getReferenceById(7L)).thenReturn(user);
+        when(users.findById(7L)).thenReturn(Optional.of(user));
         when(authors.save(any(Author.class))).thenAnswer(call -> call.getArgument(0));
 
         assertSame(user, authorService.profileOf(7L).getUser());

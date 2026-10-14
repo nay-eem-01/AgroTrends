@@ -15,6 +15,7 @@ import com.project.agriculturalblogapplication.security.service.AuthorizationSer
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -88,6 +89,8 @@ public class AnswerService {
         return mapToAnswerResponse(reply);
     }
 
+    // Replies are a lazy collection: read them inside a transaction (open-in-view is off).
+    @Transactional(readOnly = true)
     public List<AnswerResponse> viewReplies(Long parentAnswerId) {
         Answer parentAnswer = findByIdWithException(parentAnswerId);
 
