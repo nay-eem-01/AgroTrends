@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 75 of 87 steps done): launch blockers and one account type with
+- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 76 of 88 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -48,6 +48,29 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-14 (roadmap 8.4a)
+
+**Done**
+- New privilege `CONTENT_MODERATE` (super-admin role). `GET /api/admin/reports?status=OPEN` (oldest first;
+  reporter id and name), `POST /api/admin/reports/{id}/dismiss`, `POST /api/admin/reports/{id}/remove-content`.
+- Remove = delete through the owners' delete paths (admin passes owner-or-admin): out of every list, AI
+  vectors dropped, earned reputation gone (`ON DELETE CASCADE`), accepted mark cleared. All open reports on
+  the target become `ACTIONED` with `snapshot` (the text, ≤ 2000 chars) as evidence; the author gets
+  `CONTENT_REMOVED` with no actor. A reported AI answer is hidden (`FLAGGED`, `ReviewService.hide`, no
+  reviewer recorded, asker not notified). A `USER` report answers 400: ban instead (8.4b).
+- Checked live: 25/25 (an accepted, indexed answer reported twice: both closed, row, accept, 15 points and
+  vectors gone, author told; dismiss leaves content; AI answer hidden; comment and question removal; 403
+  for non-admins).
+- Roadmap 8.4 split into 8.4a/8.4b.
+
+**Decisions**
+- Removal, not a restorable hide (decided 2026-10-14 with Nayeem): one small step instead of a `hidden`
+  filter on every read path; the snapshot keeps the evidence.
+
+**Known limitations**
+- Not restorable. Removing a question also removes the answers others wrote on it.
+- Moderators need an admin role: the delete paths check owner-or-admin, not the privilege.
 
 ## 2026-10-14 (roadmap 8.3)
 
