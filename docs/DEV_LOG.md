@@ -49,6 +49,28 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-14 (Phase 8 review fixes, round 2)
+
+**Done** — a second review (12 findings) of the first round of fixes:
+- Reverted `assertOwnerAdminOrModerator`: it let any `CONTENT_MODERATE` holder delete any post, an admin's
+  included, through the public endpoints with no snapshot, audit or notice. Public deletes are owner-or-admin
+  again; `ModerationService` deletes through package-private `removeForModeration` in the four services.
+- A banned account's token is treated as no token in `JwtAuthenticationFilter`: public reads keep working
+  and everything else is a 401 (was a 403 on every request, sign-out and public reads included); the refresh
+  flow then answers 403 with the ban. `unban` revokes credentials too, so a session created while the ban
+  was being applied is not revived.
+- An admin deciding their own application is not notified (the null actor had disabled the self-skip).
+- Regression tests for the Google pre-link ban refusal and for `deliver` swallowing a failed store.
+- Checked live: fix checks 16/16 (moderator 403 outside the queue, decision audited, banned token reads
+  public pages and gets 401 elsewhere) and 8.4a, 8.4b, 8.5a–c again.
+
+**Not changed, with reasons**
+- "Expert decisions are not audited": verified live as a false alarm; the entity is dirtied after the
+  conditional update, so auditing stamps `lastModifiedBy`.
+- Ban via `isAccountNonLocked`: Spring checks it before the password, so a banned user would get the
+  generic "invalid credentials" instead of the ban message.
+- `docs/ROADMAP.md` for review fixes: there is no step row to tick; the dev log records them.
+
 ## 2026-10-14 (roadmap 8.5c)
 
 **Done**
