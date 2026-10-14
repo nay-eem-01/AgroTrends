@@ -191,6 +191,7 @@ class AiServiceTest {
     @Test
     void aFlaggedOrMissingAiAnswerIsNotFoundAndAnUncheckedOneCarriesTheDisclaimer() {
         QuestionAiAnswer stored = new QuestionAiAnswer();
+        stored.setQuestion(question("Yellow leaves", "Why?"));
         stored.setAnswer("Check nitrogen.");
         when(questionAiAnswers.findByQuestionId(4L)).thenReturn(Optional.of(stored));
 

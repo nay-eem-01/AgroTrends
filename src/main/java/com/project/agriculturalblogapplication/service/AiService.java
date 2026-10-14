@@ -119,7 +119,7 @@ public class AiService {
     public QuestionAiAnswerResponse questionAnswer(Long questionId, String lang) {
         return questionAiAnswerRepository.findByQuestionId(questionId)
                 .filter(aiAnswer -> aiAnswer.getStatus() != AiAnswerStatus.FLAGGED)
-                .map(aiAnswer -> QuestionAiAnswerResponse.from(aiAnswer, questionId))
+                .map(QuestionAiAnswerResponse::from)
                 .orElseThrow(() -> new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_AI_ANSWER_NOT_FOUND, lang));
     }
 

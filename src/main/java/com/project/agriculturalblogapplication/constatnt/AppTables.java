@@ -291,6 +291,12 @@ public final class AppTables {
         public static final String PROMPT_TOKENS = "prompt_tokens";
 
         public static final String COMPLETION_TOKENS = "completion_tokens";
+
+        public static final String REVIEWED_BY = "reviewed_by";
+
+        public static final String REVIEWED_AT = "reviewed_at";
+
+        public static final String CORRECTION_ANSWER_ID = "correction_answer_id";
     }
 
     public static final class AiAnswerTable {
