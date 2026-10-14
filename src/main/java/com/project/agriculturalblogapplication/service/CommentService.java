@@ -12,6 +12,10 @@ import com.project.agriculturalblogapplication.model.request.UpdateCommentReques
 import com.project.agriculturalblogapplication.model.response.CommentResponse;
 import com.project.agriculturalblogapplication.repositories.CommentRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
+import com.project.agriculturalblogapplication.enums.NotificationTarget;
+import com.project.agriculturalblogapplication.enums.NotificationType;
+import com.project.agriculturalblogapplication.notification.NotificationMessage;
+import com.project.agriculturalblogapplication.notification.NotificationPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -32,6 +36,8 @@ public class CommentService {
     private final AuthorizationService authorizationService;
 
     private final CommentRepository commentRepository;
+
+    private final NotificationPublisher notificationPublisher;
 
     public CommentResponse create(CreateCommentRequest request, String lang) {
         Blog blog = blogService.findByIdWithException(request.getBlogId());
@@ -91,6 +97,8 @@ public class CommentService {
         reply.setCommentContent(request.getContent());
 
         reply =  commentRepository.save(reply);
+        notificationPublisher.publish(new NotificationMessage(parentComment.getUser().getId(), user.getId(),
+                NotificationType.COMMENT_REPLY, NotificationTarget.BLOG, blog.getId()));
 
         return mapToCommentResponse(reply);
     }

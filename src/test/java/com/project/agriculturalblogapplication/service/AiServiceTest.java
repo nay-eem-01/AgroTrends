@@ -3,6 +3,7 @@ package com.project.agriculturalblogapplication.service;
 import com.project.agriculturalblogapplication.config.AiProperties;
 import com.project.agriculturalblogapplication.entities.AiAnswer;
 import com.project.agriculturalblogapplication.constatnt.AppConstants;
+import com.project.agriculturalblogapplication.entities.Category;
 import com.project.agriculturalblogapplication.entities.Question;
 import com.project.agriculturalblogapplication.entities.QuestionAiAnswer;
 import com.project.agriculturalblogapplication.entities.User;
@@ -22,6 +23,10 @@ import com.project.agriculturalblogapplication.repositories.QuestionAiAnswerRepo
 import com.project.agriculturalblogapplication.security.service.AttemptLimiter;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.project.agriculturalblogapplication.enums.NotificationTarget;
+import com.project.agriculturalblogapplication.enums.NotificationType;
+import com.project.agriculturalblogapplication.notification.NotificationMessage;
+import com.project.agriculturalblogapplication.notification.NotificationPublisher;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.ai.chat.client.ChatClient;
@@ -66,9 +71,11 @@ class AiServiceTest {
     private final AiProperties aiProperties = new AiProperties();
     private final QuestionService questionService = mock(QuestionService.class);
     private final QuestionAiAnswerRepository questionAiAnswers = mock(QuestionAiAnswerRepository.class);
+    private final ExpertService expertService = mock(ExpertService.class);
+    private final NotificationPublisher notifications = mock(NotificationPublisher.class);
     private final AiService aiService =
             new AiService(aiRepositories, chatClient, authorization, aiProperties, questionService, questionAiAnswers,
-                    new AttemptLimiter());
+                    new AttemptLimiter(), expertService, notifications);
 
     @Test
     void askReturnsTheAnswerWithItsSourcesAndStoresItForTheCaller() {
@@ -255,7 +262,8 @@ class AiServiceTest {
     }
 
     @Test
-    void aNewQuestionGetsAStoredUncheckedAnswerWithItsSources() {
+    void aNewQuestionGetsAStoredUncheckedAnswerWithItsSourcesAndTheTopicsExpertsAreTold() {
+        when(expertService.expertsIn(2L)).thenReturn(List.of(30L, 31L));
         when(questionService.findByIdWithException(4L)).thenReturn(question("Yellow leaves", "<p>My paddy leaves turn <b>yellow</b>.</p>"));
         when(chatClient.prompt().user("Yellow leaves\n\nMy paddy leaves turn yellow.").call().chatClientResponse())
                 .thenReturn(response("Check nitrogen.", List.of(chunk(2, "Rice nutrition"))));
@@ -269,6 +277,10 @@ class AiServiceTest {
         assertEquals(List.of(AiSourceResponse.blog(2L, "Rice nutrition")), saved.getValue().getSources());
         assertEquals(4L, saved.getValue().getQuestion().getId());
         assertEquals(120, saved.getValue().getPromptTokens());
+        verify(notifications).publish(new NotificationMessage(30L, 9L, NotificationType.NEW_REVIEW_ITEM,
+                NotificationTarget.QUESTION, 4L));
+        verify(notifications).publish(new NotificationMessage(31L, 9L, NotificationType.NEW_REVIEW_ITEM,
+                NotificationTarget.QUESTION, 4L));
     }
 
     @Test
@@ -341,7 +353,10 @@ class AiServiceTest {
     private static Question question(String title, String content) {
         User asker = new User();
         asker.setId(9L);
+        Category topic = new Category();
+        topic.setId(2L);
         Question question = new Question();
+        question.setCategory(topic);
         question.setId(4L);
         question.setUser(asker);
         question.setTitle(title);

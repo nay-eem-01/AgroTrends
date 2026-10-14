@@ -8,6 +8,11 @@ import com.project.agriculturalblogapplication.model.request.CreateCommentReques
 import com.project.agriculturalblogapplication.model.response.CommentResponse;
 import com.project.agriculturalblogapplication.repositories.CommentRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
+import com.project.agriculturalblogapplication.model.request.ReplyCommentRequest;
+import com.project.agriculturalblogapplication.enums.NotificationTarget;
+import com.project.agriculturalblogapplication.enums.NotificationType;
+import com.project.agriculturalblogapplication.notification.NotificationMessage;
+import com.project.agriculturalblogapplication.notification.NotificationPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -32,8 +37,9 @@ class CommentServiceTest {
     private final UserService userService = mock(UserService.class);
     private final CommentRepository commentRepository = mock(CommentRepository.class);
     private final AuthorizationService authorization = mock(AuthorizationService.class);
+    private final NotificationPublisher notifications = mock(NotificationPublisher.class);
     private final CommentService commentService =
-            new CommentService(blogService, userService, authorization, commentRepository);
+            new CommentService(blogService, userService, authorization, commentRepository, notifications);
 
     private User author;
     private Blog blog;
@@ -65,6 +71,26 @@ class CommentServiceTest {
         assertEquals(10L, response.getCommentId());
         assertNull(response.getParentCommentId());
         assertEquals(3L, response.getBlogId());
+    }
+
+    @Test
+    void aReplyNotifiesTheParentCommentsAuthor() {
+        User replier = new User();
+        replier.setId(8L);
+        when(authorization.currentUserId("en")).thenReturn(8L);
+        when(userService.findByIdWithException(8L, "en")).thenReturn(replier);
+        when(blogService.findByIdWithException(3L)).thenReturn(blog);
+        when(commentRepository.findById(10L)).thenReturn(Optional.of(comment(10L, null)));
+        when(commentRepository.save(any(Comment.class))).thenAnswer(call -> call.getArgument(0));
+        ReplyCommentRequest request = new ReplyCommentRequest();
+        request.setBlogId(3L);
+        request.setParentCommentId(10L);
+        request.setContent("Thanks!");
+
+        commentService.reply(request, "en");
+
+        verify(notifications).publish(new NotificationMessage(7L, 8L, NotificationType.COMMENT_REPLY,
+                NotificationTarget.BLOG, 3L));
     }
 
     @Test
