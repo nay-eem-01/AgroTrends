@@ -19,4 +19,14 @@ public class AppProperties {
 
     private String backendUrlShort;
 
+    private Moderation moderation = new Moderation();
+
+    @Getter
+    @Setter
+    public static class Moderation {
+
+        /** Open reports from different users that hide a post until a moderator decides. */
+        private int autoHideReports = 3;
+    }
+
 }

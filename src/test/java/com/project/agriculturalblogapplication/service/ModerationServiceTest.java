@@ -1,5 +1,10 @@
 package com.project.agriculturalblogapplication.service;
 
+import com.project.agriculturalblogapplication.entities.Author;
+import com.project.agriculturalblogapplication.entities.Blog;
+import com.project.agriculturalblogapplication.enums.BlogStatus;
+import com.project.agriculturalblogapplication.events.QuestionChanged;
+import org.springframework.context.ApplicationEventPublisher;
 import com.project.agriculturalblogapplication.entities.Answer;
 import com.project.agriculturalblogapplication.entities.Question;
 import com.project.agriculturalblogapplication.entities.Report;
@@ -21,6 +26,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -45,9 +51,11 @@ class ModerationServiceTest {
     private final NotificationPublisher notifications = mock(NotificationPublisher.class);
     private final UserService userService = mock(UserService.class);
     private final EntityManager entityManager = mock(EntityManager.class);
+    private final DocumentService documentService = mock(DocumentService.class);
+    private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
     private final ModerationService moderation = new ModerationService(repository, blogService, questionService,
-            answerService, commentService, reviewService, notifications, userService, entityManager,
-            () -> Optional.of("mod@agrotrends.test"));
+            answerService, commentService, reviewService, documentService, notifications, events, userService,
+            entityManager, () -> Optional.of("mod@agrotrends.test"));
 
     @Test
     void removingAnAnswerSnapshotsItClosesItsReportsDeletesItAndTellsTheAuthor() {
@@ -110,16 +118,87 @@ class ModerationServiceTest {
     }
 
     @Test
-    void dismissingIsConditionalSoARemovalAtTheSameMomentWins() {
-        report(ReportTarget.QUESTION, 4L, ReportStatus.OPEN);
-        when(repository.dismissIfOpen(eq(1L), eq("mod@agrotrends.test"), any())).thenReturn(1);
-        moderation.dismiss(1L, LANG);
-        verify(questionService, never()).delete(anyLong(), anyString());
+    void reachingTheThresholdHidesAQuestionKeepsItsTextAndTellsTheAuthor() {
+        Question question = question(4L, 30L);
+        when(entityManager.find(Question.class, 4L)).thenReturn(question);
 
+        moderation.hideForReview(ReportTarget.QUESTION, 4L);
+
+        assertTrue(question.isHidden());
+        verify(events).publishEvent(new QuestionChanged(4L));
+        verify(repository).recordSnapshot(ReportTarget.QUESTION, 4L, "Why?\n\nLeaves are yellow");
+        verify(notifications).publish(new NotificationMessage(30L, null, NotificationType.CONTENT_HIDDEN,
+                NotificationTarget.QUESTION, 4L));
+    }
+
+    @Test
+    void anAlreadyHiddenPostIsNotHiddenOrAnnouncedAgain() {
+        Question question = question(4L, 30L);
+        question.setHidden(true);
+        when(entityManager.find(Question.class, 4L)).thenReturn(question);
+
+        moderation.hideForReview(ReportTarget.QUESTION, 4L);
+
+        verifyNoInteractions(events, notifications);
+        verify(repository, never()).recordSnapshot(any(), anyLong(), anyString());
+    }
+
+    @Test
+    void aHiddenBlogLeavesTheAiIndexAndComesBackWhenTheReportsAreDismissed() {
+        Blog blog = new Blog();
+        blog.setTitle("Fake cure");
+        blog.setContent("Buy now");
+        blog.setStatus(BlogStatus.PUBLISHED);
+        Author author = new Author();
+        author.setUser(user(30L));
+        blog.setAuthor(author);
+        when(entityManager.find(Blog.class, 6L)).thenReturn(blog);
+
+        moderation.hideForReview(ReportTarget.BLOG, 6L);
+        assertEquals(BlogStatus.HIDDEN, blog.getStatus());
+        verify(documentService).deleteBlog(6L);
+
+        report(ReportTarget.BLOG, 6L, ReportStatus.OPEN);
+        when(repository.dismissAllOpen(eq(ReportTarget.BLOG), eq(6L), eq("mod@agrotrends.test"), any())).thenReturn(3);
+        moderation.dismiss(1L, LANG);
+
+        assertEquals(BlogStatus.PUBLISHED, blog.getStatus());
+        verify(documentService).indexBlog(blog);
+        verify(notifications).publish(new NotificationMessage(30L, null, NotificationType.CONTENT_RESTORED,
+                NotificationTarget.BLOG, 6L));
+    }
+
+    @Test
+    void dismissingAPostThatWasNeverHiddenClosesItsReportsQuietly() {
+        report(ReportTarget.QUESTION, 4L, ReportStatus.OPEN);
+        when(repository.dismissAllOpen(eq(ReportTarget.QUESTION), eq(4L), any(), any())).thenReturn(1);
+        when(entityManager.find(Question.class, 4L)).thenReturn(question(4L, 30L));
+
+        moderation.dismiss(1L, LANG);
+
+        verifyNoInteractions(events, notifications);
+        verify(questionService, never()).delete(anyLong(), anyString());
+    }
+
+    @Test
+    void dismissingAfterAnotherModeratorActedIsAConflict() {
         // Regression: dismiss overwrote a concurrent ACTIONED close.
-        when(repository.dismissIfOpen(eq(1L), any(), any())).thenReturn(0);
+        report(ReportTarget.QUESTION, 4L, ReportStatus.OPEN);
+        when(repository.dismissAllOpen(eq(ReportTarget.QUESTION), eq(4L), any(), any())).thenReturn(0);
+
         assertEquals(HttpStatus.CONFLICT,
                 assertThrows(ApplicationException.class, () -> moderation.dismiss(1L, LANG)).getHttpStatus());
+        verifyNoInteractions(notifications);
+    }
+
+    @Test
+    void dismissedReportsOnAnAiAnswerAskReviewToRestoreIt() {
+        report(ReportTarget.AI_ANSWER, 4L, ReportStatus.OPEN);
+        when(repository.dismissAllOpen(eq(ReportTarget.AI_ANSWER), eq(4L), any(), any())).thenReturn(2);
+
+        moderation.dismiss(1L, LANG);
+
+        verify(reviewService).restore(4L);
     }
 
     @Test
@@ -158,6 +237,15 @@ class ModerationServiceTest {
         report.setStatus(status);
         when(repository.findById(1L)).thenReturn(Optional.of(report));
         return report;
+    }
+
+    private static Question question(Long id, Long authorId) {
+        Question question = new Question();
+        question.setId(id);
+        question.setTitle("Why?");
+        question.setContent("<p>Leaves are yellow</p>");
+        question.setUser(user(authorId));
+        return question;
     }
 
     private static User user(Long id) {

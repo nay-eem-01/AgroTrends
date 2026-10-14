@@ -6,10 +6,13 @@ import com.project.agriculturalblogapplication.entities.Blog;
 import com.project.agriculturalblogapplication.entities.Comment;
 import com.project.agriculturalblogapplication.entities.Question;
 import com.project.agriculturalblogapplication.entities.Report;
+import com.project.agriculturalblogapplication.enums.BlogStatus;
 import com.project.agriculturalblogapplication.enums.NotificationTarget;
 import com.project.agriculturalblogapplication.enums.NotificationType;
 import com.project.agriculturalblogapplication.enums.ReportStatus;
 import com.project.agriculturalblogapplication.enums.ReportTarget;
+import com.project.agriculturalblogapplication.events.AnswerChanged;
+import com.project.agriculturalblogapplication.events.QuestionChanged;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.response.ReportResponse;
 import com.project.agriculturalblogapplication.notification.NotificationMessage;
@@ -19,6 +22,7 @@ import com.project.agriculturalblogapplication.util.CommonUtils;
 import com.project.agriculturalblogapplication.util.SafeHtml;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
@@ -29,9 +33,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 
 /**
- * The moderators' report queue (roadmap 8.4). Removing content deletes it through the owners' own delete paths, so
- * it leaves every list, its AI vectors and the reputation it earned go with it; the reports keep a snapshot of what it
- * said. Reported AI answers are hidden (FLAGGED) instead, and users are banned, not removed.
+ * Moderation (roadmap 8.4, 8.5). Enough reports hide a post ({@link #hideForReview}); a moderator then confirms
+ * them (the post is deleted through the owners' own delete paths, so its AI vectors and earned reputation go too) or
+ * dismisses them (the post comes back). Reports keep a snapshot of what the post said. Users are banned, not removed.
  */
 @Service
 @RequiredArgsConstructor
@@ -53,7 +57,11 @@ public class ModerationService {
 
     private final ReviewService reviewService;
 
+    private final DocumentService documentService;
+
     private final NotificationPublisher notificationPublisher;
+
+    private final ApplicationEventPublisher eventPublisher;
 
     private final UserService userService;
 
@@ -61,7 +69,7 @@ public class ModerationService {
 
     private final AuditorAware<String> auditorAware;
 
-    /** Reports in one status, oldest first. */
+    /** Reports in one status, oldest first. An open report with a snapshot is on a post that is hidden. */
     @Transactional(readOnly = true)
     public Page<ReportResponse> reports(ReportStatus status, int pageNo, int pageSize) {
         return reportRepository.findAllByStatus(status,
@@ -69,76 +77,86 @@ public class ModerationService {
                 .map(ReportResponse::from);
     }
 
+    /**
+     * Called when a post reaches the report threshold: hidden from everyone (and the AI) until a moderator decides,
+     * its text kept on the open reports, its author told. Not an admin action, so it needs no privilege.
+     */
+    @Transactional
+    public void hideForReview(ReportTarget type, Long id) {
+        String snapshot;
+        Post post = null;
+        if (type == ReportTarget.AI_ANSWER) {
+            snapshot = reviewService.hide(id);
+        } else {
+            post = load(type, id);
+            snapshot = post != null && setHidden(type, id, post, true) ? post.snapshot() : null;
+        }
+        if (snapshot != null) {
+            reportRepository.recordSnapshot(type, id, cut(snapshot));
+            if (post != null) {
+                notify(post, NotificationType.CONTENT_HIDDEN);
+            }
+        }
+    }
+
+    /**
+     * The reports were unfounded: every open report on the post is dismissed and, if the threshold had hidden it,
+     * the post is visible again and its author told.
+     */
     @Transactional
     public ReportResponse dismiss(Long reportId, String lang) {
-        open(reportId, lang);
-        if (reportRepository.dismissIfOpen(reportId, moderator(), LocalDateTime.now()) == 0) {
+        Report report = open(reportId, lang);
+        ReportTarget type = report.getTargetType();
+        Long id = report.getTargetId();
+        if (reportRepository.dismissAllOpen(type, id, moderator(), LocalDateTime.now()) == 0) {
             throw new ApplicationException(HttpStatus.CONFLICT, ErrorCode.ERROR_REPORT_ALREADY_CLOSED, lang);
+        }
+        if (type == ReportTarget.AI_ANSWER) {
+            reviewService.restore(id);
+        } else {
+            Post post = load(type, id);
+            if (post != null && setHidden(type, id, post, false)) {
+                notify(post, NotificationType.CONTENT_RESTORED);
+            }
         }
         return ReportResponse.from(reportRepository.findById(reportId).orElseThrow());
     }
 
     /**
-     * Removes the reported content and closes every open report on it; the author is told. Content that is already
-     * gone (removed with its question, deleted by its author) just closes the reports.
+     * The reports are confirmed: the post is deleted for good (an AI answer is hidden instead) and every open report
+     * on it closes as ACTIONED with its snapshot. A post that is already gone just closes the reports.
      */
     @Transactional
     public ReportResponse removeContent(Long reportId, String lang) {
         Report report = open(reportId, lang);
+        ReportTarget type = report.getTargetType();
         Long id = report.getTargetId();
-        // Looked up with find (null, not an exception): an exception out of another transactional service would
-        // mark this transaction rollback-only. The delete comes last so nothing outlives a failure.
-        Runnable delete = () -> { };
-        String snapshot = ALREADY_GONE;
-        NotificationMessage notice = null;
-        switch (report.getTargetType()) {
-            case BLOG -> {
-                Blog blog = entityManager.find(Blog.class, id);
-                if (blog != null) {
-                    snapshot = blog.getTitle() + "\n\n" + SafeHtml.plainText(blog.getContent());
-                    notice = removed(blog.getAuthor().getUser().getId(), NotificationTarget.BLOG, id);
-                    delete = () -> blogService.delete(id, lang);
-                }
-            }
-            case QUESTION -> {
-                Question question = entityManager.find(Question.class, id);
-                if (question != null) {
-                    snapshot = question.getTitle() + "\n\n" + SafeHtml.plainText(question.getContent());
-                    notice = removed(question.getUser().getId(), NotificationTarget.QUESTION, id);
-                    delete = () -> questionService.delete(id, lang);
-                }
-            }
-            case ANSWER -> {
-                Answer answer = entityManager.find(Answer.class, id);
-                if (answer != null) {
-                    snapshot = SafeHtml.plainText(answer.getContent());
-                    notice = removed(answer.getUser().getId(), NotificationTarget.QUESTION, answer.getQuestion().getId());
-                    delete = () -> answerService.delete(id, lang);
-                }
-            }
-            case COMMENT -> {
-                Comment comment = entityManager.find(Comment.class, id);
-                if (comment != null) {
-                    snapshot = comment.getCommentContent();
-                    notice = removed(comment.getUser().getId(), NotificationTarget.BLOG, comment.getBlog().getId());
-                    delete = () -> commentService.delete(id, lang);
-                }
-            }
-            case AI_ANSWER -> {
-                String hidden = reviewService.hide(id);
-                snapshot = hidden == null ? ALREADY_GONE : hidden;
-            }
-            default -> throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_BAN_INSTEAD, lang);
+        if (type == ReportTarget.USER) {
+            throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_BAN_INSTEAD, lang);
         }
-        reportRepository.closeAsActioned(report.getTargetType(), id, cut(snapshot), moderator(), LocalDateTime.now());
-        delete.run();
-        if (notice != null) {
-            notificationPublisher.publish(notice);
+        if (type == ReportTarget.AI_ANSWER) {
+            String hidden = reviewService.hide(id);
+            reportRepository.closeAsActioned(type, id, cut(hidden == null ? ALREADY_GONE : hidden), moderator(),
+                    LocalDateTime.now());
+            return ReportResponse.from(reportRepository.findById(reportId).orElseThrow());
+        }
+        Post post = load(type, id);
+        // The delete comes last, so nothing outlives a failure.
+        reportRepository.closeAsActioned(type, id, cut(post == null ? ALREADY_GONE : post.snapshot()), moderator(),
+                LocalDateTime.now());
+        if (post != null) {
+            switch (type) {
+                case BLOG -> blogService.delete(id, lang);
+                case QUESTION -> questionService.delete(id, lang);
+                case ANSWER -> answerService.delete(id, lang);
+                default -> commentService.delete(id, lang);
+            }
+            notify(post, NotificationType.CONTENT_REMOVED);
         }
         return ReportResponse.from(reportRepository.findById(reportId).orElseThrow());
     }
 
-    /** Suspends the account, signs it out everywhere and closes the open reports about it. */
+    /** Suspends the account, signs it out everywhere and closes the open reports about them. */
     @Transactional
     public void ban(Long userId, String reason, String lang) {
         userService.ban(userId, reason, lang);
@@ -151,6 +169,87 @@ public class ModerationService {
         userService.unban(userId, lang);
     }
 
+    /** What moderation needs to know about a reported post; null when it no longer exists. */
+    private record Post(Object entity, String snapshot, Long authorId, NotificationTarget link, Long linkId) {
+    }
+
+    // Looked up with find (null, not an exception): an exception out of another transactional service would mark this
+    // transaction rollback-only. Hidden posts are found too, unlike through the services.
+    private Post load(ReportTarget type, Long id) {
+        return switch (type) {
+            case BLOG -> {
+                Blog blog = entityManager.find(Blog.class, id);
+                yield blog == null ? null : new Post(blog, blog.getTitle() + "\n\n" + SafeHtml.plainText(blog.getContent()),
+                        blog.getAuthor().getUser().getId(), NotificationTarget.BLOG, id);
+            }
+            case QUESTION -> {
+                Question question = entityManager.find(Question.class, id);
+                yield question == null ? null : new Post(question,
+                        question.getTitle() + "\n\n" + SafeHtml.plainText(question.getContent()),
+                        question.getUser().getId(), NotificationTarget.QUESTION, id);
+            }
+            case ANSWER -> {
+                Answer answer = entityManager.find(Answer.class, id);
+                yield answer == null ? null : new Post(answer, SafeHtml.plainText(answer.getContent()),
+                        answer.getUser().getId(), NotificationTarget.QUESTION, answer.getQuestion().getId());
+            }
+            case COMMENT -> {
+                Comment comment = entityManager.find(Comment.class, id);
+                yield comment == null ? null : new Post(comment, comment.getCommentContent(),
+                        comment.getUser().getId(), NotificationTarget.BLOG, comment.getBlog().getId());
+            }
+            // AI answers are handled through ReviewService; users are banned, not loaded.
+            case AI_ANSWER, USER -> null;
+        };
+    }
+
+    /**
+     * Hides or shows a post; false when it already was in that state. A blog leaves or rejoins the vector store at
+     * once; questions and answers publish an event so the AI index follows after the commit.
+     */
+    private boolean setHidden(ReportTarget type, Long id, Post post, boolean hidden) {
+        switch (post.entity()) {
+            case Blog blog -> {
+                if (blog.getStatus() != (hidden ? BlogStatus.PUBLISHED : BlogStatus.HIDDEN)) {
+                    return false;
+                }
+                blog.setStatus(hidden ? BlogStatus.HIDDEN : BlogStatus.PUBLISHED);
+                if (hidden) {
+                    documentService.deleteBlog(id);
+                } else {
+                    documentService.indexBlog(blog);
+                }
+            }
+            case Question question -> {
+                if (question.isHidden() == hidden) {
+                    return false;
+                }
+                question.setHidden(hidden);
+                eventPublisher.publishEvent(new QuestionChanged(id));
+            }
+            case Answer answer -> {
+                if (answer.isHidden() == hidden) {
+                    return false;
+                }
+                answer.setHidden(hidden);
+                eventPublisher.publishEvent(new AnswerChanged(id));
+            }
+            case Comment comment -> {
+                if (comment.isHidden() == hidden) {
+                    return false;
+                }
+                comment.setHidden(hidden);
+            }
+            default -> throw new IllegalStateException("Not a post: " + type);
+        }
+        return true;
+    }
+
+    // No actor: authors are not told which moderator acted.
+    private void notify(Post post, NotificationType type) {
+        notificationPublisher.publish(new NotificationMessage(post.authorId(), null, type, post.link(), post.linkId()));
+    }
+
     private Report open(Long reportId, String lang) {
         Report report = reportRepository.findById(reportId).orElseThrow(() ->
                 new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_REPORT_NOT_FOUND, lang));
@@ -158,11 +257,6 @@ public class ModerationService {
             throw new ApplicationException(HttpStatus.CONFLICT, ErrorCode.ERROR_REPORT_ALREADY_CLOSED, lang);
         }
         return report;
-    }
-
-    // No actor: authors are not told which moderator acted.
-    private static NotificationMessage removed(Long authorId, NotificationTarget target, Long targetId) {
-        return new NotificationMessage(authorId, null, NotificationType.CONTENT_REMOVED, target, targetId);
     }
 
     private String moderator() {

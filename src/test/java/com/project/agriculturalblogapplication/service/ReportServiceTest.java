@@ -1,5 +1,6 @@
 package com.project.agriculturalblogapplication.service;
 
+import com.project.agriculturalblogapplication.config.AppProperties;
 import com.project.agriculturalblogapplication.entities.Blog;
 import com.project.agriculturalblogapplication.entities.Report;
 import com.project.agriculturalblogapplication.entities.User;
@@ -40,8 +41,10 @@ class ReportServiceTest {
     private final CommentService commentService = mock(CommentService.class);
     private final UserService userService = mock(UserService.class);
     private final AuthorizationService authorization = mock(AuthorizationService.class);
+    private final ModerationService moderation = mock(ModerationService.class);
+    private final AppProperties appProperties = new AppProperties();
     private final ReportService reportService = new ReportService(repository, blogService, questionService, answerService,
-            aiAnswers, commentService, userService, authorization);
+            aiAnswers, commentService, userService, authorization, moderation, appProperties);
 
     @BeforeEach
     void setUp() {
@@ -78,6 +81,26 @@ class ReportServiceTest {
         assertEquals(HttpStatus.NOT_FOUND, assertThrows(ApplicationException.class,
                 () -> reportService.report(request(ReportTarget.BLOG, 6L, null), LANG)).getHttpStatus());
         verify(repository, never()).save(any());
+    }
+
+    @Test
+    void theThirdOpenReportHidesThePostButFewerDoNot() {
+        when(repository.countByTargetTypeAndTargetIdAndStatus(ReportTarget.ANSWER, 5L, ReportStatus.OPEN)).thenReturn(2L, 3L);
+
+        reportService.report(request(ReportTarget.ANSWER, 5L, null), LANG);
+        verify(moderation, never()).hideForReview(any(), any());
+
+        reportService.report(request(ReportTarget.ANSWER, 5L, null), LANG);
+        verify(moderation).hideForReview(ReportTarget.ANSWER, 5L);
+    }
+
+    @Test
+    void reportsNeverBanAUserAutomatically() {
+        when(repository.countByTargetTypeAndTargetIdAndStatus(any(), any(), any())).thenReturn(99L);
+
+        reportService.report(request(ReportTarget.USER, 30L, null), LANG);
+
+        verify(moderation, never()).hideForReview(any(), any());
     }
 
     @Test
