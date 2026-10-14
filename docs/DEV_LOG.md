@@ -20,7 +20,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 ## Next up
 
 1. Merge `docs/product-study` and `docs/launch-plan` into `development`.
-2. Phase 5 on `feat/launch-blockers-base`: 5.1–5.6 done; next 5.7 (confirmed-e-mail gate on writes).
+2. Phase 5 on `feat/launch-blockers-base`: 5.1–5.7 done; next 5.8 (per-IP AI cap).
 3. Then Phases 6, 7, 8; deploy (Phase 4) and live-test only after all of them.
 4. **Team:** 30–50 seeded Bangla articles; 5–10 experts invited; pick the 6–8 launch topics (categories).
 5. **Nayeem:** fix the Gemini key; roadmap 0.4 (rotate keys, purge history); set `GOOGLE_CLIENT_ID`; make
@@ -45,6 +45,26 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | After deploying 2.3a: start once with `AI_REINDEX_ON_STARTUP=true` (old chunks have no `status`, so retrieval ignores them) | whoever deploys | AI answers on existing posts |
 | Deleting a user with comments/questions/answers fails on foreign keys: decide delete vs anonymise | Nayeem | account deletion |
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
+
+---
+
+## 2026-10-13 (roadmap 5.7)
+
+**Done**
+- `JwtAuthenticationFilter` refuses every non-GET request from a user without a confirmed e-mail with 403
+  "Confirm your e-mail address first: …". Allowed before confirmation: `/api/auth/**`, `/api/user/update`,
+  `/api/user/change-password`, `/api/user/delete`. Covers questions, answers, comments, blogs, claps, bookmarks,
+  follows, images and AI in one place, next to the existing must-change-password rule (`refusal(...)`).
+- `CustomUserDetails.emailVerified`; the seeded super-admin is created confirmed.
+- Tests: two new `JwtAuthenticationFilterTest` cases. 172 unit tests pass.
+
+**Breaking API changes**
+- Unconfirmed accounts get 403 on writes. The frontend should show a "confirm your e-mail" banner when
+  `UserResponse.emailVerified` is false, with a resend button (`POST /api/auth/resend-verification`).
+
+**Known limitations**
+- Admin accounts created before this change are unconfirmed and blocked from writes until they confirm through
+  resend (dev databases only).
 
 ---
 
