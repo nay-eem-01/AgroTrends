@@ -100,6 +100,24 @@ public final class AppTables {
         public static final String CLAP_COUNT = "clap_count";
     }
 
+    public static final class VoteTable {
+
+        public static final String NAME = "votes";
+
+        public static final String DIRECTION = "direction";
+
+        public static final String SCORE = "score";
+    }
+
+    public static final class ReputationEventTable {
+
+        public static final String NAME = "reputation_events";
+
+        public static final String REASON = "reason";
+
+        public static final String POINTS = "points";
+    }
+
     public static final class TagTable {
 
         public static final String TAG_NAME = "tag_name";
@@ -178,6 +196,12 @@ public final class AppTables {
         public static final String CONTENT = "content";
 
         public static final String TITLE = "title";
+
+        public static final String QUESTION_TAGS = "question_tags";
+
+        public static final String IMAGE_URLS = "image_urls";
+
+        public static final String ACCEPTED_ANSWER_ID = "accepted_answer_id";
     }
 
     public static final class RefreshTokenTable {

@@ -49,7 +49,7 @@ public final class ErrorCode {
 
     public static final String ERROR_TITLE_IS_REQUIRED = "Blog title is required.";
     public static final String ERROR_CONTENT_IS_REQUIRED = "Blog content is required.";
-    public static final String ERROR_CATEGORY_IS_REQUIRED = "Blog category is required.";
+    public static final String ERROR_CATEGORY_IS_REQUIRED = "Category is required.";
     public static final String ERROR_BLOG_ID_IS_REQUIRED = "Blog id is required.";
 
     public static final String ERROR_CATEGORY_NOT_FOUND = "Category not found";
@@ -81,14 +81,20 @@ public final class ErrorCode {
     public static final String ERROR_INVALID_SORT_FIELD = "This list cannot be sorted by that field.";
     public static final String ERROR_BLOG_ALREADY_PUBLISHED = "This blog is already published.";
     public static final String ERROR_BLOG_NOT_PUBLISHED = "This blog is not published.";
-    public static final String ERROR_TOO_MANY_TAGS = "A blog can have at most 5 tags.";
+    public static final String ERROR_TOO_MANY_TAGS = "A post can have at most 5 tags.";
     public static final String ERROR_TAG_TOO_LONG = "A tag can be at most 40 characters.";
     public static final String ERROR_SEARCH_QUERY_REQUIRED = "Please enter something to search for.";
     public static final String ERROR_IMAGE_REQUIRED = "Please choose an image to upload.";
     public static final String ERROR_IMAGE_TOO_LARGE = "Images can be at most 5 MB.";
     public static final String ERROR_IMAGE_TYPE_NOT_ALLOWED = "Only JPEG, PNG and WebP images are allowed.";
+    public static final String ERROR_IMAGE_NOT_UPLOADED = "Photos must be uploaded through /api/images first.";
+    public static final String ERROR_TOO_MANY_PHOTOS = "A question can have at most 4 photos.";
     public static final String ERROR_CANNOT_CLAP_OWN_BLOG = "You cannot clap for your own blog.";
     public static final String ERROR_INVALID_CLAP_COUNT = "Clap between 1 and 50 times.";
+    public static final String ERROR_CANNOT_VOTE_OWN_POST = "You cannot vote on your own post.";
+    public static final String ERROR_DOWNVOTE_NEEDS_REPUTATION = "You need 50 reputation points to downvote.";
+    public static final String ERROR_ONLY_ASKER_CAN_ACCEPT = "Only the person who asked can accept an answer.";
+    public static final String ERROR_CANNOT_ACCEPT_REPLY = "Only answers, not replies, can be accepted.";
     public static final String ERROR_CANNOT_FOLLOW_YOURSELF = "You cannot follow yourself.";
     public static final String ERROR_TAG_NOT_FOUND = "Tag not found.";
     public static final String ERROR_BIO_TOO_LONG = "A bio can be at most 2000 characters.";

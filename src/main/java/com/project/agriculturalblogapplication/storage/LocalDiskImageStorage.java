@@ -26,6 +26,16 @@ public class LocalDiskImageStorage implements ImageStorage {
         } catch (IOException e) {
             throw new UncheckedIOException("Could not store image", e);
         }
-        return storageProperties.getPublicBaseUrl().replaceAll("/+$", "") + "/" + fileName;
+        return baseUrl() + "/" + fileName;
+    }
+
+    @Override
+    public boolean isStored(String url) {
+        String prefix = baseUrl() + "/";
+        return url != null && url.startsWith(prefix) && url.substring(prefix.length()).matches("[0-9a-f-]+\\.[a-z]+");
+    }
+
+    private String baseUrl() {
+        return storageProperties.getPublicBaseUrl().replaceAll("/+$", "");
     }
 }

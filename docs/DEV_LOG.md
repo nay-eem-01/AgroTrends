@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 43 of 84 steps done): launch blockers and one account type with
+- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 62 of 84 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -20,7 +20,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 ## Next up
 
 1. Merge `docs/product-study` and `docs/launch-plan` into `development`.
-2. Phase 5 is done (5.1–5.11). Next: Phase 6 (community Q&A and reputation) on `feat/qa-reputation-base`, 6.1 first.
+2. Phases 5 and 6 are done. Next: Phase 7 (verified experts and AI review), 7.1 first.
 3. Then Phases 6, 7, 8; deploy (Phase 4) and live-test only after all of them.
 4. **Team:** 30–50 seeded Bangla articles; 5–10 experts invited; pick the 6–8 launch topics (categories).
 5. **Nayeem:** fix the Gemini key; roadmap 0.4 (rotate keys, purge history); set `GOOGLE_CLIENT_ID`; make
@@ -47,6 +47,154 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-13 (Phase 6 review fix)
+
+**Done**
+- Phase-end review of 6.1–6.8 found a lost-update race: editing a question or answer, or accepting an answer,
+  saved the whole row including the `score` it had loaded, undoing a vote cast in between. `score` is now
+  `updatable = false`; only the atomic `UPDATE … score + :delta` changes it (regression test `ScoreColumnTest`).
+- Phase 6 live smoke after the fix: 59/59 against the local Postgres.
+
+**Known limitations**
+- `Blog.clapCount` has the same pattern (an edit could undo a clap made meanwhile); fix it the same way when
+  articles are next touched.
+
+## 2026-10-13 (roadmap 6.8)
+
+**Done**
+- Top Contributor badge (`Badge.TOP_CONTRIBUTOR`): 250 points and 5 accepted answers in a topic. Computed on
+  read from the ledger (net accepts: a reversal row cancels its accept), so it comes and goes with the points.
+- `GET /api/users/{id}/reputation` topics gain `acceptedAnswers` and `badges`. `QuestionResponse` and
+  `AnswerResponse` gain `authorBadges`: the author's badges in that question's topic.
+- One grouped query (`topicTotals`) now serves totals, profile topics and badges; `totalsFor`/`byTopic` removed.
+- Checked live: 4 accepts no badge, the 5th with 250 points earns it, shown on the answer, not on the asker,
+  unaccept takes it away. Full Phase 6 smoke run: 58/58.
+
+**Decisions**
+- Computed, not stored: nothing to keep in step, and moderation reversals (Phase 8) remove badges for free.
+- Questions with no topic never count towards a badge.
+
+**Known limitations**
+- Top Contributors cannot flag AI answers yet; that permission comes with the review queue (Phase 7).
+
+## 2026-10-13 (roadmap 6.7)
+
+**Done**
+- `GET /api/users/{userId}/reputation` (public): `{total, topics: [{categoryId, categoryName, points}]}`,
+  highest topic first; a user with no events gets `{total: 0, topics: []}`.
+- `authorReputation` on `QuestionResponse` and `AnswerResponse`. Lists (question pages, search, answers,
+  replies) read every author's total with one grouped query; single responses with one small query.
+- Checked live: endpoint totals equal the ledger, the topic is named, list and answer authors match.
+
+**Decisions**
+- Badges on responses arrive with the first badge (6.8), so the field has a real meaning from the start.
+
+## 2026-10-13 (roadmap 6.6)
+
+**Done**
+- `ReputationEvent` ledger (decision 16): user, topic (the question's category), the question or answer that
+  earned it, `reason`, `points`. `ReputationReason` holds the PLAN §5 numbers: question upvoted +5, answer
+  upvoted +10, downvoted −2, answer accepted +15, accepting an answer +2.
+- `ReputationService` is called by `VoteService` and `AnswerService`: a changed or withdrawn vote, a switched
+  accept or an unaccept appends the reversal (same reason, negated points) and then the new event.
+- Downvoting needs 50 points (403 `ERROR_DOWNVOTE_NEEDS_REPUTATION`); upvoting is open.
+- Checked live: +5/+10, up→down nets −2, accept +15/+2, unaccept reverses, events carry the topic, deleting
+  the answer removes what it earned.
+
+**Decisions**
+- Events are foreign-keyed to their post with `ON DELETE CASCADE`: deleting a post (by its author now, by a
+  moderator in Phase 8) takes back exactly what it earned, with no extra code.
+- No points for accepting your own answer; the voter earns or loses nothing.
+- Totals are summed on read (`shortcut:` in `ReputationService`); cache per user and topic when reads get slow.
+
+**Known limitations**
+- Nobody has 50 points on day one, so nobody can downvote until upvotes and accepts accumulate (intended,
+  as on Stack Overflow). Launch experts can be seeded points by hand if needed.
+- Votes cast before 6.6 (dev data only) have no ledger rows.
+
+## 2026-10-13 (roadmap 6.5)
+
+**Done**
+- `Question.acceptedAnswer` (`ON DELETE SET NULL`). `PUT /api/answers/id/{id}/accept` (asker only, 403 for
+  anyone else; replies 400) replaces any earlier accept; `DELETE` on the same path takes it back.
+- `QuestionResponse.acceptedAnswerId`, `AnswerResponse.accepted`.
+- `GET /api/answers/question/{id}`: accepted first, then highest score, then oldest.
+- Fixed before commit (found live): deleting the accepted answer failed with a 500 because the loaded question
+  still pointed at it; `AnswerService.delete` now clears the accept in the same transaction (regression test).
+
+**Breaking API changes**
+- `GET /api/answers/question/{id}` returns direct answers only; replies were mixed in before and now come only
+  from `GET /api/answers/replies/{answerId}` (matches `answerCount`).
+
+**Decisions**
+- Accepting your own answer is allowed (a self-answer can be the solution); 6.6 gives it no points.
+
+## 2026-10-13 (roadmap 6.4)
+
+**Done**
+- `Vote` (one per user and question or answer; unique per pair; `ON DELETE CASCADE` from user, question and
+  answer). `PUT /api/questions/id/{id}/vote?direction=UP|DOWN` and `PUT /api/answers/id/{id}/vote?direction=…`
+  cast or change a vote; `DELETE` on the same paths withdraws it. Voting on your own post is 403.
+- `score` column on questions and answers, moved by an atomic `UPDATE … SET score = score + :delta` (the clap
+  pattern); shown on `QuestionResponse` and `AnswerResponse`. Votes answer `{score, myVote}`.
+- `GET /api/questions/id/{id}/my-votes`: the caller's votes on the question and each answer, one query.
+- Checked live: self-vote 403, idempotent repeat, up→down, withdraw, anonymous 401, deleting a voted thread.
+
+**Known limitations**
+- Two simultaneous first votes by the same user on the same post: the unique constraint rejects the second
+  with a 500 instead of a clean answer (same as claps). Rare; handle with the 4.7 error clean-up.
+- Downvotes are open to everyone until 6.6 adds the 50-point threshold.
+
+## 2026-10-13 (roadmap 6.3)
+
+**Done**
+- `GET /api/questions/search?q=` (public): full-text over title and text, best match first, with the article
+  search's `'simple'` configuration (Bangla and English alike; quoted phrases and `-exclusions`).
+- `QuestionResponse.answerCount`: direct answers only (replies to answers are not counted).
+- `GET /api/questions/all?unanswered=true`, combinable with the topic, tag and agri filters.
+- Checked live: search, exclusion, blank query 400, answer vs reply counting, the unanswered filter.
+
+**Decisions**
+- `answerCount` is a Hibernate `@Formula` subquery, not a stored counter: nothing to keep in step and nothing to
+  backfill. `shortcut:` one subquery per listed row; switch to a stored counter if question lists get slow.
+- Search is written in HQL (`function('ts_match_vq', …)`) rather than native SQL, so the formula column loads.
+
+**Known limitations**
+- No search index yet (same as articles): a GIN index on the tsvector comes with the Flyway baseline (4.2).
+- Moderated (hidden) answers still count until Phase 8 adds hiding.
+
+## 2026-10-13 (roadmap 6.2)
+
+**Done**
+- Questions take `imageUrls`: up to four photos uploaded through `POST /api/images` (omitted on update keeps
+  them). Stored in a `varchar[]` column with a `'{}'` default, so old rows read as an empty list.
+- `ImageStorage.isStored(url)` and `ImageService.requireUploaded`: a URL from any other host is refused with
+  400, so a question cannot embed a tracking pixel.
+- Checked live (local Postgres): the column and `question_tags` are created by `ddl-auto`, foreign and 5+
+  photo URLs are refused, the topic/tag filter returns the right question.
+
+**Decisions**
+- An array column, not a join table: four strings that are always read with the question.
+
+**Known limitations**
+- Article `imageUrl` is still unchecked; apply `requireUploaded` there when articles get the same review.
+
+## 2026-10-13 (roadmap 6.1)
+
+**Done**
+- Questions have a topic (`category`, the same categories as articles — decision 12) and up to five tags
+  (`question_tags`, the article tag table and normaliser). `GET /api/questions/all` filters by `categoryId` and
+  `tag`, combined with the crop/season/region/soil filters.
+- `MAX_TAGS_PER_BLOG` became `MAX_TAGS_PER_POST`; the category-required message no longer says "Blog".
+
+**Breaking API changes**
+- `POST /api/questions/create` and `PUT /api/questions/update` require `categoryId`; both accept `tags`
+  (omitted on update keeps them). `QuestionResponse` gains `category` and `tags`.
+
+**Known limitations**
+- Questions asked before 6.1 have no topic (`category: null`); the column stays nullable until the Flyway
+  baseline (4.2) can backfill or drop them.
 
 ## 2026-10-13 (roadmap 5.11)
 

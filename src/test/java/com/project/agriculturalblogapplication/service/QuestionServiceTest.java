@@ -1,8 +1,11 @@
 package com.project.agriculturalblogapplication.service;
 
+import com.project.agriculturalblogapplication.entities.Category;
 import com.project.agriculturalblogapplication.entities.Question;
+import com.project.agriculturalblogapplication.entities.Tag;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.enums.CropSeason;
+import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.enums.SoilType;
 import com.project.agriculturalblogapplication.model.AgriInfo;
 import com.project.agriculturalblogapplication.model.request.CreateQuestionRequest;
@@ -11,13 +14,17 @@ import com.project.agriculturalblogapplication.model.response.QuestionResponse;
 import com.project.agriculturalblogapplication.repositories.QuestionRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -27,7 +34,12 @@ class QuestionServiceTest {
     private final QuestionRepository questionRepository = mock(QuestionRepository.class);
     private final UserService userService = mock(UserService.class);
     private final AuthorizationService authorization = mock(AuthorizationService.class);
-    private final QuestionService questionService = new QuestionService(questionRepository, userService, authorization);
+    private final CategoryService categoryService = mock(CategoryService.class);
+    private final TagService tagService = mock(TagService.class);
+    private final ImageService imageService = mock(ImageService.class);
+    private final QuestionService questionService =
+            new QuestionService(questionRepository, userService, authorization, categoryService, tagService, imageService,
+                    mock(ReputationService.class));
 
     @Test
     void questionShowsItsAuthorsNameAndIsoTimestamps() {
@@ -52,6 +64,62 @@ class QuestionServiceTest {
     }
 
     @Test
+    void aQuestionHasATopicAndTagsAndAnUpdateWithoutTagsKeepsThem() {
+        User user = new User();
+        user.setId(7L);
+        Category rice = new Category();
+        rice.setId(2L);
+        rice.setCategoryName("Rice");
+        Tag blast = new Tag();
+        blast.setName("rice blast");
+        when(authorization.currentUserId("en")).thenReturn(7L);
+        when(userService.findByIdWithException(7L, "en")).thenReturn(user);
+        when(categoryService.findByIdWithException(2L)).thenReturn(rice);
+        when(tagService.resolve(List.of("Rice Blast"))).thenReturn(Set.of(blast));
+        when(questionRepository.save(any(Question.class))).thenAnswer(call -> call.getArgument(0));
+        CreateQuestionRequest create = new CreateQuestionRequest();
+        create.setTitle("Brown spots");
+        create.setContent("Why?");
+        create.setCategoryId(2L);
+        create.setTags(List.of("Rice Blast"));
+
+        QuestionResponse created = questionService.create(create, "en");
+        assertEquals("Rice", created.getCategory().categoryName());
+        assertEquals(List.of("rice blast"), created.getTags());
+
+        Question stored = new Question();
+        stored.setId(4L);
+        stored.setUser(user);
+        stored.setTags(Set.of(blast));
+        when(questionRepository.findById(4L)).thenReturn(Optional.of(stored));
+        UpdateQuestionRequest update = new UpdateQuestionRequest();
+        update.setQuestionId(4L);
+        update.setTitle("Brown spots on leaves");
+        update.setContent("Still why?");
+        update.setCategoryId(2L);
+
+        assertEquals(List.of("rice blast"), questionService.update(update, "en").getTags());
+    }
+
+    @Test
+    void searchNeedsSomethingToSearchFor() {
+        ApplicationException refused = assertThrows(ApplicationException.class, () -> questionService.search("  ", 0, 10, "en"));
+        assertEquals(HttpStatus.BAD_REQUEST, refused.getHttpStatus());
+    }
+
+    @Test
+    void aQuestionAskedBeforeTopicsExistedHasNoTopic() {
+        User user = new User();
+        user.setId(7L);
+        Question legacy = new Question();
+        legacy.setId(4L);
+        legacy.setUser(user);
+        when(questionRepository.findById(4L)).thenReturn(Optional.of(legacy));
+
+        assertNull(questionService.findById(4L).getCategory());
+    }
+
+    @Test
     void aQuestionKeepsItsAgriInfoAndAnUpdateWithoutItKeepsIt() {
         User user = new User();
         user.setId(7L);
@@ -62,6 +130,7 @@ class QuestionServiceTest {
         CreateQuestionRequest create = new CreateQuestionRequest();
         create.setTitle("Yellow leaves");
         create.setContent("Why?");
+        create.setCategoryId(2L);
         create.setAgri(new AgriInfo(" Aman Rice", CropSeason.KHARIF_2, "Bogura", SoilType.CLAY));
 
         QuestionResponse created = questionService.create(create, "en");
@@ -76,6 +145,7 @@ class QuestionServiceTest {
         update.setQuestionId(4L);
         update.setTitle("Yellow lower leaves");
         update.setContent("Still why?");
+        update.setCategoryId(2L);
 
         assertEquals("bogura", questionService.update(update, "en").getAgri().region());
     }
