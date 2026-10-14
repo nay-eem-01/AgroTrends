@@ -34,9 +34,24 @@ class AuthorizationServiceTest {
     private void signInAs(long id, RoleType type) {
         Role role = new Role();
         role.setRoleType(type);
-        CustomUserDetails details = new CustomUserDetails(id, "n", "u" + id + "@x.com", "pw", Set.of(role), List.of(), false, true);
+        CustomUserDetails details = new CustomUserDetails(id, "n", "u" + id + "@x.com", "pw", Set.of(role), List.of(), false, true, false);
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(details, null, details.getAuthorities()));
+    }
+
+    @Test
+    void aModeratorMayDeleteOthersPostsButAnOrdinaryUserMayNot() {
+        Role role = new Role();
+        role.setRoleType(RoleType.USER);
+        CustomUserDetails moderator = new CustomUserDetails(9L, "m", "m@x.com", "pw", Set.of(role),
+                List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("CONTENT_MODERATE")),
+                false, true, false);
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(moderator, null, moderator.getAuthorities()));
+        assertDoesNotThrow(() -> authorization.assertOwnerAdminOrModerator(7L, "en"));
+
+        signInAs(8, RoleType.USER);
+        assertThrows(ApplicationException.class, () -> authorization.assertOwnerAdminOrModerator(7L, "en"));
     }
 
     @Test

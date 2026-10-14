@@ -224,7 +224,7 @@ class ExpertServiceTest {
 
         assertEquals(ApplicationStatus.REJECTED, expertService.reject(9L, decision(null, "Blurry proof"), LANG).status());
         assertEquals("Blurry proof", application.getReviewNote());
-        verify(notifications).publish(new NotificationMessage(APPLICANT, ADMIN, NotificationType.APPLICATION_DECIDED,
+        verify(notifications).publish(new NotificationMessage(APPLICANT, null, NotificationType.APPLICATION_DECIDED,
                 NotificationTarget.EXPERT_APPLICATION, 9L));
         verify(badgeRepository, never()).save(any());
     }

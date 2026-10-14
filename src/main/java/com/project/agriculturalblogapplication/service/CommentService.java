@@ -65,7 +65,7 @@ public class CommentService {
 
     public void delete(Long commentId, String lang) {
         Comment comment = findByIdWithException(commentId);
-        authorizationService.assertOwnerOrAdmin(comment.getUser().getId(), lang);
+        authorizationService.assertOwnerAdminOrModerator(comment.getUser().getId(), lang);
         commentRepository.delete(comment);
     }
 
