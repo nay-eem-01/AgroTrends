@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 68 of 85 steps done): launch blockers and one account type with
+- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 69 of 86 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -47,6 +47,37 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-14 (roadmap 7.6a)
+
+**Done**
+- Vetted answers reach the AI: the accepted answer, a direct answer (not a reply) by a Verified Expert in
+  the question's topic, and an AI answer an expert `CONFIRMED`. Each is embedded as the question title plus
+  the answer's plain text with `type=answer`, `questionId`, `answerId` or `aiAnswerId`, `categoryId` and
+  `status=PUBLISHED`, so the existing retrieval filter finds them (related posts still match blogs only).
+- Events `AnswerChanged`, `ExpertBadgeChanged`, `AiAnswerReviewed`, `QuestionDeleted`; `AnswerIndexer`
+  handles them after the commit on a single `indexing-` thread (`AppConfig.indexingExecutor`;
+  `spring.task.execution.mode=force` keeps Boot's executor for the AI answers), re-reads the current state
+  and replaces the vectors. `AnswerService.create/update` and `QuestionService.delete` became transactional
+  so their events are delivered.
+- Found live and fixed before commit: a `readOnly` listener transaction made Postgres refuse the vector
+  store's DELETE (nothing was indexed), and Spring refuses to start unless such a listener's transaction is
+  `REQUIRES_NEW`; a reflection test pins both. The first version also ran in the request thread after the
+  commit, holding two connections during the embedding call; it is async on one thread now.
+- Checked live with real embeddings: 23/23 (accept/unaccept, edit replaces, badge grant/revoke re-sync,
+  replies never, confirm/reopen, answer and question delete), no vector-store warnings.
+- Roadmap 7.6 split into 7.6a/7.6b to keep each PR within 20 files.
+
+**Decisions**
+- After-commit and re-read instead of indexing inline: a rolled-back transaction (e.g. a lost correction
+  race) cannot leave vectors for rows that do not exist.
+- An expert's earlier answers in the topic are indexed when the badge is granted and dropped when it is
+  revoked (unless accepted).
+
+**Known limitations**
+- Like posts, a failed embedding is logged and healed only by the next change to that answer
+  (`shortcut:` in `DocumentService`); the startup re-index (`AI_REINDEX_ON_STARTUP`) covers posts only.
+- Editing a question's title leaves the old title in its indexed answers until they change.
 
 ## 2026-10-14 (roadmap 7.5)
 

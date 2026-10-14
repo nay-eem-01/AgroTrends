@@ -3,6 +3,7 @@ package com.project.agriculturalblogapplication.service;
 import com.project.agriculturalblogapplication.entities.Answer;
 import com.project.agriculturalblogapplication.entities.Category;
 import com.project.agriculturalblogapplication.entities.Question;
+import com.project.agriculturalblogapplication.events.AnswerChanged;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.enums.Badge;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
@@ -12,6 +13,7 @@ import com.project.agriculturalblogapplication.repositories.AnswerRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 
 import java.util.List;
@@ -28,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -39,8 +42,9 @@ class AnswerServiceTest {
     private final AnswerRepository answerRepository = mock(AnswerRepository.class);
     private final AuthorizationService authorization = mock(AuthorizationService.class);
     private final ReputationService reputation = mock(ReputationService.class);
+    private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
     private final AnswerService answerService = new AnswerService(mock(QuestionService.class), mock(UserService.class),
-            authorization, answerRepository, reputation);
+            authorization, answerRepository, reputation, events);
 
     private Question question;
 
@@ -67,6 +71,9 @@ class AnswerServiceTest {
         verify(reputation).unaccepted(first);
         verify(reputation).accepted(second);
         verify(reputation, never()).unaccepted(second);
+        // The switch re-checks both answers' place in the AI index.
+        verify(events, times(2)).publishEvent(new AnswerChanged(3L));
+        verify(events).publishEvent(new AnswerChanged(4L));
     }
 
     @Test

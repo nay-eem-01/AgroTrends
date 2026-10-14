@@ -6,6 +6,7 @@ import com.project.agriculturalblogapplication.entities.Question;
 import com.project.agriculturalblogapplication.entities.QuestionAiAnswer;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.enums.AiAnswerStatus;
+import com.project.agriculturalblogapplication.events.AiAnswerReviewed;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.AuthorStanding;
 import com.project.agriculturalblogapplication.model.request.CreateAnswerRequest;
@@ -15,6 +16,7 @@ import com.project.agriculturalblogapplication.security.service.AuthorizationSer
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 
 import java.util.List;
@@ -44,8 +46,9 @@ class ReviewServiceTest {
     private final ReputationService reputation = mock(ReputationService.class);
     private final UserService userService = mock(UserService.class);
     private final AuthorizationService authorization = mock(AuthorizationService.class);
+    private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
     private final ReviewService reviewService = new ReviewService(repository, answerService, reputation, userService,
-            authorization);
+            authorization, events);
 
     private final User reviewer = new User();
     private QuestionAiAnswer aiAnswer;
@@ -80,6 +83,7 @@ class ReviewServiceTest {
 
         verify(repository).transition(eq(12L), eq(Set.of(AiAnswerStatus.UNCHECKED)), eq(AiAnswerStatus.CONFIRMED),
                 eq(reviewer), any(), isNull());
+        verify(events).publishEvent(new AiAnswerReviewed(4L));
     }
 
     @Test
@@ -108,6 +112,7 @@ class ReviewServiceTest {
 
         assertEquals(HttpStatus.CONFLICT,
                 assertThrows(ApplicationException.class, () -> reviewService.confirm(4L, LANG)).getHttpStatus());
+        verify(events, never()).publishEvent(any());
     }
 
     @Test

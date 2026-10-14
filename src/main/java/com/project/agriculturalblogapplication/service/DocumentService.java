@@ -1,8 +1,12 @@
 package com.project.agriculturalblogapplication.service;
 
 import com.project.agriculturalblogapplication.config.AiProperties;
+import com.project.agriculturalblogapplication.entities.Answer;
 import com.project.agriculturalblogapplication.entities.Blog;
+import com.project.agriculturalblogapplication.entities.Question;
+import com.project.agriculturalblogapplication.entities.QuestionAiAnswer;
 import com.project.agriculturalblogapplication.enums.BlogStatus;
+import com.project.agriculturalblogapplication.util.SafeHtml;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
@@ -13,6 +17,7 @@ import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -26,6 +31,12 @@ public class DocumentService {
     public static final String CATEGORY_ID = "categoryId";
     public static final String TITLE = "title";
     public static final String STATUS = "status";
+    /** "answer" for vetted answers and confirmed AI answers (roadmap 7.6); blog chunks have no type. */
+    public static final String TYPE = "type";
+    public static final String QUESTION_ID = "questionId";
+    public static final String ANSWER_ID = "answerId";
+    public static final String AI_ANSWER_ID = "aiAnswerId";
+    public static final String ANSWER_TYPE = "answer";
 
     // A post's opening is enough to find its neighbours and keeps the query embedding cheap.
     private static final int RELATED_QUERY_MAX_CHARS = 2000;
@@ -63,6 +74,50 @@ public class DocumentService {
 
     public void deleteBlog(Long blogId) {
         vectorStore.delete(new FilterExpressionBuilder().eq(BLOG_ID, blogId).build());
+    }
+
+    /** Replaces an answer's chunks: indexed when {@code vetted}, otherwise just removed. Never throws. */
+    public void syncAnswer(Answer answer, boolean vetted) {
+        sync(ANSWER_ID, answer.getId(), vetted
+                ? answerDocument(answer.getQuestion(), answer.getContent(), Map.of(ANSWER_ID, answer.getId()))
+                : null);
+    }
+
+    /** Replaces a question's AI answer chunks: indexed only when an expert {@code confirmed} it. Never throws. */
+    public void syncAiAnswer(QuestionAiAnswer aiAnswer, boolean confirmed) {
+        sync(AI_ANSWER_ID, aiAnswer.getId(), confirmed
+                ? answerDocument(aiAnswer.getQuestion(), aiAnswer.getAnswer(), Map.of(AI_ANSWER_ID, aiAnswer.getId()))
+                : null);
+    }
+
+    /** Drops every answer chunk of a deleted question. Never throws. */
+    public void deleteQuestion(Long questionId) {
+        sync(QUESTION_ID, questionId, null);
+    }
+
+    // Same contract as indexBlog: the database is the truth, the index a cache healed by the next change.
+    private void sync(String key, Long id, Document replacement) {
+        try {
+            vectorStore.delete(new FilterExpressionBuilder().eq(key, id).build());
+            if (replacement != null) {
+                vectorStore.add(blogTextSplitter.apply(List.of(replacement)));
+            }
+        } catch (RuntimeException e) {
+            log.warn("Could not update the vector store for {} {}; AI answers may be out of date for it", key, id, e);
+        }
+    }
+
+    /** Question title plus the answer's plain text; PUBLISHED so the one retrieval filter covers answers too. */
+    private static Document answerDocument(Question question, String content, Map<String, Object> idOfAnswer) {
+        Map<String, Object> metadata = new HashMap<>(idOfAnswer);
+        metadata.put(TYPE, ANSWER_TYPE);
+        metadata.put(QUESTION_ID, question.getId());
+        metadata.put(TITLE, question.getTitle());
+        metadata.put(STATUS, BlogStatus.PUBLISHED.name());
+        if (question.getCategory() != null) {
+            metadata.put(CATEGORY_ID, question.getCategory().getId());
+        }
+        return new Document(question.getTitle() + "\n\n" + SafeHtml.plainText(content), metadata);
     }
 
     /** Ids of other posts whose chunks are closest to this post, most similar first, each post once. */

@@ -6,6 +6,7 @@ import com.project.agriculturalblogapplication.entities.ExpertBadge;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.enums.ApplicationStatus;
 import com.project.agriculturalblogapplication.enums.CredentialType;
+import com.project.agriculturalblogapplication.events.ExpertBadgeChanged;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.request.ExpertApplicationRequest;
 import com.project.agriculturalblogapplication.model.request.ExpertDecisionRequest;
@@ -16,6 +17,7 @@ import com.project.agriculturalblogapplication.security.service.AuthorizationSer
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDateTime;
@@ -48,9 +50,10 @@ class ExpertServiceTest {
     private final CategoryService categoryService = mock(CategoryService.class);
     private final ImageService imageService = mock(ImageService.class);
     private final AuthorizationService authorization = mock(AuthorizationService.class);
+    private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
     private final ExpertBadgeRepository badgeRepository = mock(ExpertBadgeRepository.class);
     private final ExpertService expertService = new ExpertService(repository, badgeRepository, userService, categoryService,
-            imageService, authorization);
+            imageService, authorization, events);
 
     @BeforeEach
     void setUp() {
@@ -124,6 +127,8 @@ class ExpertServiceTest {
         verify(badgeRepository, times(2)).save(badges.capture());
         assertEquals(Set.of(3L, 4L), badges.getAllValues().stream().map(b -> b.getTopic().getId()).collect(Collectors.toSet()));
         assertEquals("Veterinarian", badges.getValue().getFieldTitle());
+        verify(events).publishEvent(new ExpertBadgeChanged(APPLICANT, 3L));
+        verify(events).publishEvent(new ExpertBadgeChanged(APPLICANT, 4L));
         assertSame(application.getUser(), badges.getValue().getUser());
     }
 
@@ -195,6 +200,7 @@ class ExpertServiceTest {
         expertService.revoke(APPLICANT, 3L, LANG);
 
         assertNotNull(badge.getRevokedAt());
+        verify(events).publishEvent(new ExpertBadgeChanged(APPLICANT, 3L));
         ApplicationException e = assertThrows(ApplicationException.class, () -> expertService.revoke(APPLICANT, 3L, LANG));
         assertEquals(HttpStatus.NOT_FOUND, e.getHttpStatus());
     }
