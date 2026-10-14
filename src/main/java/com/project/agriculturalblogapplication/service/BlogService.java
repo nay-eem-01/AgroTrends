@@ -197,7 +197,7 @@ public class BlogService {
 
     public void delete(Long id, String lang) {
         Blog blog = findByIdWithException(id);
-        authorizationService.assertOwnerOrAdmin(blog.getAuthor().getUser().getId(), lang);
+        authorizationService.assertOwnerAdminOrModerator(blog.getAuthor().getUser().getId(), lang);
         blogRepositories.delete(blog);
         documentService.deleteBlog(blog.getId());
     }

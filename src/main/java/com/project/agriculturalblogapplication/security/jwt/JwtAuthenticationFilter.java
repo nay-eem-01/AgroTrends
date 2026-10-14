@@ -76,6 +76,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     /** Why a signed-in request is refused before it reaches a controller, or null when it may go on. */
     static String refusal(CustomUserDetails user, HttpServletRequest request) {
         String uri = request.getRequestURI();
+        if (user.isBanned()) {
+            return ErrorCode.ERROR_ACCOUNT_BANNED;
+        }
         if (user.isMustChangePassword() && !ALLOWED_WHILE_PASSWORD_CHANGE_PENDING.contains(uri)) {
             return "Password change required before using this API.";
         }

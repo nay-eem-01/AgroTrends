@@ -137,7 +137,7 @@ public class QuestionService {
     @Transactional
     public void delete(Long id, String lang) {
         Question question = findByIdWithException(id);
-        authorizationService.assertOwnerOrAdmin(question.getUser().getId(), lang);
+        authorizationService.assertOwnerAdminOrModerator(question.getUser().getId(), lang);
         questionRepository.delete(question);
         eventPublisher.publishEvent(new QuestionDeleted(id));
     }
