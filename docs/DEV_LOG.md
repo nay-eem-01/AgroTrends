@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 61 of 84 steps done): launch blockers and one account type with
+- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 62 of 84 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -20,7 +20,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 ## Next up
 
 1. Merge `docs/product-study` and `docs/launch-plan` into `development`.
-2. Phase 6 in progress on `feat/qa-reputation-base` (6.1–6.7 done). Next: 6.8 Top Contributor badge.
+2. Phases 5 and 6 are done. Next: Phase 7 (verified experts and AI review), 7.1 first.
 3. Then Phases 6, 7, 8; deploy (Phase 4) and live-test only after all of them.
 4. **Team:** 30–50 seeded Bangla articles; 5–10 experts invited; pick the 6–8 launch topics (categories).
 5. **Nayeem:** fix the Gemini key; roadmap 0.4 (rotate keys, purge history); set `GOOGLE_CLIENT_ID`; make
@@ -47,6 +47,24 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-13 (roadmap 6.8)
+
+**Done**
+- Top Contributor badge (`Badge.TOP_CONTRIBUTOR`): 250 points and 5 accepted answers in a topic. Computed on
+  read from the ledger (net accepts: a reversal row cancels its accept), so it comes and goes with the points.
+- `GET /api/users/{id}/reputation` topics gain `acceptedAnswers` and `badges`. `QuestionResponse` and
+  `AnswerResponse` gain `authorBadges`: the author's badges in that question's topic.
+- One grouped query (`topicTotals`) now serves totals, profile topics and badges; `totalsFor`/`byTopic` removed.
+- Checked live: 4 accepts no badge, the 5th with 250 points earns it, shown on the answer, not on the asker,
+  unaccept takes it away. Full Phase 6 smoke run: 58/58.
+
+**Decisions**
+- Computed, not stored: nothing to keep in step, and moderation reversals (Phase 8) remove badges for free.
+- Questions with no topic never count towards a badge.
+
+**Known limitations**
+- Top Contributors cannot flag AI answers yet; that permission comes with the review queue (Phase 7).
 
 ## 2026-10-13 (roadmap 6.7)
 

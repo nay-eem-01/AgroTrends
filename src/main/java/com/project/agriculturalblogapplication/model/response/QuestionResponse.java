@@ -1,5 +1,6 @@
 package com.project.agriculturalblogapplication.model.response;
 
+import com.project.agriculturalblogapplication.enums.Badge;
 import com.project.agriculturalblogapplication.model.AgriInfo;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,6 +23,9 @@ public class QuestionResponse {
 
     /** The author's total reputation. */
     private long authorReputation;
+
+    /** The author's badges in this question's topic. */
+    private List<Badge> authorBadges;
 
     private Instant createdAt;
 

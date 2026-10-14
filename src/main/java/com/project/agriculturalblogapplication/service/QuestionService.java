@@ -10,6 +10,7 @@ import com.project.agriculturalblogapplication.entities.Question;
 import com.project.agriculturalblogapplication.entities.Tag;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.model.AgriInfo;
+import com.project.agriculturalblogapplication.model.AuthorStanding;
 import com.project.agriculturalblogapplication.model.response.CategoryResponse;
 import com.project.agriculturalblogapplication.repositories.AgriSpecifications;
 import com.project.agriculturalblogapplication.repositories.QuestionRepository;
@@ -137,23 +138,25 @@ public class QuestionService {
     }
 
     private QuestionResponse mapToQuestionResponse(Question question) {
-        return mapToQuestionResponse(question, reputationService.totals(List.of(question.getUser().getId())));
+        return mapToQuestionResponse(question, reputationService.standings(List.of(question.getUser().getId())));
     }
 
     /** One reputation query for the whole page. */
     private Page<QuestionResponse> mapToQuestionResponses(Page<Question> questions) {
-        Map<Long, Long> reputation = reputationService.totals(questions.map(q -> q.getUser().getId()).toSet());
-        return questions.map(question -> mapToQuestionResponse(question, reputation));
+        Map<Long, AuthorStanding> standings = reputationService.standings(questions.map(q -> q.getUser().getId()).toSet());
+        return questions.map(question -> mapToQuestionResponse(question, standings));
     }
 
-    private QuestionResponse mapToQuestionResponse(Question question, Map<Long, Long> reputation) {
+    private QuestionResponse mapToQuestionResponse(Question question, Map<Long, AuthorStanding> standings) {
         QuestionResponse response = new QuestionResponse();
         response.setQuestionId(question.getId());
         response.setUserId(question.getUser().getId());
         response.setTitle(question.getTitle());
         response.setContent(question.getContent());
         response.setAuthorName(question.getUser().getName());
-        response.setAuthorReputation(reputation.getOrDefault(question.getUser().getId(), 0L));
+        AuthorStanding author = standings.getOrDefault(question.getUser().getId(), AuthorStanding.NONE);
+        response.setAuthorReputation(author.reputation());
+        response.setAuthorBadges(author.badgesIn(question.getCategory() == null ? null : question.getCategory().getId()));
         response.setAgri(AgriInfo.from(question.getAgri()));
         response.setCategory(question.getCategory() == null ? null : CategoryResponse.from(question.getCategory()));
         response.setTags(question.getTags().stream().map(Tag::getName).toList());

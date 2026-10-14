@@ -5,8 +5,11 @@ import com.project.agriculturalblogapplication.entities.Category;
 import com.project.agriculturalblogapplication.entities.Question;
 import com.project.agriculturalblogapplication.entities.ReputationEvent;
 import com.project.agriculturalblogapplication.entities.User;
+import com.project.agriculturalblogapplication.enums.Badge;
 import com.project.agriculturalblogapplication.enums.ReputationReason;
 import com.project.agriculturalblogapplication.enums.VoteDirection;
+import com.project.agriculturalblogapplication.model.AuthorStanding;
+import com.project.agriculturalblogapplication.model.TopicTotals;
 import com.project.agriculturalblogapplication.model.response.ReputationResponse;
 import com.project.agriculturalblogapplication.model.response.TopicReputation;
 import com.project.agriculturalblogapplication.repositories.ReputationEventRepository;
@@ -14,10 +17,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -94,22 +99,35 @@ class ReputationServiceTest {
     }
 
     @Test
-    void aProfileTotalIsTheSumOfItsTopics() {
-        when(repository.byTopic(2L)).thenReturn(List.of(new TopicReputation(1L, "Rice", 30), new TopicReputation(null, null, -2)));
+    void aProfileListsTopicsHighestFirstWithTheTopContributorBadgeOnlyWhereBothBarsAreMet() {
+        when(repository.topicTotals(List.of(2L))).thenReturn(List.of(
+                new TopicTotals(2L, 3L, "Fish", 400, 4),
+                new TopicTotals(2L, null, null, 600, 9),
+                new TopicTotals(2L, 1L, "Rice", 250, 5)));
 
         ReputationResponse response = reputation.of(2L);
 
-        assertEquals(28, response.total());
-        assertEquals(2, response.topics().size());
+        assertEquals(1250, response.total());
+        assertEquals(Arrays.asList(null, 3L, 1L), response.topics().stream().map(TopicReputation::categoryId).toList());
+        assertEquals(List.of(List.of(), List.of(), List.of(Badge.TOP_CONTRIBUTOR)),
+                response.topics().stream().map(TopicReputation::badges).toList());
     }
 
     @Test
-    void totalsForAListComeFromOneQueryAndSkipTheEmptyCase() {
-        when(repository.totalsFor(List.of(1L, 2L))).thenReturn(List.<Object[]>of(new Object[]{2L, 15L}));
+    void standingsForAListComeFromOneQueryAndShowBadgesOnlyInTheirTopic() {
+        when(repository.topicTotals(List.of(1L, 2L))).thenReturn(List.of(
+                new TopicTotals(2L, 1L, "Rice", 300, 6),
+                new TopicTotals(2L, 3L, "Fish", 15, 1)));
 
-        assertEquals(Map.of(2L, 15L), reputation.totals(List.of(1L, 2L)));
-        assertEquals(Map.of(), reputation.totals(List.of()));
-        verify(repository, never()).totalsFor(List.of());
+        Map<Long, AuthorStanding> standings = reputation.standings(List.of(1L, 2L));
+
+        assertEquals(315, standings.get(2L).reputation());
+        assertEquals(List.of(Badge.TOP_CONTRIBUTOR), standings.get(2L).badgesIn(1L));
+        assertEquals(List.of(), standings.get(2L).badgesIn(3L));
+        assertEquals(List.of(), standings.get(2L).badgesIn(null));
+        assertFalse(standings.containsKey(1L));
+        assertEquals(Map.of(), reputation.standings(List.of()));
+        verify(repository, never()).topicTotals(List.of());
     }
 
     @Test
