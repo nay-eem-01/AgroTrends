@@ -165,6 +165,23 @@ public final class AppTables {
         public static final String READ_AT = "read_at";
     }
 
+    public static final class ReportTable {
+
+        public static final String NAME = "reports";
+
+        public static final String REPORTER_ID = "reporter_id";
+
+        public static final String TARGET_TYPE = "target_type";
+
+        public static final String TARGET_ID = "target_id";
+
+        public static final String REASON = "reason";
+
+        public static final String DETAILS = "details";
+
+        public static final String STATUS = "status";
+    }
+
     public static final class TagTable {
 
         public static final String TAG_NAME = "tag_name";

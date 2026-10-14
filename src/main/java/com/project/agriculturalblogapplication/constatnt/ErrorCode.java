@@ -87,6 +87,11 @@ public final class ErrorCode {
     public static final String ERROR_CORRECTION_TOO_LONG = "An answer can be at most 5000 characters.";
     public static final String ERROR_QUESTION_TITLE_TOO_LONG = "A title can be at most 150 characters.";
     public static final String ERROR_NOTIFICATION_NOT_FOUND = "Notification not found.";
+    public static final String ERROR_REPORT_TARGET_REQUIRED = "Say what you are reporting.";
+    public static final String ERROR_REPORT_REASON_REQUIRED = "Choose a reason for the report.";
+    public static final String ERROR_REPORT_DETAILS_TOO_LONG = "Report details can be at most 500 characters.";
+    public static final String ERROR_ALREADY_REPORTED = "You have already reported this.";
+    public static final String ERROR_CANNOT_REPORT_YOURSELF = "You cannot report yourself.";
     public static final String ERROR_AI_ANSWER_NOT_FOUND = "This question has no AI answer.";
     public static final String ERROR_INVALID_SORT_FIELD = "This list cannot be sorted by that field.";
     public static final String ERROR_BLOG_ALREADY_PUBLISHED = "This blog is already published.";
