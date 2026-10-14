@@ -92,6 +92,9 @@ public final class ErrorCode {
     public static final String ERROR_REPORT_DETAILS_TOO_LONG = "Report details can be at most 500 characters.";
     public static final String ERROR_ALREADY_REPORTED = "You have already reported this.";
     public static final String ERROR_CANNOT_REPORT_YOURSELF = "You cannot report yourself.";
+    public static final String ERROR_REPORT_NOT_FOUND = "Report not found.";
+    public static final String ERROR_REPORT_ALREADY_CLOSED = "This report has already been handled.";
+    public static final String ERROR_BAN_INSTEAD = "A user cannot be removed; ban the account instead.";
     public static final String ERROR_AI_ANSWER_NOT_FOUND = "This question has no AI answer.";
     public static final String ERROR_INVALID_SORT_FIELD = "This list cannot be sorted by that field.";
     public static final String ERROR_BLOG_ALREADY_PUBLISHED = "This blog is already published.";

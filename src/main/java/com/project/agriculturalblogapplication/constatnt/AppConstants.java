@@ -67,6 +67,7 @@ public final class AppConstants {
 
             put("NOTIFICATION_SEND", "NOTIFICATION SEND");
             put("EXPERT_REVIEW", "EXPERT APPLICATION REVIEW");
+            put("CONTENT_MODERATE", "CONTENT MODERATION");
             put("USER_UPDATE_FROM_ADMIN", "USER UPDATE FROM ADMIN");
         }
     };
