@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 71 of 86 steps done): launch blockers and one account type with
+- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 72 of 87 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -20,8 +20,8 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 ## Next up
 
 1. Merge `docs/product-study` and `docs/launch-plan` into `development`.
-2. Phases 5, 6 and 7 are done (Phase 7 on `feat/experts-review-base`, not yet merged into `development`).
-   Next: Phase 8 (notifications and moderation), 8.1 first.
+2. Phases 5, 6 and 7 are on `development`. Phase 8 (notifications and moderation) is in progress on
+   `feat/notifications-moderation-base`.
 3. Then Phases 6, 7, 8; deploy (Phase 4) and live-test only after all of them.
 4. **Team:** 30–50 seeded Bangla articles; 5–10 experts invited; pick the 6–8 launch topics (categories).
 5. **Nayeem:** fix the Gemini key; roadmap 0.4 (rotate keys, purge history); set `GOOGLE_CLIENT_ID`; make
@@ -48,6 +48,34 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-14 (roadmap 8.1a)
+
+**Done**
+- `notification` package: `NotificationPublisher` (the only way services notify), `NotificationMessage`
+  (recipient, actor, type, target type and id — plain values any transport can serialize) and
+  `SpringEventNotificationPublisher`, active for `app.notifications.transport=spring` (default; env
+  `NOTIFICATIONS_TRANSPORT`): publishes an application event, stored by a `@TransactionalEventListener`
+  after the commit (`fallbackExecution` for background work without a transaction).
+- `NotificationService.store` (own `REQUIRES_NEW` transaction; skips self-notifications) writes
+  `Notification` rows: recipient (`ON DELETE CASCADE`), actor (`SET NULL`), `type`, `targetType`
+  (`QUESTION`, `BLOG`, `EXPERT_APPLICATION`), `targetId`, `readAt`.
+- Triggers: `ANSWER_ON_YOUR_QUESTION` (asker), `ANSWER_ACCEPTED` (answerer), `AI_ANSWER_REVIEWED` (asker, on
+  confirm/correct/flag; not on an admin reopen).
+- Found live and fixed before commit: `columnDefinition` does not stop Hibernate's enum CHECK constraint;
+  `type`/`targetType` use `AttributeConverter`s so new types need no schema change (test pins it).
+- Checked live: 12/12 (no CHECK on the table, self-actions and a rolled-back answer notify nobody, re-accept
+  does not duplicate, reopen is silent).
+- Roadmap 8.1 split into 8.1a/8.1b.
+
+**Decisions**
+- Switching to Kafka or RabbitMQ later = one new `NotificationPublisher` implementation (its consumer calls
+  `NotificationService.store`) plus `app.notifications.transport=kafka`; no caller changes. Not built now.
+
+**Known limitations**
+- In-process delivery: a crash between commit and store loses that notification; one instance only
+  (`shortcut:` in `SpringEventNotificationPublisher`).
+- An expert's correction notifies the asker twice: a new answer, and the AI answer reviewed.
 
 ## 2026-10-14 (Phase 7 review fixes)
 
