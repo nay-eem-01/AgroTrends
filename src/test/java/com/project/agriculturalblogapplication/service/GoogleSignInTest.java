@@ -74,6 +74,18 @@ class GoogleSignInTest {
     }
 
     @Test
+    void aBannedAccountGetsNoTokens() {
+        User banned = user(RoleType.USER, SUBJECT);
+        banned.setBannedAt(java.time.LocalDateTime.now());
+        when(userService.findByGoogleSubject(SUBJECT)).thenReturn(Optional.of(banned));
+
+        ApplicationException e = assertThrows(ApplicationException.class, () -> authService.signInWithGoogle(request(), "en"));
+
+        assertEquals(org.springframework.http.HttpStatus.FORBIDDEN, e.getHttpStatus());
+        verify(refreshTokenService, never()).createRefreshToken(any());
+    }
+
+    @Test
     void linkedGoogleAccountSignsStraightIn() {
         User linked = user(RoleType.USER, SUBJECT);
         when(userService.findByGoogleSubject(SUBJECT)).thenReturn(Optional.of(linked));

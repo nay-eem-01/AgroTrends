@@ -9,6 +9,7 @@ import com.project.agriculturalblogapplication.entities.Report;
 import com.project.agriculturalblogapplication.enums.NotificationTarget;
 import com.project.agriculturalblogapplication.enums.NotificationType;
 import com.project.agriculturalblogapplication.enums.ReportStatus;
+import com.project.agriculturalblogapplication.enums.ReportTarget;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.response.ReportResponse;
 import com.project.agriculturalblogapplication.notification.NotificationMessage;
@@ -47,6 +48,8 @@ public class ModerationService {
     private final ReviewService reviewService;
 
     private final NotificationPublisher notificationPublisher;
+
+    private final UserService userService;
 
     /** Reports in one status, oldest first. */
     @Transactional(readOnly = true)
@@ -110,6 +113,18 @@ public class ModerationService {
             notificationPublisher.publish(notice);
         }
         return ReportResponse.from(reportRepository.findById(reportId).orElseThrow());
+    }
+
+    /** Suspends the account, signs it out everywhere and closes the open reports about it. */
+    @Transactional
+    public void ban(Long userId, String reason, String lang) {
+        userService.ban(userId, reason, lang);
+        reportRepository.closeAsActioned(ReportTarget.USER, userId, "Banned: " + reason.strip());
+    }
+
+    @Transactional
+    public void unban(Long userId, String lang) {
+        userService.unban(userId, lang);
     }
 
     private Report open(Long reportId, String lang) {
