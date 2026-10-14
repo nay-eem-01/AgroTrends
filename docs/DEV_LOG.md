@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 72 of 87 steps done): launch blockers and one account type with
+- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 73 of 87 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -48,6 +48,21 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-14 (roadmap 8.1b)
+
+**Done**
+- `NEW_REVIEW_ITEM` to every active Verified Expert in the topic when an AI answer is stored (after
+  generation, and from "ask the experts"); the asker is the actor, so an expert's own question does not
+  notify them. `ExpertService.expertsIn(topicId)`.
+- `APPLICATION_DECIDED` to the applicant on approve or reject (target `EXPERT_APPLICATION`, actor the admin).
+- `COMMENT_REPLY` to the parent comment's author (target `BLOG`).
+- Checked live: 12/12 (reply and self-reply, both decisions and no note on a refused second decision, each
+  expert notified once, an expert's own question skipped); 8.1a run still 12/12.
+
+**Known limitations**
+- One row per expert per new question (`shortcut:` in `AiService.notifyReviewers`); a digest if topics get
+  large.
 
 ## 2026-10-14 (roadmap 8.1a)
 
