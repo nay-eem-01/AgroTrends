@@ -203,17 +203,26 @@ public class AiService {
                 aiAnswer.getCreationDate().atZone(ZoneId.systemDefault()).toInstant());
     }
 
-    /** One source per post, in retrieval order: several chunks of the same post collapse into one citation. */
+    /**
+     * One source per post or question, in retrieval order: several chunks of the same post, or several vetted
+     * answers to the same question, collapse into one citation.
+     */
     static List<AiSourceResponse> sourcesOf(Object retrieved) {
         if (!(retrieved instanceof List<?> documents)) {
             return List.of();
         }
-        Map<Long, AiSourceResponse> sources = new LinkedHashMap<>();
+        Map<String, AiSourceResponse> sources = new LinkedHashMap<>();
         for (Object item : documents) {
-            if (item instanceof Document document
-                    && document.getMetadata().get(DocumentService.BLOG_ID) instanceof Number blogId) {
-                sources.putIfAbsent(blogId.longValue(), new AiSourceResponse(blogId.longValue(),
-                        (String) document.getMetadata().get(DocumentService.TITLE)));
+            if (!(item instanceof Document document)) {
+                continue;
+            }
+            Map<String, Object> metadata = document.getMetadata();
+            String title = (String) metadata.get(DocumentService.TITLE);
+            if (metadata.get(DocumentService.BLOG_ID) instanceof Number blogId) {
+                sources.putIfAbsent("blog:" + blogId, AiSourceResponse.blog(blogId.longValue(), title));
+            } else if (DocumentService.ANSWER_TYPE.equals(metadata.get(DocumentService.TYPE))
+                    && metadata.get(DocumentService.QUESTION_ID) instanceof Number questionId) {
+                sources.putIfAbsent("question:" + questionId, AiSourceResponse.answer(questionId.longValue(), title));
             }
         }
         return List.copyOf(sources.values());
