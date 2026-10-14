@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 62 of 84 steps done): launch blockers and one account type with
+- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 63 of 84 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -20,7 +20,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 ## Next up
 
 1. Merge `docs/product-study` and `docs/launch-plan` into `development`.
-2. Phases 5 and 6 are done. Next: Phase 7 (verified experts and AI review), 7.1 first.
+2. Phases 5 and 6 are done. Phase 7 (verified experts and AI review) is in progress on `feat/experts-review-base`.
 3. Then Phases 6, 7, 8; deploy (Phase 4) and live-test only after all of them.
 4. **Team:** 30–50 seeded Bangla articles; 5–10 experts invited; pick the 6–8 launch topics (categories).
 5. **Nayeem:** fix the Gemini key; roadmap 0.4 (rotate keys, purge history); set `GOOGLE_CLIENT_ID`; make
@@ -47,6 +47,26 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-14 (roadmap 7.1)
+
+**Done**
+- `ExpertApplication`: applicant, 1–3 topics, field title, credential type (`DEGREE`, `STAFF_ID`,
+  `FACULTY_PAGE`, `LICENCE`, `OTHER`), institution, up to 4 proof images (must come from `POST /api/images`)
+  and 3 `http(s)` links, `status` (`PENDING`, `APPROVED`, `REJECTED`), `reviewNote`.
+- `POST /api/experts/applications` (at least one proof; 409 while one is still pending) and
+  `GET /api/experts/applications/me` (the caller's own, newest first, paged).
+- Checked live: 14/14 (anonymous 401, no proof / bad link / foreign image / bad credential type 400,
+  unknown topic 404, second pending 409, other users see nothing).
+
+**Decisions**
+- Only one application waits at a time; after a decision the user may apply again (re-apply after rejection).
+
+**Known limitations**
+- Proof images live under the public `/uploads/` with unguessable names (`shortcut:` in `ExpertApplication`).
+- Two simultaneous submissions can both be saved as pending; the admin decides each (harmless).
+- Enum columns carry Hibernate `CHECK` constraints that `ddl-auto=update` never widens: adding a value to a
+  stored enum needs a `SchemaPatches` entry until Flyway (4.2).
 
 ## 2026-10-13 (Phase 6 review fix)
 
