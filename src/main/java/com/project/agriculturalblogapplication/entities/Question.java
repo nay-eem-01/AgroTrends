@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.project.agriculturalblogapplication.constatnt.AppTables.CategoryTable;
 import com.project.agriculturalblogapplication.constatnt.AppTables.QuestionTable;
 import com.project.agriculturalblogapplication.constatnt.AppTables.TagTable;
+import com.project.agriculturalblogapplication.constatnt.AppTables.VoteTable;
 import com.project.agriculturalblogapplication.constatnt.AppTables.UserTable;
 import com.project.agriculturalblogapplication.model.AuditModel;
 import jakarta.persistence.*;
@@ -59,6 +60,11 @@ public class Question extends AuditModel<String> {
     /** Direct answers, not replies to answers; computed by the database so it can never drift. */
     @Formula("(select count(*) from answers a where a.question_id = id and a.answer_id is null)")
     private long answerCount;
+
+    /** Upvotes minus downvotes, kept in step by VoteService so lists need no count query. */
+    @ColumnDefault("0")
+    @Column(name = VoteTable.SCORE, nullable = false)
+    private long score;
 
     @JsonIgnore
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)

@@ -91,6 +91,7 @@ public final class ErrorCode {
     public static final String ERROR_TOO_MANY_PHOTOS = "A question can have at most 4 photos.";
     public static final String ERROR_CANNOT_CLAP_OWN_BLOG = "You cannot clap for your own blog.";
     public static final String ERROR_INVALID_CLAP_COUNT = "Clap between 1 and 50 times.";
+    public static final String ERROR_CANNOT_VOTE_OWN_POST = "You cannot vote on your own post.";
     public static final String ERROR_CANNOT_FOLLOW_YOURSELF = "You cannot follow yourself.";
     public static final String ERROR_TAG_NOT_FOUND = "Tag not found.";
     public static final String ERROR_BIO_TOO_LONG = "A bio can be at most 2000 characters.";

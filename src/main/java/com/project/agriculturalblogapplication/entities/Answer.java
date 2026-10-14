@@ -5,9 +5,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.project.agriculturalblogapplication.constatnt.AppTables.UserTable;
 import com.project.agriculturalblogapplication.constatnt.AppTables.AnswerTable;
 import com.project.agriculturalblogapplication.constatnt.AppTables.QuestionTable;
+import com.project.agriculturalblogapplication.constatnt.AppTables.VoteTable;
 import com.project.agriculturalblogapplication.model.AuditModel;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +36,11 @@ public class Answer extends AuditModel<String> {
     @ManyToOne
     @JoinColumn(name = AnswerTable.ANSWER_ID)
     private Answer parentAnswer;
+
+    /** Upvotes minus downvotes, kept in step by VoteService so lists need no count query. */
+    @ColumnDefault("0")
+    @Column(name = VoteTable.SCORE, nullable = false)
+    private long score;
 
     @JsonIgnore
     @OneToMany(mappedBy = "parentAnswer", cascade = CascadeType.ALL, orphanRemoval = true)

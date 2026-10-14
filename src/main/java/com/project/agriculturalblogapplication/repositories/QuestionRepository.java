@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -29,4 +30,9 @@ public interface QuestionRepository extends JpaRepository<Question, Long>, JpaSp
                               function('websearch_to_tsquery', 'simple', :query)) desc, q.id desc
             """)
     Page<Question> search(@Param("query") String query, Pageable pageable);
+
+    /** Atomic, so two votes at once cannot overwrite each other. */
+    @Modifying
+    @Query("UPDATE Question x SET x.score = x.score + :delta WHERE x.id = :id")
+    void addToScore(@Param("id") Long id, @Param("delta") long delta);
 }

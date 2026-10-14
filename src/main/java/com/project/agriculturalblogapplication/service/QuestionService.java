@@ -145,6 +145,7 @@ public class QuestionService {
         response.setTags(question.getTags().stream().map(Tag::getName).toList());
         response.setImageUrls(List.copyOf(question.getImageUrls()));
         response.setAnswerCount(question.getAnswerCount());
+        response.setScore(question.getScore());
         response.setCreatedAt(CommonUtils.toInstant(question.getCreationDate()));
         response.setUpdatedAt(CommonUtils.toInstant(question.getLastModifiedDate()));
 

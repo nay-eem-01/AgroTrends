@@ -118,6 +118,7 @@ public class AnswerService {
         response.setAuthorName(answer.getUser().getName());
         response.setCreatedAt(CommonUtils.toInstant(answer.getCreationDate()));
         response.setUpdatedAt(CommonUtils.toInstant(answer.getLastModifiedDate()));
+        response.setScore(answer.getScore());
 
         return response;
     }
