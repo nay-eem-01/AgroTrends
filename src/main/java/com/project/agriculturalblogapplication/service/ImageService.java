@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class ImageService {
@@ -27,5 +29,13 @@ public class ImageService {
         ImageType type = ImageType.detect(bytes).orElseThrow(() ->
                 new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_IMAGE_TYPE_NOT_ALLOWED, lang));
         return imageStorage.store(bytes, type);
+    }
+
+    /** Returns {@code urls} unchanged when every one was uploaded here; 400 otherwise. */
+    public List<String> requireUploaded(List<String> urls, String lang) {
+        if (!urls.stream().allMatch(imageStorage::isStored)) {
+            throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_IMAGE_NOT_UPLOADED, lang);
+        }
+        return urls;
     }
 }

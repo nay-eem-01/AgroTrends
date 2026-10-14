@@ -9,6 +9,9 @@ import com.project.agriculturalblogapplication.constatnt.AppTables.UserTable;
 import com.project.agriculturalblogapplication.model.AuditModel;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -44,6 +47,13 @@ public class Question extends AuditModel<String> {
             joinColumns = @JoinColumn(name = QuestionTable.QUESTION_ID),
             inverseJoinColumns = @JoinColumn(name = TagTable.TAG_ID))
     private Set<Tag> tags = new LinkedHashSet<>();
+
+    /** Up to four photo URLs from POST /api/images, kept in one array column. */
+    // The default fills rows that existed before photos, so the list is never null.
+    @JdbcTypeCode(SqlTypes.ARRAY)
+    @ColumnDefault("'{}'")
+    @Column(name = QuestionTable.IMAGE_URLS, nullable = false)
+    private List<String> imageUrls = new ArrayList<>();
 
     @JsonIgnore
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)

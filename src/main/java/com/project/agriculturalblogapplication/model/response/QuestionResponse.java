@@ -30,4 +30,6 @@ public class QuestionResponse {
     private CategoryResponse category;
 
     private List<String> tags;
+
+    private List<String> imageUrls;
 }
