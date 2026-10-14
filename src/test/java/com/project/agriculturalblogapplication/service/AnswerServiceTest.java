@@ -97,6 +97,15 @@ class AnswerServiceTest {
     }
 
     @Test
+    void aReplyUnderAHiddenAnswerIsNotFound() {
+        Answer parent = answer(3L, 0);
+        parent.setHidden(true);
+        answer(4L, 0).setParentAnswer(parent);
+
+        assertThrows(ApplicationException.class, () -> answerService.findById(4L));
+    }
+
+    @Test
     void aReplyCannotBeAccepted() {
         when(authorization.currentUserId(LANG)).thenReturn(ASKER);
         answer(3L, 0).setParentAnswer(new Answer());

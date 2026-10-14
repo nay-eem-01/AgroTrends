@@ -198,10 +198,11 @@ public class AnswerService {
         return mapToAnswerResponses(parentAnswer.getReplies().stream().filter(reply -> !reply.isHidden()).toList());
     }
 
-    /** Hidden, or on a hidden question: a 404, so it cannot be read, edited, accepted or voted on meanwhile. */
+    /** Hidden, or on a hidden question or under a hidden answer: a 404, so it cannot be read, edited, accepted or voted on meanwhile. */
     public Answer findByIdWithException(Long answerId) {
         return answerRepository.findById(answerId)
-                .filter(answer -> !answer.isHidden() && !answer.getQuestion().isHidden())
+                .filter(answer -> !answer.isHidden() && !answer.getQuestion().isHidden()
+                        && (answer.getParentAnswer() == null || !answer.getParentAnswer().isHidden()))
                 .orElseThrow(() -> new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_ANSWER_NOT_FOUND));
     }
 
