@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 69 of 86 steps done): launch blockers and one account type with
+- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 70 of 86 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -47,6 +47,21 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-14 (roadmap 7.6b)
+
+**Done**
+- `AiSourceResponse` is `{type, blogId, questionId, title}`: `type` `blog` (link to the post) or `answer`
+  (link to the question whose checked answers were used). Several vetted answers to one question are one
+  citation. Sources stored before (private asks, AI answers on questions) read back as `type: blog`.
+- The RAG prompt labels answer excerpts "Community answer to: <question title>" and asks the model to name
+  the posts or questions it used.
+- Checked live: stored old-format and new-format sources round-trip through the API; 7.5 and 7.6a smoke
+  runs still pass. A model call with answer citations awaits the Gemini chat key.
+
+**Breaking API changes**
+- Additive, but the frontend must branch on `sources[].type`: answer sources have `blogId: null` and a
+  `questionId` (`/api/ai/ask`, `/api/ai/history`, `/api/questions/id/{id}/ai-answer`).
 
 ## 2026-10-14 (roadmap 7.6a)
 
