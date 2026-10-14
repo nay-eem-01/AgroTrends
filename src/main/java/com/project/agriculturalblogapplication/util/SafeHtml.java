@@ -24,6 +24,11 @@ public final class SafeHtml {
 
     private SafeHtml() {}
 
+    /** The readable text of HTML (or plain text), whitespace collapsed; "" for null. */
+    public static String plainText(String content) {
+        return content == null ? "" : Jsoup.parse(content).text();
+    }
+
     public static String clean(String content) {
         if (content == null || !HAS_TAG.matcher(content).find()) {
             return content;

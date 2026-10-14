@@ -6,6 +6,7 @@ import com.project.agriculturalblogapplication.model.AgriInfo;
 import com.project.agriculturalblogapplication.model.request.CreateBlogRequest;
 import com.project.agriculturalblogapplication.model.request.UpdateBlogRequest;
 import com.project.agriculturalblogapplication.model.response.BlogResponse;
+import com.project.agriculturalblogapplication.model.response.BlogSummaryResponse;
 import com.project.agriculturalblogapplication.model.response.RelatedBlogResponse;
 import com.project.agriculturalblogapplication.payloads.PaginationArgs;
 import com.project.agriculturalblogapplication.entities.Author;
@@ -97,48 +98,48 @@ public class BlogService {
     }
 
     /** Published blogs, optionally filtered by crop, season, region and soil. */
-    public Page<BlogResponse> getAll(PaginationArgs paginationArgs, AgriInfo filter, String lang) {
+    public Page<BlogSummaryResponse> getAll(PaginationArgs paginationArgs, AgriInfo filter, String lang) {
         Pageable pageable = CommonUtils.getPageable(paginationArgs, SORTABLE_FIELDS, lang);
         Specification<Blog> published = (root, query, cb) -> cb.equal(root.get("status"), BlogStatus.PUBLISHED);
-        return blogRepositories.findAll(published.and(AgriSpecifications.matches(filter)), pageable).map(BlogResponse::from);
+        return blogRepositories.findAll(published.and(AgriSpecifications.matches(filter)), pageable).map(BlogSummaryResponse::from);
     }
 
-    public Page<BlogResponse> getAllByCategory(PaginationArgs paginationArgs, Long categoryId, String lang) {
+    public Page<BlogSummaryResponse> getAllByCategory(PaginationArgs paginationArgs, Long categoryId, String lang) {
         Pageable pageable = CommonUtils.getPageable(paginationArgs, SORTABLE_FIELDS, lang);
         Category category = categoryService.findByIdWithException(categoryId);
-        return blogRepositories.findAllByCategoryAndStatus(category, BlogStatus.PUBLISHED, pageable).map(BlogResponse::from);
+        return blogRepositories.findAllByCategoryAndStatus(category, BlogStatus.PUBLISHED, pageable).map(BlogSummaryResponse::from);
     }
 
     /** {@code authorId} is the Author id, the same id a blog response shows as {@code author.authorId}. */
-    public Page<BlogResponse> getAllByAuthor(PaginationArgs paginationArgs, Long authorId, String lang) {
+    public Page<BlogSummaryResponse> getAllByAuthor(PaginationArgs paginationArgs, Long authorId, String lang) {
         Pageable pageable = CommonUtils.getPageable(paginationArgs, SORTABLE_FIELDS, lang);
         Author author = authorService.findByIdWithException(authorId);
-        return blogRepositories.findAllByAuthorAndStatus(author, BlogStatus.PUBLISHED, pageable).map(BlogResponse::from);
+        return blogRepositories.findAllByAuthorAndStatus(author, BlogStatus.PUBLISHED, pageable).map(BlogSummaryResponse::from);
     }
 
-    public Page<BlogResponse> getAllByTag(PaginationArgs paginationArgs, String tagName, String lang) {
+    public Page<BlogSummaryResponse> getAllByTag(PaginationArgs paginationArgs, String tagName, String lang) {
         Pageable pageable = CommonUtils.getPageable(paginationArgs, SORTABLE_FIELDS, lang);
         return blogRepositories.findAllByTagsNameAndStatus(TagService.normalize(tagName), BlogStatus.PUBLISHED, pageable)
-                .map(BlogResponse::from);
+                .map(BlogSummaryResponse::from);
     }
 
     /**
      * Full-text search over published titles and content, best match first. Uses the 'simple' text configuration:
      * no stemming, so it works the same for Bangla and English ("disease" does not match "diseases").
      */
-    public Page<BlogResponse> search(String query, int pageNo, int pageSize, String lang) {
+    public Page<BlogSummaryResponse> search(String query, int pageNo, int pageSize, String lang) {
         if (query == null || query.isBlank()) {
             throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_SEARCH_QUERY_REQUIRED, lang);
         }
         return blogRepositories.search(query.trim(), CommonUtils.clampedPageable(pageNo, pageSize, Sort.unsorted()))
-                .map(BlogResponse::from);
+                .map(BlogSummaryResponse::from);
     }
 
     /** The caller's own drafts. */
-    public Page<BlogResponse> getMyDrafts(PaginationArgs paginationArgs, String lang) {
+    public Page<BlogSummaryResponse> getMyDrafts(PaginationArgs paginationArgs, String lang) {
         Pageable pageable = CommonUtils.getPageable(paginationArgs, SORTABLE_FIELDS, lang);
         Author author = authorService.profileOf(authorizationService.currentUserId(lang));
-        return blogRepositories.findAllByAuthorAndStatus(author, BlogStatus.DRAFT, pageable).map(BlogResponse::from);
+        return blogRepositories.findAllByAuthorAndStatus(author, BlogStatus.DRAFT, pageable).map(BlogSummaryResponse::from);
     }
 
     public BlogResponse publish(Long blogId, String lang) {
@@ -235,24 +236,24 @@ public class BlogService {
     }
 
     /** Newest published posts. */
-    public Page<BlogResponse> latestFeed(int pageNo, int pageSize) {
+    public Page<BlogSummaryResponse> latestFeed(int pageNo, int pageSize) {
         return blogRepositories.findAllByStatus(BlogStatus.PUBLISHED, CommonUtils.clampedPageable(pageNo, pageSize, NEWEST))
-                .map(BlogResponse::from);
+                .map(BlogSummaryResponse::from);
     }
 
     /** Newest posts from followed authors and followed tags; empty when the caller follows nothing. */
-    public Page<BlogResponse> followingFeed(int pageNo, int pageSize, String lang) {
+    public Page<BlogSummaryResponse> followingFeed(int pageNo, int pageSize, String lang) {
         Long userId = authorizationService.currentUserId(lang);
         return blogRepositories.findFollowingFeed(userId, CommonUtils.clampedPageable(pageNo, pageSize, NEWEST))
-                .map(BlogResponse::from);
+                .map(BlogSummaryResponse::from);
     }
 
     /** Posts published in the last {@value #TRENDING_DAYS} days, most clapped first. */
-    public Page<BlogResponse> trendingFeed(int pageNo, int pageSize) {
+    public Page<BlogSummaryResponse> trendingFeed(int pageNo, int pageSize) {
         Sort mostClapped = Sort.by(Sort.Direction.DESC, "clapCount").and(NEWEST);
         return blogRepositories.findAllByStatusAndPublishedAtAfter(BlogStatus.PUBLISHED,
                         LocalDateTime.now().minusDays(TRENDING_DAYS), CommonUtils.clampedPageable(pageNo, pageSize, mostClapped))
-                .map(BlogResponse::from);
+                .map(BlogSummaryResponse::from);
     }
 
     public long countPublishedByAuthor(Long authorId) {

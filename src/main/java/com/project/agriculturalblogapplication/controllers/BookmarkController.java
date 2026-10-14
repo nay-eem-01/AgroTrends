@@ -1,7 +1,7 @@
 package com.project.agriculturalblogapplication.controllers;
 
 import com.project.agriculturalblogapplication.config.CommonApiResponses;
-import com.project.agriculturalblogapplication.model.response.BlogResponse;
+import com.project.agriculturalblogapplication.model.response.BlogSummaryResponse;
 import com.project.agriculturalblogapplication.model.response.HttpResponse;
 import com.project.agriculturalblogapplication.service.BookmarkService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,7 +27,7 @@ public class BookmarkController {
     private final BookmarkService bookmarkService;
 
     @Operation(summary = "Your saved blogs, most recently saved first", security = @SecurityRequirement(name = "jwtToken"))
-    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogResponse.class))), responseCode = "200")
+    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogSummaryResponse.class))), responseCode = "200")
     @GetMapping("/bookmarks")
     public ResponseEntity<HttpResponse> mine(@RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
                                              @RequestParam(name = PAGE_SIZE, defaultValue = DEFAULT_PAGE_SIZE) int pageSize,

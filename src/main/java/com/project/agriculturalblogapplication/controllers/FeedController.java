@@ -1,7 +1,7 @@
 package com.project.agriculturalblogapplication.controllers;
 
 import com.project.agriculturalblogapplication.config.CommonApiResponses;
-import com.project.agriculturalblogapplication.model.response.BlogResponse;
+import com.project.agriculturalblogapplication.model.response.BlogSummaryResponse;
 import com.project.agriculturalblogapplication.model.response.HttpResponse;
 import com.project.agriculturalblogapplication.service.BlogService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,7 +30,7 @@ public class FeedController {
     private final BlogService blogService;
 
     @Operation(summary = "Newest published posts")
-    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogResponse.class))), responseCode = "200")
+    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogSummaryResponse.class))), responseCode = "200")
     @GetMapping("/latest")
     public ResponseEntity<HttpResponse> latest(@RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
                                                @RequestParam(name = PAGE_SIZE, defaultValue = DEFAULT_PAGE_SIZE) int pageSize) {
@@ -39,7 +39,7 @@ public class FeedController {
 
     @Operation(summary = "Newest posts from authors and topics you follow (empty if you follow nothing)",
             security = @SecurityRequirement(name = "jwtToken"))
-    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogResponse.class))), responseCode = "200")
+    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogSummaryResponse.class))), responseCode = "200")
     @GetMapping("/following")
     public ResponseEntity<HttpResponse> following(@RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
                                                   @RequestParam(name = PAGE_SIZE, defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
@@ -48,7 +48,7 @@ public class FeedController {
     }
 
     @Operation(summary = "Posts from the last 14 days, most clapped first")
-    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogResponse.class))), responseCode = "200")
+    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogSummaryResponse.class))), responseCode = "200")
     @GetMapping("/trending")
     public ResponseEntity<HttpResponse> trending(@RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
                                                  @RequestParam(name = PAGE_SIZE, defaultValue = DEFAULT_PAGE_SIZE) int pageSize) {

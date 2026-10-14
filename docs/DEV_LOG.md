@@ -20,7 +20,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 ## Next up
 
 1. Merge `docs/product-study` and `docs/launch-plan` into `development`.
-2. Phase 5 on `feat/launch-blockers-base`: 5.1–5.9 done; next 5.10 (list excerpts).
+2. Phase 5 on `feat/launch-blockers-base`: 5.1–5.10 done; next 5.11 (N+1 queries).
 3. Then Phases 6, 7, 8; deploy (Phase 4) and live-test only after all of them.
 4. **Team:** 30–50 seeded Bangla articles; 5–10 experts invited; pick the 6–8 launch topics (categories).
 5. **Nayeem:** fix the Gemini key; roadmap 0.4 (rotate keys, purge history); set `GOOGLE_CLIENT_ID`; make
@@ -45,6 +45,22 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | After deploying 2.3a: start once with `AI_REINDEX_ON_STARTUP=true` (old chunks have no `status`, so retrieval ignores them) | whoever deploys | AI answers on existing posts |
 | Deleting a user with comments/questions/answers fails on foreign keys: decide delete vs anonymise | Nayeem | account deletion |
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
+
+---
+
+## 2026-10-13 (roadmap 5.10)
+
+**Done**
+- `BlogSummaryResponse`: every blog list returns a plain-text `excerpt` (up to 200 characters, cut at a word,
+  "…" appended) instead of `content` (audit A1). Covers `/api/blogs/all*`, `/api/blogs/search`,
+  `/api/blogs/me/drafts`, `/api/feed/*` and `/api/bookmarks`. `GET /api/blogs/id/{id}` and `/slug/{slug}` keep
+  the full `BlogResponse`.
+- `SafeHtml.plainText` extracts readable text from HTML.
+- Tests: `BlogSummaryResponseTest` (2). 182 unit tests pass.
+
+**Breaking API changes**
+- List items have `excerpt` and no `content`. The frontend's story cards should show `excerpt`; the editor must
+  load a draft through `GET /api/blogs/id/{id}`.
 
 ---
 
