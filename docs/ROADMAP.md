@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 65 of 85 steps done
+**Progress:** 66 of 85 steps done
 
 **Launch scope (decided 2026-10-13):** Phases 4–8 must all be done before the public launch. Order of work:
 5 → 6 → 7 → 8 → 4 (deploy) → live test → launch. Nothing is deployed until Phases 5–8 are done. After launch, the
@@ -149,7 +149,7 @@ The trust layer. An expert is verified **per topic**; only verified experts conf
 | 7.1 | Expert application: `POST /api/experts/applications` (topics, field title, credential type, institution, proof images, links); `GET /api/experts/applications/me` | ✅ |
 | 7.2 | Admin review: pending list, approve (grants an `ExpertBadge` per topic) / reject with reason, revoke a badge | ✅ |
 | 7.3a | Stored AI answer on every new question, generated after commit (async), status `UNCHECKED`; responses carry a safety `disclaimer` | ✅ |
-| 7.3b | Retire the on-demand `POST /api/questions/id/{id}/ai-draft` (replaced by 7.3a) | ⬜ |
+| 7.3b | Retire the on-demand `POST /api/questions/id/{id}/ai-draft` (replaced by 7.3a) | ✅ |
 | 7.4 | Review queue for experts (their topics only): confirm / correct (creates an expert answer, AI answer `CORRECTED`) / flag (`FLAGGED`, hidden); admin can reopen | ⬜ |
 | 7.5 | "Ask an expert to check this": turn a private `/api/ai/ask` answer into a public question | ⬜ |
 | 7.6 | RAG over Q&A: index accepted answers, expert answers and confirmed AI answers (`type=answer`, `questionId`); remove on un-accept, delete, flag or hide; `sources` gain `type` and `questionId` | ⬜ |
