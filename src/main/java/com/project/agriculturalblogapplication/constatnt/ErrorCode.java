@@ -99,6 +99,15 @@ public final class ErrorCode {
     public static final String ERROR_TAG_NOT_FOUND = "Tag not found.";
     public static final String ERROR_BIO_TOO_LONG = "A bio can be at most 2000 characters.";
     public static final String ERROR_AGRI_FIELD_TOO_LONG = "Crop and region can be at most 60 characters.";
+    public static final String ERROR_EXPERT_TOPICS_REQUIRED = "Choose the topics (1 to 3) you are an expert in.";
+    public static final String ERROR_EXPERT_FIELD_TITLE_REQUIRED = "Tell us your field, e.g. Veterinarian or Agronomist.";
+    public static final String ERROR_EXPERT_INSTITUTION_REQUIRED = "Tell us where you studied or work.";
+    public static final String ERROR_EXPERT_CREDENTIAL_TYPE_REQUIRED = "Choose what kind of proof you are sending.";
+    public static final String ERROR_EXPERT_TEXT_TOO_LONG = "Field and institution can be at most 150 characters.";
+    public static final String ERROR_EXPERT_TOO_MANY_PROOFS = "Send at most 4 proof images and 3 links.";
+    public static final String ERROR_EXPERT_INVALID_LINK = "Links must start with http:// or https://.";
+    public static final String ERROR_EXPERT_PROOF_REQUIRED = "Add at least one proof image or link.";
+    public static final String ERROR_EXPERT_APPLICATION_PENDING = "You already have an application waiting for review.";
     public static final String ERROR_INVALID_REQUEST = "Invalid request.";
     // Formatted with the parameter name (and, for enums, the allowed values) by ExceptionHandlingController.
     public static final String ERROR_INVALID_PARAMETER_VALUE = "Invalid value for '%s'.";
