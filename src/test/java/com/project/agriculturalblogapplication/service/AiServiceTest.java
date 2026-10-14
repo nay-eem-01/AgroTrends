@@ -19,6 +19,7 @@ import com.project.agriculturalblogapplication.model.response.QuestionResponse;
 import com.project.agriculturalblogapplication.repositories.AiRepositories;
 import com.project.agriculturalblogapplication.repositories.QuestionAiAnswerRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.ai.chat.client.ChatClient;
@@ -73,11 +74,11 @@ class AiServiceTest {
         AiAnswerResponse answer = aiService.ask("How do I stop rice blast?", "en");
 
         assertEquals("Use resistant varieties.", answer.answer());
-        assertEquals(List.of(new AiSourceResponse(2L, "Rice blast in short")), answer.sources());
+        assertEquals(List.of(AiSourceResponse.blog(2L, "Rice blast in short")), answer.sources());
         ArgumentCaptor<AiAnswer> saved = ArgumentCaptor.forClass(AiAnswer.class);
         verify(aiRepositories).save(saved.capture());
         assertEquals(7L, saved.getValue().getUserId());
-        assertEquals(List.of(new AiSourceResponse(2L, "Rice blast in short")), saved.getValue().getSources());
+        assertEquals(List.of(AiSourceResponse.blog(2L, "Rice blast in short")), saved.getValue().getSources());
         assertEquals("Use resistant varieties.", saved.getValue().getAiAnswer());
         assertEquals(120, saved.getValue().getPromptTokens());
         assertEquals(30, saved.getValue().getCompletionTokens());
@@ -113,8 +114,24 @@ class AiServiceTest {
         List<AiSourceResponse> sources = AiService.sourcesOf(List.of(
                 chunk(5, "Feeding dairy cows"), chunk(2, "Rice blast in short"), chunk(5, "Feeding dairy cows")));
 
-        assertEquals(List.of(new AiSourceResponse(5L, "Feeding dairy cows"), new AiSourceResponse(2L, "Rice blast in short")),
+        assertEquals(List.of(AiSourceResponse.blog(5L, "Feeding dairy cows"), AiSourceResponse.blog(2L, "Rice blast in short")),
                 sources);
+    }
+
+    @Test
+    void vettedAnswersAreCitedOncePerQuestionAlongsidePosts() {
+        List<AiSourceResponse> sources = AiService.sourcesOf(List.of(
+                answerChunk(4, 8, "Yellow leaves"), chunk(2, "Rice nutrition"), answerChunk(4, 9, "Yellow leaves")));
+
+        assertEquals(List.of(AiSourceResponse.answer(4L, "Yellow leaves"), AiSourceResponse.blog(2L, "Rice nutrition")),
+                sources);
+    }
+
+    @Test
+    void aSourceStoredBeforeTypesExistedReadsAsABlog() throws Exception {
+        AiSourceResponse old = new ObjectMapper().readValue("{\"blogId\":2,\"title\":\"Rice blast\"}", AiSourceResponse.class);
+
+        assertEquals(AiSourceResponse.blog(2L, "Rice blast"), old);
     }
 
     @Test
@@ -171,7 +188,7 @@ class AiServiceTest {
         ArgumentCaptor<QuestionAiAnswer> aiAnswer = ArgumentCaptor.forClass(QuestionAiAnswer.class);
         verify(questionAiAnswers).save(aiAnswer.capture());
         assertEquals("Use resistant varieties.", aiAnswer.getValue().getAnswer());
-        assertEquals(List.of(new AiSourceResponse(2L, "Rice blast in short")), aiAnswer.getValue().getSources());
+        assertEquals(List.of(AiSourceResponse.blog(2L, "Rice blast in short")), aiAnswer.getValue().getSources());
         assertEquals(AiAnswerStatus.UNCHECKED, aiAnswer.getValue().getStatus());
         verify(chatClient, never()).prompt();
     }
@@ -227,7 +244,7 @@ class AiServiceTest {
         ask.setUserId(7L);
         ask.setQuestion("How do I stop rice blast?\nIt spreads fast.");
         ask.setAiAnswer("Use resistant varieties.");
-        ask.setSources(List.of(new AiSourceResponse(2L, "Rice blast in short")));
+        ask.setSources(List.of(AiSourceResponse.blog(2L, "Rice blast in short")));
         when(aiRepositories.findByIdAndUserId(3L, 7L)).thenReturn(Optional.of(ask));
         return ask;
     }
@@ -244,7 +261,7 @@ class AiServiceTest {
         verify(questionAiAnswers).save(saved.capture());
         assertEquals("Check nitrogen.", saved.getValue().getAnswer());
         assertEquals(AiAnswerStatus.UNCHECKED, saved.getValue().getStatus());
-        assertEquals(List.of(new AiSourceResponse(2L, "Rice nutrition")), saved.getValue().getSources());
+        assertEquals(List.of(AiSourceResponse.blog(2L, "Rice nutrition")), saved.getValue().getSources());
         assertEquals(4L, saved.getValue().getQuestion().getId());
         assertEquals(120, saved.getValue().getPromptTokens());
     }
@@ -309,6 +326,11 @@ class AiServiceTest {
     // Metadata read back from pgvector JSON holds Integers, so ids are taken as any Number.
     private static Document chunk(Integer blogId, String title) {
         return new Document("excerpt", Map.of(DocumentService.BLOG_ID, blogId, DocumentService.TITLE, title));
+    }
+
+    private static Document answerChunk(Integer questionId, Integer answerId, String title) {
+        return new Document("excerpt", Map.of(DocumentService.TYPE, DocumentService.ANSWER_TYPE,
+                DocumentService.QUESTION_ID, questionId, DocumentService.ANSWER_ID, answerId, DocumentService.TITLE, title));
     }
 
     private static ChatClientResponse response(String answer, List<Document> retrieved) {

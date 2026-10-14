@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 69 of 86 steps done
+**Progress:** 70 of 86 steps done
 
 **Launch scope (decided 2026-10-13):** Phases 4–8 must all be done before the public launch. Order of work:
 5 → 6 → 7 → 8 → 4 (deploy) → live test → launch. Nothing is deployed until Phases 5–8 are done. After launch, the
@@ -153,7 +153,7 @@ The trust layer. An expert is verified **per topic**; only verified experts conf
 | 7.4 | Review queue for experts (their topics only): confirm / correct (creates an expert answer, AI answer `CORRECTED`) / flag (`FLAGGED`, hidden); admin can reopen | ✅ |
 | 7.5 | "Ask an expert to check this": turn a private `/api/ai/ask` answer into a public question | ✅ |
 | 7.6a | RAG over Q&A: index accepted answers, expert answers and confirmed AI answers (`type=answer`, `questionId`); remove on un-accept, delete, reopen or badge revoked (hide arrives with 8.4) | ✅ |
-| 7.6b | Citations for answers: `sources` gain `type` and `questionId` | ⬜ |
+| 7.6b | Citations for answers: `sources` gain `type` and `questionId` | ✅ |
 | 7.7 | Question crop/season/region passed into the AI prompt | ⬜ |
 
 ## Phase 8 — Notifications and moderation
