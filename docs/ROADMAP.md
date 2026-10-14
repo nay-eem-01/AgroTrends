@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 74 of 87 steps done
+**Progress:** 75 of 87 steps done
 
 **Launch scope (decided 2026-10-13):** Phases 4–8 must all be done before the public launch. Order of work:
 5 → 6 → 7 → 8 → 4 (deploy) → live test → launch. Nothing is deployed until Phases 5–8 are done. After launch, the
@@ -166,7 +166,7 @@ The old `feature/kafka-impl` branch can be deleted.
 | 8.1a | `NotificationPublisher` interface, transport chosen by `app.notifications.transport` (`spring` = after-commit Spring events; a broker later is config + one class); `Notification` rows; triggers: answer on your question, your answer accepted, AI answer on your question reviewed | ✅ |
 | 8.1b | Triggers: new review item in your topic, application decided, reply to your comment | ✅ |
 | 8.2 | `/api/notifications` for the caller only: list, unread count, mark one / all read | ✅ |
-| 8.3 | Reports: `POST /api/reports` (blog, question, answer, AI answer, comment, user; reason); one per user per target | ⬜ |
+| 8.3 | Reports: `POST /api/reports` (blog, question, answer, AI answer, comment, user; reason); one per user per target | ✅ |
 | 8.4 | Moderation: admin report queue, hide content (out of public lists and RAG, reputation reversed), ban user (sessions revoked), revoke expert badge | ⬜ |
 
 ## Later — after the 8-week launch test
