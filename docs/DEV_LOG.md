@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 76 of 88 steps done): launch blockers and one account type with
+- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 77 of 88 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -48,6 +48,19 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-14 (roadmap 8.4b)
+
+**Done**
+- `User.bannedAt`, `banReason`. `POST /api/admin/users/{userId}/ban {reason}` and `DELETE` on the same path
+  (`CONTENT_MODERATE`). A ban revokes every session and refresh token; `AuthService.issueTokens` (the end of
+  password, Google and refresh sign-in) refuses a banned account with 403 `ERROR_ACCOUNT_BANNED`, after the
+  credentials check, so a wrong password still gets the generic 401. Admin accounts cannot be banned. Open
+  reports about the user close as `ACTIONED` ("Banned: <reason>").
+- Checked live: 12/12.
+
+**Known limitations**
+- A banned user's posts stay up; moderators remove them one by one through their reports.
 
 ## 2026-10-14 (roadmap 8.4a)
 
