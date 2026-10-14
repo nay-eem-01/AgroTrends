@@ -7,6 +7,7 @@ import com.project.agriculturalblogapplication.entities.Question;
 import com.project.agriculturalblogapplication.entities.QuestionAiAnswer;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.enums.AiAnswerStatus;
+import com.project.agriculturalblogapplication.enums.CropSeason;
 import com.project.agriculturalblogapplication.events.QuestionCreated;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.request.AskExpertsRequest;
@@ -46,6 +47,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
@@ -287,6 +289,20 @@ class AiServiceTest {
         aiService.answerQuestion(new QuestionCreated(4L));
 
         verify(questionAiAnswers, never()).save(any());
+    }
+
+    @Test
+    void theQuestionsFarmDetailsFollowTheCappedTextAndMissingOnesAreLeftOut() {
+        Question question = question("Yellow leaves", "x".repeat(5000));
+        question.getAgri().setCrop(" Aman rice ");
+        question.getAgri().setSeason(CropSeason.KHARIF_2);
+        question.getAgri().setRegion("Rangpur");
+
+        String prompt = AiService.promptFor(question);
+
+        assertTrue(prompt.endsWith("\n\nFarm details: crop Aman rice; season kharif-2; region Rangpur"), prompt);
+        assertEquals(AppConstants.AI_MAX_QUESTION_LENGTH, prompt.indexOf("\n\nFarm details"));
+        assertEquals("Yellow leaves\n\nWhy?", AiService.promptFor(question("Yellow leaves", "Why?")));
     }
 
     @Test

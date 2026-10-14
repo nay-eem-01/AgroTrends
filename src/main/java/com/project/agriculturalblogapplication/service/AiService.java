@@ -3,6 +3,7 @@ package com.project.agriculturalblogapplication.service;
 import com.project.agriculturalblogapplication.config.AiProperties;
 import com.project.agriculturalblogapplication.constatnt.AppConstants;
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
+import com.project.agriculturalblogapplication.entities.AgriMetadata;
 import com.project.agriculturalblogapplication.entities.AiAnswer;
 import com.project.agriculturalblogapplication.entities.Question;
 import com.project.agriculturalblogapplication.entities.QuestionAiAnswer;
@@ -40,6 +41,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -154,10 +156,37 @@ public class AiService {
         }
     }
 
-    /** Title and plain text, capped like a private question so one long post cannot run up the bill. */
+    /**
+     * Title and plain text, capped like a private question so one long post cannot run up the bill, then the
+     * question's crop, season, region and soil so the advice fits the asker's farm (each at most 60 characters).
+     */
     static String promptFor(Question question) {
         String text = question.getTitle() + "\n\n" + SafeHtml.plainText(question.getContent());
-        return text.length() > AppConstants.AI_MAX_QUESTION_LENGTH ? text.substring(0, AppConstants.AI_MAX_QUESTION_LENGTH) : text;
+        if (text.length() > AppConstants.AI_MAX_QUESTION_LENGTH) {
+            text = text.substring(0, AppConstants.AI_MAX_QUESTION_LENGTH);
+        }
+        String details = farmDetails(question.getAgri());
+        return details.isEmpty() ? text : text + "\n\nFarm details: " + details;
+    }
+
+    private static String farmDetails(AgriMetadata agri) {
+        if (agri == null) {
+            return "";
+        }
+        List<String> details = new ArrayList<>();
+        if (agri.getCrop() != null && !agri.getCrop().isBlank()) {
+            details.add("crop " + agri.getCrop().strip());
+        }
+        if (agri.getSeason() != null) {
+            details.add("season " + agri.getSeason().name().toLowerCase().replace('_', '-'));
+        }
+        if (agri.getRegion() != null && !agri.getRegion().isBlank()) {
+            details.add("region " + agri.getRegion().strip());
+        }
+        if (agri.getSoil() != null) {
+            details.add("soil " + agri.getSoil().name().toLowerCase().replace('_', ' '));
+        }
+        return String.join("; ", details);
     }
 
     /** The question's AI answer; 404 while it is being generated, when there is none, or when it was flagged. */
