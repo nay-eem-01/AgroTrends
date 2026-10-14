@@ -24,6 +24,9 @@ public final class AppConstants {
     public static final int MAX_TAGS_PER_POST = 5;
     public static final int MAX_TAG_LENGTH = 40;
     public static final int MAX_PHOTOS_PER_QUESTION = 4;
+    public static final int MAX_EXPERT_TOPICS = 3;
+    public static final int MAX_EXPERT_PROOF_IMAGES = 4;
+    public static final int MAX_EXPERT_LINKS = 3;
 
     public static final String INITIAL_MOBILE_NUMBER = "+01833849973";
 
