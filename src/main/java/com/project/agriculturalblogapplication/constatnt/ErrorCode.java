@@ -98,6 +98,7 @@ public final class ErrorCode {
     public static final String ERROR_ACCOUNT_BANNED = "This account has been suspended by the moderators.";
     public static final String ERROR_CANNOT_BAN_ADMIN = "Admin accounts cannot be banned.";
     public static final String ERROR_BAN_REASON_REQUIRED = "Give a reason for the ban (at most 500 characters).";
+    public static final String ERROR_UNDER_REVIEW = "This post is hidden while the moderators review reports about it.";
     public static final String ERROR_AI_ANSWER_NOT_FOUND = "This question has no AI answer.";
     public static final String ERROR_INVALID_SORT_FIELD = "This list cannot be sorted by that field.";
     public static final String ERROR_BLOG_ALREADY_PUBLISHED = "This blog is already published.";

@@ -40,7 +40,7 @@ public class CommentService {
     private final NotificationPublisher notificationPublisher;
 
     public CommentResponse create(CreateCommentRequest request, String lang) {
-        Blog blog = blogService.findByIdWithException(request.getBlogId());
+        Blog blog = blogService.findVisibleBlog(request.getBlogId(), lang);
         User user = userService.findByIdWithException(authorizationService.currentUserId(lang), lang);
 
         Comment comment = new Comment();
@@ -69,8 +69,8 @@ public class CommentService {
         commentRepository.delete(comment);
     }
 
-    public List<CommentResponse> getAllByBlogId(Long blogId) {
-        blogService.findByIdWithException(blogId);
+    public List<CommentResponse> getAllByBlogId(Long blogId, String lang) {
+        blogService.findVisibleBlog(blogId, lang);
 
         List<Comment> comments = commentRepository.findByBlogIdAndParentCommentIsNull(blogId);
 
@@ -80,7 +80,7 @@ public class CommentService {
     }
 
     public CommentResponse reply(ReplyCommentRequest request, String lang) {
-        Blog blog = blogService.findByIdWithException(request.getBlogId());
+        Blog blog = blogService.findVisibleBlog(request.getBlogId(), lang);
 
         User user = userService.findByIdWithException(authorizationService.currentUserId(lang), lang);
 
