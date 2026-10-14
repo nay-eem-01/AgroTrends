@@ -32,4 +32,7 @@ public class QuestionResponse {
     private List<String> tags;
 
     private List<String> imageUrls;
+
+    /** Direct answers, not counting replies. */
+    private long answerCount;
 }

@@ -18,6 +18,7 @@ import com.project.agriculturalblogapplication.security.service.AuthorizationSer
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -62,19 +63,30 @@ public class QuestionService {
         return mapToQuestionResponse(question);
     }
 
-    /** All questions, optionally filtered by topic, tag, crop, season, region and soil. */
-    public Page<QuestionResponse> getAll(PaginationArgs paginationArgs, Long categoryId, String tag, AgriInfo filter,
-                                         String lang) {
+    /** All questions, optionally filtered by topic, tag, no answers yet, crop, season, region and soil. */
+    public Page<QuestionResponse> getAll(PaginationArgs paginationArgs, Long categoryId, String tag, boolean unanswered,
+                                         AgriInfo filter, String lang) {
         Pageable pageable = CommonUtils.getPageable(paginationArgs, SORTABLE_FIELDS, lang);
-        Specification<Question> spec = AgriSpecifications.<Question>matches(filter).and(inTopicWithTag(categoryId, tag));
+        Specification<Question> spec = AgriSpecifications.<Question>matches(filter)
+                .and(inTopicWithTag(categoryId, tag, unanswered));
         return questionRepository.findAll(spec, pageable).map(this::mapToQuestionResponse);
     }
 
-    static Specification<Question> inTopicWithTag(Long categoryId, String tag) {
+    static Specification<Question> inTopicWithTag(Long categoryId, String tag, boolean unanswered) {
         String tagName = TagService.normalize(tag);
         return (root, query, cb) -> cb.and(
                 categoryId == null ? cb.conjunction() : cb.equal(root.get("category").get("id"), categoryId),
-                tagName.isEmpty() ? cb.conjunction() : cb.equal(root.join("tags").get("name"), tagName));
+                tagName.isEmpty() ? cb.conjunction() : cb.equal(root.join("tags").get("name"), tagName),
+                unanswered ? cb.equal(root.get("answerCount"), 0L) : cb.conjunction());
+    }
+
+    /** Full-text search over titles and text, best match first ('simple' config: works for Bangla and English). */
+    public Page<QuestionResponse> search(String query, int pageNo, int pageSize, String lang) {
+        if (query == null || query.isBlank()) {
+            throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_SEARCH_QUERY_REQUIRED, lang);
+        }
+        return questionRepository.search(query.trim(), CommonUtils.clampedPageable(pageNo, pageSize, Sort.unsorted()))
+                .map(this::mapToQuestionResponse);
     }
 
     public Page<QuestionResponse> getAllByUser(PaginationArgs paginationArgs, Long userId, String lang) {
@@ -132,6 +144,7 @@ public class QuestionService {
         response.setCategory(question.getCategory() == null ? null : CategoryResponse.from(question.getCategory()));
         response.setTags(question.getTags().stream().map(Tag::getName).toList());
         response.setImageUrls(List.copyOf(question.getImageUrls()));
+        response.setAnswerCount(question.getAnswerCount());
         response.setCreatedAt(CommonUtils.toInstant(question.getCreationDate()));
         response.setUpdatedAt(CommonUtils.toInstant(question.getLastModifiedDate()));
 

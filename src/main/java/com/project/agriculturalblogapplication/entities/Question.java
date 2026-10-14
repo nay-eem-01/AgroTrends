@@ -10,6 +10,7 @@ import com.project.agriculturalblogapplication.model.AuditModel;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -54,6 +55,10 @@ public class Question extends AuditModel<String> {
     @ColumnDefault("'{}'")
     @Column(name = QuestionTable.IMAGE_URLS, nullable = false)
     private List<String> imageUrls = new ArrayList<>();
+
+    /** Direct answers, not replies to answers; computed by the database so it can never drift. */
+    @Formula("(select count(*) from answers a where a.question_id = id and a.answer_id is null)")
+    private long answerCount;
 
     @JsonIgnore
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
