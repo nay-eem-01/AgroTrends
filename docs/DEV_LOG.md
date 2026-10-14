@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 67 of 85 steps done): launch blockers and one account type with
+- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 68 of 85 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -47,6 +47,24 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-14 (roadmap 7.5)
+
+**Done**
+- `POST /api/ai/history/{aiAnswerId}/ask-experts {categoryId, title?}`: the caller's own private ask (404
+  for anyone else's) becomes a public question in that topic (title defaults to the first line, cut at 120
+  characters); the stored answer becomes its `UNCHECKED` AI answer with its sources, so it appears in the
+  experts' review queue. No second model call; the after-commit generator skips questions that already have
+  an AI answer.
+- `AiAnswer` gains `sources` (jsonb, `[]` for older rows) and `publishedQuestion` (`ON DELETE SET NULL`); a
+  conditional update makes a double submit a 409 with nothing posted.
+- `GET /api/ai/history` items gain `sources` and `publishedQuestionId` (additive).
+- Checked live: 16/16 with seeded private asks (Gemini chat key still invalid): ownership 404, topic
+  required, AI answer is the private one with its sources, second publish 409, deleting the question
+  frees the ask again; no model call in the log.
+
+**Known limitations**
+- The question text is the plain ask text, so line breaks need `white-space: pre-line` in the UI.
 
 ## 2026-10-14 (roadmap 7.4)
 
