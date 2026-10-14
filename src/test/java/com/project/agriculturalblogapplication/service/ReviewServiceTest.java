@@ -7,6 +7,10 @@ import com.project.agriculturalblogapplication.entities.QuestionAiAnswer;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.enums.AiAnswerStatus;
 import com.project.agriculturalblogapplication.events.AiAnswerReviewed;
+import com.project.agriculturalblogapplication.enums.NotificationTarget;
+import com.project.agriculturalblogapplication.enums.NotificationType;
+import com.project.agriculturalblogapplication.notification.NotificationMessage;
+import com.project.agriculturalblogapplication.notification.NotificationPublisher;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.AuthorStanding;
 import com.project.agriculturalblogapplication.model.request.CreateAnswerRequest;
@@ -40,6 +44,7 @@ class ReviewServiceTest {
     private static final String LANG = "en";
     private static final long REVIEWER = 7L;
     private static final long TOPIC = 3L;
+    private static final long ASKER = 2L;
 
     private final QuestionAiAnswerRepository repository = mock(QuestionAiAnswerRepository.class);
     private final AnswerService answerService = mock(AnswerService.class);
@@ -48,8 +53,9 @@ class ReviewServiceTest {
     private final UserService userService = mock(UserService.class);
     private final AuthorizationService authorization = mock(AuthorizationService.class);
     private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
+    private final NotificationPublisher notifications = mock(NotificationPublisher.class);
     private final ReviewService reviewService = new ReviewService(repository, answerService, reputation, expertService,
-            userService, authorization, events);
+            userService, authorization, events, notifications);
 
     private final User reviewer = new User();
     private QuestionAiAnswer aiAnswer;
@@ -62,6 +68,9 @@ class ReviewServiceTest {
         Question question = new Question();
         question.setId(4L);
         question.setCategory(topic);
+        User asker = new User();
+        asker.setId(ASKER);
+        question.setUser(asker);
         aiAnswer = new QuestionAiAnswer();
         aiAnswer.setId(12L);
         aiAnswer.setQuestion(question);
@@ -86,6 +95,8 @@ class ReviewServiceTest {
         verify(repository).transition(eq(12L), eq(Set.of(AiAnswerStatus.UNCHECKED)), eq(AiAnswerStatus.CONFIRMED),
                 eq(reviewer), any(), isNull());
         verify(events).publishEvent(new AiAnswerReviewed(4L));
+        verify(notifications).publish(new NotificationMessage(ASKER, REVIEWER, NotificationType.AI_ANSWER_REVIEWED,
+                NotificationTarget.QUESTION, 4L));
     }
 
     @Test
@@ -165,6 +176,7 @@ class ReviewServiceTest {
         verify(repository).transition(eq(12L),
                 eq(Set.of(AiAnswerStatus.CONFIRMED, AiAnswerStatus.CORRECTED, AiAnswerStatus.FLAGGED)),
                 eq(AiAnswerStatus.UNCHECKED), isNull(), isNull(), isNull());
+        verify(notifications, never()).publish(any());
     }
 
     @Test

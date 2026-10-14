@@ -8,6 +8,10 @@ import com.project.agriculturalblogapplication.entities.Category;
 import com.project.agriculturalblogapplication.entities.Question;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.events.AnswerChanged;
+import com.project.agriculturalblogapplication.enums.NotificationTarget;
+import com.project.agriculturalblogapplication.enums.NotificationType;
+import com.project.agriculturalblogapplication.notification.NotificationMessage;
+import com.project.agriculturalblogapplication.notification.NotificationPublisher;
 import com.project.agriculturalblogapplication.model.request.CreateAnswerRequest;
 import com.project.agriculturalblogapplication.model.request.ReplyToAnswerRequest;
 import com.project.agriculturalblogapplication.model.request.UpdateAnswerRequest;
@@ -44,6 +48,8 @@ public class AnswerService {
 
     private final ApplicationEventPublisher eventPublisher;
 
+    private final NotificationPublisher notificationPublisher;
+
     @Transactional
     public AnswerResponse create(CreateAnswerRequest request, String lang) {
         Question question = questionService.findByIdWithException(request.getQuestionId());
@@ -56,6 +62,8 @@ public class AnswerService {
         answer.setQuestion(question);
         answer = answerRepository.save(answer);
         eventPublisher.publishEvent(new AnswerChanged(answer.getId()));
+        notificationPublisher.publish(new NotificationMessage(question.getUser().getId(), user.getId(),
+                NotificationType.ANSWER_ON_YOUR_QUESTION, NotificationTarget.QUESTION, question.getId()));
 
         return mapToAnswerResponse(answer);
     }
@@ -111,6 +119,8 @@ public class AnswerService {
             answer.getQuestion().setAcceptedAnswer(answer);
             reputationService.accepted(answer);
             eventPublisher.publishEvent(new AnswerChanged(answer.getId()));
+            notificationPublisher.publish(new NotificationMessage(answer.getUser().getId(), answer.getQuestion().getUser().getId(),
+                    NotificationType.ANSWER_ACCEPTED, NotificationTarget.QUESTION, answer.getQuestion().getId()));
         }
         return mapToAnswerResponse(answer);
     }

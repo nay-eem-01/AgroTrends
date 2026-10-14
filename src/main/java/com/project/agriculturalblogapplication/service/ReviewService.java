@@ -6,6 +6,10 @@ import com.project.agriculturalblogapplication.entities.QuestionAiAnswer;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.enums.AiAnswerStatus;
 import com.project.agriculturalblogapplication.events.AiAnswerReviewed;
+import com.project.agriculturalblogapplication.enums.NotificationTarget;
+import com.project.agriculturalblogapplication.enums.NotificationType;
+import com.project.agriculturalblogapplication.notification.NotificationMessage;
+import com.project.agriculturalblogapplication.notification.NotificationPublisher;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.AuthorStanding;
 import com.project.agriculturalblogapplication.model.request.CreateAnswerRequest;
@@ -47,6 +51,8 @@ public class ReviewService {
     private final AuthorizationService authorizationService;
 
     private final ApplicationEventPublisher eventPublisher;
+
+    private final NotificationPublisher notificationPublisher;
 
     /** Unchecked AI answers in the caller's expert topics, oldest first. */
     @Transactional(readOnly = true)
@@ -141,6 +147,10 @@ public class ReviewService {
             throw new ApplicationException(HttpStatus.CONFLICT, conflict, lang);
         }
         eventPublisher.publishEvent(new AiAnswerReviewed(aiAnswer.getQuestion().getId()));
+        if (reviewer != null) {
+            notificationPublisher.publish(new NotificationMessage(aiAnswer.getQuestion().getUser().getId(), reviewer.getId(),
+                    NotificationType.AI_ANSWER_REVIEWED, NotificationTarget.QUESTION, aiAnswer.getQuestion().getId()));
+        }
         return QuestionAiAnswerResponse.from(find(aiAnswer.getQuestion().getId(), lang));
     }
 }

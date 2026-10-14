@@ -148,6 +148,23 @@ public final class AppTables {
         public static final String REVOKED_AT = "revoked_at";
     }
 
+    public static final class NotificationTable {
+
+        public static final String NAME = "notifications";
+
+        public static final String RECIPIENT_ID = "recipient_id";
+
+        public static final String ACTOR_ID = "actor_id";
+
+        public static final String TYPE = "type";
+
+        public static final String TARGET_TYPE = "target_type";
+
+        public static final String TARGET_ID = "target_id";
+
+        public static final String READ_AT = "read_at";
+    }
+
     public static final class TagTable {
 
         public static final String TAG_NAME = "tag_name";
