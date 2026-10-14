@@ -5,6 +5,7 @@ import com.project.agriculturalblogapplication.enums.ReportReason;
 import com.project.agriculturalblogapplication.enums.ReportStatus;
 import com.project.agriculturalblogapplication.enums.ReportTarget;
 import com.project.agriculturalblogapplication.model.AuditModel;
+import com.project.agriculturalblogapplication.model.EnumNameConverter;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -27,15 +28,15 @@ public class Report extends AuditModel<String> {
     @OnDelete(action = OnDeleteAction.CASCADE)
     private User reporter;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = ReportTable.TARGET_TYPE, nullable = false)
+    @Convert(converter = TargetConverter.class)
+    @Column(name = ReportTable.TARGET_TYPE, nullable = false, length = 40)
     private ReportTarget targetType;
 
     /** The target's id; for AI_ANSWER, its question's id. Not a foreign key: targets live in several tables. */
     @Column(name = ReportTable.TARGET_ID, nullable = false)
     private Long targetId;
 
-    // Converted, not @Enumerated: reasons will grow and Hibernate's enum CHECK is never widened by ddl-auto.
+    // Converted, not @Enumerated, like every enum here: Hibernate's enum CHECK is never widened by ddl-auto.
     @Convert(converter = ReasonConverter.class)
     @Column(name = ReportTable.REASON, nullable = false, length = 40)
     private ReportReason reason;
@@ -47,20 +48,28 @@ public class Report extends AuditModel<String> {
     @Column(name = ReportTable.SNAPSHOT, columnDefinition = "TEXT")
     private String snapshot;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = ReportTable.STATUS, nullable = false)
+    @Convert(converter = StatusConverter.class)
+    @Column(name = ReportTable.STATUS, nullable = false, length = 40)
     private ReportStatus status = ReportStatus.OPEN;
 
     @Converter
-    static class ReasonConverter implements AttributeConverter<ReportReason, String> {
-        @Override
-        public String convertToDatabaseColumn(ReportReason reason) {
-            return reason == null ? null : reason.name();
+    static class ReasonConverter extends EnumNameConverter<ReportReason> {
+        ReasonConverter() {
+            super(ReportReason.class);
         }
+    }
 
-        @Override
-        public ReportReason convertToEntityAttribute(String name) {
-            return name == null ? null : ReportReason.valueOf(name);
+    @Converter
+    static class TargetConverter extends EnumNameConverter<ReportTarget> {
+        TargetConverter() {
+            super(ReportTarget.class);
+        }
+    }
+
+    @Converter
+    static class StatusConverter extends EnumNameConverter<ReportStatus> {
+        StatusConverter() {
+            super(ReportStatus.class);
         }
     }
 }

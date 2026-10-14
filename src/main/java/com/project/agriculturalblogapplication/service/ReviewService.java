@@ -105,15 +105,18 @@ public class ReviewService {
     }
 
     /**
-     * Moderator: hides an AI answer whatever its review state and returns what it said. No reviewer is recorded, so
-     * the asker is not notified and the moderator stays anonymous.
+     * Moderator: hides the question's AI answer whatever its review state and returns what it said, or null when
+     * the question has none. The reviewer stays on record; nobody is notified, so the moderator stays anonymous.
      */
     @Transactional
-    public String hide(Long questionId, String lang) {
-        QuestionAiAnswer aiAnswer = find(questionId, lang);
-        move(aiAnswer, Set.of(AiAnswerStatus.UNCHECKED, AiAnswerStatus.CONFIRMED, AiAnswerStatus.CORRECTED),
-                AiAnswerStatus.FLAGGED, null, null, ErrorCode.ERROR_AI_ANSWER_ALREADY_REVIEWED, lang);
-        return aiAnswer.getAnswer();
+    public String hide(Long questionId) {
+        return aiAnswerRepository.findByQuestionId(questionId).map(aiAnswer -> {
+            if (aiAnswer.getStatus() != AiAnswerStatus.FLAGGED) {
+                aiAnswerRepository.hide(questionId);
+                eventPublisher.publishEvent(new AiAnswerReviewed(questionId));
+            }
+            return aiAnswer.getAnswer();
+        }).orElse(null);
     }
 
     /** Admin: back to UNCHECKED. A correction stays posted as an ordinary answer. */

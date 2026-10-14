@@ -1,13 +1,17 @@
 package com.project.agriculturalblogapplication.service;
 
+import com.project.agriculturalblogapplication.entities.Blog;
 import com.project.agriculturalblogapplication.entities.Report;
 import com.project.agriculturalblogapplication.entities.User;
+import com.project.agriculturalblogapplication.enums.AiAnswerStatus;
+import com.project.agriculturalblogapplication.enums.BlogStatus;
 import com.project.agriculturalblogapplication.enums.ReportReason;
 import com.project.agriculturalblogapplication.enums.ReportStatus;
 import com.project.agriculturalblogapplication.enums.ReportTarget;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.request.CreateReportRequest;
 import com.project.agriculturalblogapplication.model.response.ReportResponse;
+import com.project.agriculturalblogapplication.repositories.QuestionAiAnswerRepository;
 import com.project.agriculturalblogapplication.repositories.ReportRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,12 +36,12 @@ class ReportServiceTest {
     private final BlogService blogService = mock(BlogService.class);
     private final QuestionService questionService = mock(QuestionService.class);
     private final AnswerService answerService = mock(AnswerService.class);
-    private final AiService aiService = mock(AiService.class);
+    private final QuestionAiAnswerRepository aiAnswers = mock(QuestionAiAnswerRepository.class);
     private final CommentService commentService = mock(CommentService.class);
     private final UserService userService = mock(UserService.class);
     private final AuthorizationService authorization = mock(AuthorizationService.class);
     private final ReportService reportService = new ReportService(repository, blogService, questionService, answerService,
-            aiService, commentService, userService, authorization);
+            aiAnswers, commentService, userService, authorization);
 
     @BeforeEach
     void setUp() {
@@ -58,8 +62,22 @@ class ReportServiceTest {
 
     @Test
     void anAiAnswerIsFoundThroughItsQuestionAndBlankDetailsAreDropped() {
+        when(aiAnswers.existsByQuestionIdAndStatusNot(4L, AiAnswerStatus.FLAGGED)).thenReturn(true);
+
         assertNull(reportService.report(request(ReportTarget.AI_ANSWER, 4L, " "), LANG).details());
-        verify(aiService).questionAnswer(4L, LANG);
+        assertEquals(HttpStatus.NOT_FOUND, assertThrows(ApplicationException.class,
+                () -> reportService.report(request(ReportTarget.AI_ANSWER, 5L, null), LANG)).getHttpStatus());
+    }
+
+    @Test
+    void aDraftCannotBeReportedSoItsExistenceIsNotConfirmed() {
+        Blog draft = new Blog();
+        draft.setStatus(BlogStatus.DRAFT);
+        when(blogService.findByIdWithException(6L)).thenReturn(draft);
+
+        assertEquals(HttpStatus.NOT_FOUND, assertThrows(ApplicationException.class,
+                () -> reportService.report(request(ReportTarget.BLOG, 6L, null), LANG)).getHttpStatus());
+        verify(repository, never()).save(any());
     }
 
     @Test

@@ -29,6 +29,15 @@ public interface QuestionAiAnswerRepository extends JpaRepository<QuestionAiAnsw
             + " and a.status = :status")
     List<Long> reviewedBy(@Param("userId") Long userId, @Param("topicId") Long topicId, @Param("status") AiAnswerStatus status);
 
+    /** Moderator hide: only the status changes, so who reviewed it (and any correction) stays on record. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("""
+            update QuestionAiAnswer a set a.status = com.project.agriculturalblogapplication.enums.AiAnswerStatus.FLAGGED
+            where a.question.id = :questionId""")
+    int hide(@Param("questionId") Long questionId);
+
+    boolean existsByQuestionIdAndStatusNot(Long questionId, AiAnswerStatus status);
+
     /** Puts these AI answers back to UNCHECKED. */
     @Modifying(flushAutomatically = true)
     @Query("""

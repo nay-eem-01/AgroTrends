@@ -4,6 +4,7 @@ import com.project.agriculturalblogapplication.constatnt.AppTables.NotificationT
 import com.project.agriculturalblogapplication.enums.NotificationTarget;
 import com.project.agriculturalblogapplication.enums.NotificationType;
 import com.project.agriculturalblogapplication.model.AuditModel;
+import com.project.agriculturalblogapplication.model.EnumNameConverter;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -50,28 +51,16 @@ public class Notification extends AuditModel<String> {
     private LocalDateTime readAt;
 
     @Converter
-    static class TypeConverter implements AttributeConverter<NotificationType, String> {
-        @Override
-        public String convertToDatabaseColumn(NotificationType type) {
-            return type == null ? null : type.name();
-        }
-
-        @Override
-        public NotificationType convertToEntityAttribute(String name) {
-            return name == null ? null : NotificationType.valueOf(name);
+    static class TypeConverter extends EnumNameConverter<NotificationType> {
+        TypeConverter() {
+            super(NotificationType.class);
         }
     }
 
     @Converter
-    static class TargetConverter implements AttributeConverter<NotificationTarget, String> {
-        @Override
-        public String convertToDatabaseColumn(NotificationTarget target) {
-            return target == null ? null : target.name();
-        }
-
-        @Override
-        public NotificationTarget convertToEntityAttribute(String name) {
-            return name == null ? null : NotificationTarget.valueOf(name);
+    static class TargetConverter extends EnumNameConverter<NotificationTarget> {
+        TargetConverter() {
+            super(NotificationTarget.class);
         }
     }
 }
