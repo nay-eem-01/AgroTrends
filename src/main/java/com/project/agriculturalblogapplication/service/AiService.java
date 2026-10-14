@@ -10,7 +10,6 @@ import com.project.agriculturalblogapplication.enums.AiAnswerStatus;
 import com.project.agriculturalblogapplication.events.QuestionCreated;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.response.AiAnswerResponse;
-import com.project.agriculturalblogapplication.model.response.AiDraftAnswerResponse;
 import com.project.agriculturalblogapplication.model.response.AiHistoryItemResponse;
 import com.project.agriculturalblogapplication.model.response.AiSourceResponse;
 import com.project.agriculturalblogapplication.model.response.QuestionAiAnswerResponse;
@@ -46,8 +45,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AiService {
 
-    static final String AI_DRAFT_LABEL = "AI draft - not reviewed by an expert";
-
     private final AiRepositories aiRepositories;
 
     private final ChatClient chatClient;
@@ -57,8 +54,6 @@ public class AiService {
     private final AiProperties aiProperties;
 
     private final QuestionService questionService;
-
-    private final AnswerService answerService;
 
     private final QuestionAiAnswerRepository questionAiAnswerRepository;
 
@@ -80,21 +75,6 @@ public class AiService {
         aiRepositories.save(aiAnswer);
 
         return new AiAnswerResponse(answer, sourcesOf(response.context().get(RetrievalAugmentationAdvisor.DOCUMENT_CONTEXT)));
-    }
-
-    /**
-     * An AI answer for a community question nobody has answered yet. It goes through {@link #ask}, so it counts
-     * against the caller's daily limit and appears in their history; it is returned, not posted as an answer.
-     */
-    public AiDraftAnswerResponse draftAnswer(Long questionId, String lang) {
-        Question question = questionService.findByIdWithException(questionId);
-        if (answerService.hasAnswers(questionId)) {
-            throw new ApplicationException(HttpStatus.CONFLICT, ErrorCode.ERROR_QUESTION_ALREADY_ANSWERED, lang);
-        }
-        String text = question.getTitle() + "\n\n" + question.getContent();
-        AiAnswerResponse answer = ask(text.length() > AppConstants.AI_MAX_QUESTION_LENGTH
-                ? text.substring(0, AppConstants.AI_MAX_QUESTION_LENGTH) : text, lang);
-        return new AiDraftAnswerResponse(AI_DRAFT_LABEL, answer.answer(), answer.sources());
     }
 
     /**
