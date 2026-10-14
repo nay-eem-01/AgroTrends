@@ -141,7 +141,7 @@ class CommentServiceTest {
     void deleteByNonOwnerIsRefusedAndNothingIsDeleted() {
         when(commentRepository.findById(10L)).thenReturn(Optional.of(comment(10L, null)));
         doThrow(new ApplicationException(HttpStatus.FORBIDDEN, "no", "en"))
-                .when(authorization).assertOwnerAdminOrModerator(7L, "en");
+                .when(authorization).assertOwnerOrAdmin(7L, "en");
 
         assertThrows(ApplicationException.class, () -> commentService.delete(10L, "en"));
         verify(commentRepository, never()).delete(any());

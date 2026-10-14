@@ -64,11 +64,23 @@ public class CommentService {
     }
 
     public void delete(Long commentId, String lang) {
-        // Hidden comments can still be deleted, by their author or a moderator confirming the reports.
-        Comment comment = commentRepository.findById(commentId).orElseThrow(() ->
-                new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_COMMENT_NOT_FOUND));
-        authorizationService.assertOwnerAdminOrModerator(comment.getUser().getId(), lang);
+        Comment comment = findIncludingHidden(commentId);
+        authorizationService.assertOwnerOrAdmin(comment.getUser().getId(), lang);
         commentRepository.delete(comment);
+    }
+
+    /**
+     * Deletes after a moderator confirmed reports about it; the authorization is the moderation endpoint's.
+     * Package-private: only ModerationService may skip the owner-or-admin check.
+     */
+    void removeForModeration(Long commentId) {
+        commentRepository.delete(findIncludingHidden(commentId));
+    }
+
+    // Hidden comments can still be deleted, by their author or a moderator confirming the reports.
+    private Comment findIncludingHidden(Long commentId) {
+        return commentRepository.findById(commentId).orElseThrow(() ->
+                new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_COMMENT_NOT_FOUND));
     }
 
     public List<CommentResponse> getAllByBlogId(Long blogId, String lang) {

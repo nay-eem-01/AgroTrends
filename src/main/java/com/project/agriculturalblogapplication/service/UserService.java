@@ -264,6 +264,8 @@ public class UserService {
         user.setBannedAt(null);
         user.setBanReason(null);
         userRepository.save(user);
+        // A session created while the ban was being applied is not revived by the unban.
+        revokeAllCredentials(userId);
     }
 
     /** Kills every access session and refresh token of the user. */

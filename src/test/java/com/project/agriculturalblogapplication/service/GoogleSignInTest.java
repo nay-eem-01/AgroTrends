@@ -92,6 +92,17 @@ class GoogleSignInTest {
     }
 
     @Test
+    void aBannedAccountFoundByEmailIsRefusedBeforeItIsLinkedToGoogle() {
+        User banned = user(RoleType.USER, null);
+        banned.setBannedAt(java.time.LocalDateTime.now());
+        when(userService.findByEmail(EMAIL)).thenReturn(banned);
+
+        assertThrows(ApplicationException.class, () -> authService.signInWithGoogle(request(), "en"));
+
+        verify(userService, never()).linkGoogle(any(), any());
+    }
+
+    @Test
     void aBannedAccountGetsNoTokens() {
         User banned = user(RoleType.USER, SUBJECT);
         banned.setBannedAt(java.time.LocalDateTime.now());

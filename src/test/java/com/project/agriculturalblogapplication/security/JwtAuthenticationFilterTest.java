@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -140,18 +141,18 @@ class JwtAuthenticationFilterTest {
     }
 
     @Test
-    void aBannedUsersStillActiveSessionIsRefusedEvenForReads() throws Exception {
-        // Regression: the ban was checked only when tokens were issued, so a session created while the ban was being
-        // applied kept working.
+    void aBannedUsersTokenCountsAsNoTokenEvenWithAnActiveSession() {
+        // Regressions: the ban was checked only when tokens were issued, so a session created while the ban was
+        // applied kept working; then a 403 on every request blocked public reads and sign-out.
         givenUser(false, true, true);
         when(sessions.getActiveSessionByToken(token)).thenReturn(new UserSession());
 
-        MockHttpServletResponse blocked = new MockHttpServletResponse();
-        filter.doFilter(request("GET", "/api/user/me"), blocked, chain);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        assertDoesNotThrow(() -> filter.doFilter(request("GET", "/api/blogs/all"), response, chain));
 
-        assertEquals(403, blocked.getStatus());
-        assertTrue(blocked.getContentAsString().contains("suspended"));
-        verifyNoInteractions(chain);
+        assertEquals(200, response.getStatus());
+        assertNull(SecurityContextHolder.getContext().getAuthentication());
+        assertDoesNotThrow(() -> verify(chain).doFilter(any(), any()));
     }
 
     @Test

@@ -73,7 +73,7 @@ class ModerationServiceTest {
         InOrder order = inOrder(repository, answerService, notifications);
         order.verify(repository).closeAsActioned(eq(ReportTarget.ANSWER), eq(8L), eq("Spray 500 ml per litre."),
                 eq("mod@agrotrends.test"), any());
-        order.verify(answerService).delete(8L, LANG);
+        order.verify(answerService).removeForModeration(8L);
         order.verify(notifications).publish(new NotificationMessage(30L, null, NotificationType.CONTENT_REMOVED,
                 NotificationTarget.QUESTION, 4L));
     }
@@ -114,7 +114,7 @@ class ModerationServiceTest {
                 assertThrows(ApplicationException.class, () -> moderation.removeContent(1L, LANG)).getHttpStatus());
         assertEquals(HttpStatus.CONFLICT,
                 assertThrows(ApplicationException.class, () -> moderation.dismiss(1L, LANG)).getHttpStatus());
-        verify(questionService, never()).delete(anyLong(), anyString());
+        verify(questionService, never()).removeForModeration(anyLong());
     }
 
     @Test
@@ -177,7 +177,7 @@ class ModerationServiceTest {
         moderation.dismiss(1L, LANG);
 
         verifyNoInteractions(events, notifications);
-        verify(questionService, never()).delete(anyLong(), anyString());
+        verify(questionService, never()).removeForModeration(anyLong());
     }
 
     @Test
@@ -209,7 +209,7 @@ class ModerationServiceTest {
         moderation.removeContent(1L, LANG);
 
         verify(repository).closeAsActioned(eq(ReportTarget.ANSWER), eq(8L), eq(ModerationService.ALREADY_GONE), any(), any());
-        verify(answerService, never()).delete(anyLong(), anyString());
+        verify(answerService, never()).removeForModeration(anyLong());
         verifyNoInteractions(notifications);
     }
 

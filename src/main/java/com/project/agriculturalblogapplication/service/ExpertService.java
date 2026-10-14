@@ -192,10 +192,13 @@ public class ExpertService {
         }
         application.setStatus(status);
         application.setReviewNote(reviewNote);
-        // No actor: applicants are not told which admin decided (as with moderation).
-        notificationPublisher.publish(new NotificationMessage(application.getUser().getId(),
-                null, NotificationType.APPLICATION_DECIDED,
-                NotificationTarget.EXPERT_APPLICATION, application.getId()));
+        // No actor, so applicants are not told which admin decided; that also disables the self-notification skip,
+        // hence the explicit check for an admin deciding their own application.
+        if (!application.getUser().getId().equals(authorizationService.currentUserId(lang))) {
+            notificationPublisher.publish(new NotificationMessage(application.getUser().getId(),
+                    null, NotificationType.APPLICATION_DECIDED,
+                    NotificationTarget.EXPERT_APPLICATION, application.getId()));
+        }
         return ExpertApplicationResponse.from(application);
     }
 }

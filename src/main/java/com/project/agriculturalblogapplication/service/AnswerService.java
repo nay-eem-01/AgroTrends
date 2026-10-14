@@ -81,18 +81,35 @@ public class AnswerService {
 
     @Transactional
     public void delete(Long answerId, String lang) {
-        // Hidden answers can still be deleted, by their author or a moderator confirming the reports.
-        Answer answer = answerRepository.findById(answerId).orElseThrow(() ->
+        Answer answer = findIncludingHidden(answerId);
+        authorizationService.assertOwnerOrAdmin(answer.getUser().getId(), lang);
+        remove(answer);
+    }
+
+    /**
+     * Deletes after a moderator confirmed reports about it; the authorization is the moderation endpoint's.
+     * Package-private: only ModerationService may skip the owner-or-admin check.
+     */
+    @Transactional
+    void removeForModeration(Long answerId) {
+        remove(findIncludingHidden(answerId));
+    }
+
+    // Hidden answers can still be deleted, by their author or a moderator confirming the reports.
+    private Answer findIncludingHidden(Long answerId) {
+        return answerRepository.findById(answerId).orElseThrow(() ->
                 new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_ANSWER_NOT_FOUND));
-        authorizationService.assertOwnerAdminOrModerator(answer.getUser().getId(), lang);
+    }
+
+    private void remove(Answer answer) {
         // The loaded question must not point at a deleted row when the session flushes. The answer's reputation
         // events go with it (ON DELETE CASCADE), so nothing is written to the ledger here.
         if (isAccepted(answer)) {
             answer.getQuestion().setAcceptedAnswer(null);
         }
-        aiAnswerRepository.reopenCorrectedBy(answerId);
+        aiAnswerRepository.reopenCorrectedBy(answer.getId());
         answerRepository.delete(answer);
-        eventPublisher.publishEvent(new AnswerChanged(answerId));
+        eventPublisher.publishEvent(new AnswerChanged(answer.getId()));
     }
 
     /** Direct answers (replies come from viewReplies): the accepted one first, then highest score, then oldest. */
