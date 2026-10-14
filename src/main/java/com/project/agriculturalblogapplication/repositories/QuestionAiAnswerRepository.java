@@ -21,6 +21,8 @@ public interface QuestionAiAnswerRepository extends JpaRepository<QuestionAiAnsw
     @EntityGraph(attributePaths = {"question", "reviewedBy"})
     Optional<QuestionAiAnswer> findByQuestionId(Long questionId);
 
+    boolean existsByQuestionId(Long questionId);
+
     long countByQuestionUserIdAndCreationDateGreaterThanEqual(Long userId, LocalDateTime since);
 
     @EntityGraph(attributePaths = "question")

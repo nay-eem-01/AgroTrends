@@ -9,10 +9,13 @@ import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.enums.AiAnswerStatus;
 import com.project.agriculturalblogapplication.events.QuestionCreated;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
+import com.project.agriculturalblogapplication.model.request.AskExpertsRequest;
+import com.project.agriculturalblogapplication.model.request.CreateQuestionRequest;
 import com.project.agriculturalblogapplication.model.response.AiAnswerResponse;
 import com.project.agriculturalblogapplication.model.response.AiHistoryItemResponse;
 import com.project.agriculturalblogapplication.model.response.AiSourceResponse;
 import com.project.agriculturalblogapplication.model.response.QuestionAiAnswerResponse;
+import com.project.agriculturalblogapplication.model.response.QuestionResponse;
 import com.project.agriculturalblogapplication.repositories.AiRepositories;
 import com.project.agriculturalblogapplication.repositories.QuestionAiAnswerRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
@@ -74,6 +77,7 @@ class AiServiceTest {
         ArgumentCaptor<AiAnswer> saved = ArgumentCaptor.forClass(AiAnswer.class);
         verify(aiRepositories).save(saved.capture());
         assertEquals(7L, saved.getValue().getUserId());
+        assertEquals(List.of(new AiSourceResponse(2L, "Rice blast in short")), saved.getValue().getSources());
         assertEquals("Use resistant varieties.", saved.getValue().getAiAnswer());
         assertEquals(120, saved.getValue().getPromptTokens());
         assertEquals(30, saved.getValue().getCompletionTokens());
@@ -141,6 +145,91 @@ class AiServiceTest {
         AiHistoryItemResponse item = page.getContent().get(0);
         assertEquals("Use resistant varieties.", item.answer());
         assertEquals(LocalDateTime.of(2026, 10, 6, 12, 0).atZone(ZoneId.systemDefault()).toInstant(), item.askedAt());
+    }
+
+    @Test
+    void askingTheExpertsPostsTheAskAsAQuestionWithItsAnswerAsTheUncheckedAiAnswer() {
+        AiAnswer ask = privateAsk();
+        when(questionService.create(any(CreateQuestionRequest.class), eq("en"))).thenAnswer(call -> {
+            QuestionResponse created = new QuestionResponse();
+            created.setQuestionId(4L);
+            return created;
+        });
+        Question question = question("ignored", "ignored");
+        when(questionService.findByIdWithException(4L)).thenReturn(question);
+        when(aiRepositories.markPublished(3L, question)).thenReturn(1);
+        AskExpertsRequest request = new AskExpertsRequest();
+        request.setCategoryId(2L);
+
+        assertEquals(4L, aiService.askExperts(3L, request, "en").getQuestionId());
+
+        ArgumentCaptor<CreateQuestionRequest> create = ArgumentCaptor.forClass(CreateQuestionRequest.class);
+        verify(questionService).create(create.capture(), eq("en"));
+        assertEquals("How do I stop rice blast?", create.getValue().getTitle());
+        assertEquals("How do I stop rice blast?\nIt spreads fast.", create.getValue().getContent());
+        assertEquals(2L, create.getValue().getCategoryId());
+        ArgumentCaptor<QuestionAiAnswer> aiAnswer = ArgumentCaptor.forClass(QuestionAiAnswer.class);
+        verify(questionAiAnswers).save(aiAnswer.capture());
+        assertEquals("Use resistant varieties.", aiAnswer.getValue().getAnswer());
+        assertEquals(List.of(new AiSourceResponse(2L, "Rice blast in short")), aiAnswer.getValue().getSources());
+        assertEquals(AiAnswerStatus.UNCHECKED, aiAnswer.getValue().getStatus());
+        verify(chatClient, never()).prompt();
+    }
+
+    @Test
+    void someoneElsesAskIsNotFoundAndAPublishedOneIsAConflict() {
+        when(authorization.currentUserId("en")).thenReturn(7L);
+        AskExpertsRequest request = new AskExpertsRequest();
+        request.setCategoryId(2L);
+        assertEquals(HttpStatus.NOT_FOUND,
+                assertThrows(ApplicationException.class, () -> aiService.askExperts(3L, request, "en")).getHttpStatus());
+
+        privateAsk().setPublishedQuestion(new Question());
+        assertEquals(HttpStatus.CONFLICT,
+                assertThrows(ApplicationException.class, () -> aiService.askExperts(3L, request, "en")).getHttpStatus());
+        verify(questionService, never()).create(any(), any());
+    }
+
+    @Test
+    void aDoubleSubmitThatLosesTheRaceIsAConflict() {
+        privateAsk();
+        QuestionResponse created = new QuestionResponse();
+        created.setQuestionId(4L);
+        when(questionService.create(any(CreateQuestionRequest.class), eq("en"))).thenReturn(created);
+        AskExpertsRequest request = new AskExpertsRequest();
+        request.setCategoryId(2L);
+
+        assertEquals(HttpStatus.CONFLICT,
+                assertThrows(ApplicationException.class, () -> aiService.askExperts(3L, request, "en")).getHttpStatus());
+        verify(questionAiAnswers, never()).save(any());
+    }
+
+    @Test
+    void aLongAskIsCutToATitle() {
+        assertEquals(AiService.TITLE_LENGTH, AiService.titleOf("w ".repeat(200)).length());
+        assertEquals("First line", AiService.titleOf("  First line\nsecond line"));
+    }
+
+    @Test
+    void aQuestionThatAlreadyHasAnAiAnswerIsNotAnsweredAgain() {
+        when(questionAiAnswers.existsByQuestionId(4L)).thenReturn(true);
+
+        aiService.answerQuestion(new QuestionCreated(4L));
+
+        verify(chatClient, never()).prompt();
+        verify(questionAiAnswers, never()).save(any());
+    }
+
+    private AiAnswer privateAsk() {
+        when(authorization.currentUserId("en")).thenReturn(7L);
+        AiAnswer ask = new AiAnswer();
+        ask.setId(3L);
+        ask.setUserId(7L);
+        ask.setQuestion("How do I stop rice blast?\nIt spreads fast.");
+        ask.setAiAnswer("Use resistant varieties.");
+        ask.setSources(List.of(new AiSourceResponse(2L, "Rice blast in short")));
+        when(aiRepositories.findByIdAndUserId(3L, 7L)).thenReturn(Optional.of(ask));
+        return ask;
     }
 
     @Test

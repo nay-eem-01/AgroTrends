@@ -314,5 +314,9 @@ public final class AppTables {
         public static final String COMPLETION_TOKENS = "completion_tokens";
 
         public static final String AI_ANSWER = "ai_answer";
+
+        public static final String SOURCES = "sources";
+
+        public static final String PUBLISHED_QUESTION_ID = "published_question_id";
     }
 }

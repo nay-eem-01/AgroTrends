@@ -9,10 +9,13 @@ import com.project.agriculturalblogapplication.entities.QuestionAiAnswer;
 import com.project.agriculturalblogapplication.enums.AiAnswerStatus;
 import com.project.agriculturalblogapplication.events.QuestionCreated;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
+import com.project.agriculturalblogapplication.model.request.AskExpertsRequest;
+import com.project.agriculturalblogapplication.model.request.CreateQuestionRequest;
 import com.project.agriculturalblogapplication.model.response.AiAnswerResponse;
 import com.project.agriculturalblogapplication.model.response.AiHistoryItemResponse;
 import com.project.agriculturalblogapplication.model.response.AiSourceResponse;
 import com.project.agriculturalblogapplication.model.response.QuestionAiAnswerResponse;
+import com.project.agriculturalblogapplication.model.response.QuestionResponse;
 import com.project.agriculturalblogapplication.repositories.AiRepositories;
 import com.project.agriculturalblogapplication.repositories.QuestionAiAnswerRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
@@ -32,6 +35,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.LocalDate;
@@ -44,6 +48,8 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class AiService {
+
+    static final int TITLE_LENGTH = 120;
 
     private final AiRepositories aiRepositories;
 
@@ -70,11 +76,47 @@ public class AiService {
         aiAnswer.setUserId(userId);
         aiAnswer.setQuestion(question);
         aiAnswer.setAiAnswer(answer);
+        aiAnswer.setSources(sourcesOf(response.context().get(RetrievalAugmentationAdvisor.DOCUMENT_CONTEXT)));
         aiAnswer.setPromptTokens(usage.getPromptTokens());
         aiAnswer.setCompletionTokens(usage.getCompletionTokens());
         aiRepositories.save(aiAnswer);
 
-        return new AiAnswerResponse(answer, sourcesOf(response.context().get(RetrievalAugmentationAdvisor.DOCUMENT_CONTEXT)));
+        return new AiAnswerResponse(answer, aiAnswer.getSources());
+    }
+
+    /**
+     * "Ask an expert to check this": the caller's private ask becomes a public question in a topic, and its answer
+     * becomes that question's unchecked AI answer, so it lands in the experts' review queue without a new model call.
+     */
+    @Transactional
+    public QuestionResponse askExperts(Long aiAnswerId, AskExpertsRequest request, String lang) {
+        AiAnswer ask = aiRepositories.findByIdAndUserId(aiAnswerId, authorizationService.currentUserId(lang)).orElseThrow(() ->
+                new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_AI_ANSWER_NOT_FOUND, lang));
+        if (ask.getPublishedQuestion() != null) {
+            throw new ApplicationException(HttpStatus.CONFLICT, ErrorCode.ERROR_AI_ASK_ALREADY_PUBLISHED, lang);
+        }
+        CreateQuestionRequest create = new CreateQuestionRequest();
+        create.setTitle(request.getTitle() == null || request.getTitle().isBlank() ? titleOf(ask.getQuestion()) : request.getTitle().strip());
+        create.setContent(ask.getQuestion());
+        create.setCategoryId(request.getCategoryId());
+        QuestionResponse created = questionService.create(create, lang);
+        Question question = questionService.findByIdWithException(created.getQuestionId());
+        if (aiRepositories.markPublished(ask.getId(), question) == 0) {
+            throw new ApplicationException(HttpStatus.CONFLICT, ErrorCode.ERROR_AI_ASK_ALREADY_PUBLISHED, lang);
+        }
+
+        QuestionAiAnswer aiAnswer = new QuestionAiAnswer();
+        aiAnswer.setQuestion(question);
+        aiAnswer.setAnswer(ask.getAiAnswer());
+        aiAnswer.setSources(ask.getSources());
+        questionAiAnswerRepository.save(aiAnswer);
+        return created;
+    }
+
+    /** The first line of the asked text, cut to fit a title. */
+    static String titleOf(String asked) {
+        String firstLine = asked.strip().lines().findFirst().orElse("");
+        return firstLine.length() <= TITLE_LENGTH ? firstLine : firstLine.substring(0, TITLE_LENGTH - 1).strip() + "…";
     }
 
     /**
@@ -86,6 +128,9 @@ public class AiService {
     @TransactionalEventListener
     public void answerQuestion(QuestionCreated event) {
         try {
+            if (questionAiAnswerRepository.existsByQuestionId(event.questionId())) {
+                return; // sent from a private ask (askExperts): it already has its answer
+            }
             Question question = questionService.findByIdWithException(event.questionId());
             long answeredToday = questionAiAnswerRepository.countByQuestionUserIdAndCreationDateGreaterThanEqual(
                     question.getUser().getId(), LocalDate.now().atStartOfDay());
@@ -153,6 +198,8 @@ public class AiService {
 
     private static AiHistoryItemResponse toHistoryItem(AiAnswer aiAnswer) {
         return new AiHistoryItemResponse(aiAnswer.getId(), aiAnswer.getQuestion(), aiAnswer.getAiAnswer(),
+                List.copyOf(aiAnswer.getSources()),
+                aiAnswer.getPublishedQuestion() == null ? null : aiAnswer.getPublishedQuestion().getId(),
                 aiAnswer.getCreationDate().atZone(ZoneId.systemDefault()).toInstant());
     }
 
