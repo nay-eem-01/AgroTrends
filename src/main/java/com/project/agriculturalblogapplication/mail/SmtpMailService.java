@@ -19,13 +19,25 @@ public class SmtpMailService implements MailService {
 
     @Override
     public void sendPasswordReset(String to, String resetLink) {
+        send(to, "Reset your AgroTrends password", "We received a request to reset your password.\n\n"
+                + "Open this link within 15 minutes to choose a new one:\n" + resetLink + "\n\n"
+                + "If you did not ask for this, you can ignore this e-mail; your password has not changed.");
+    }
+
+    @Override
+    public void sendEmailVerification(String to, String verifyLink) {
+        send(to, "Confirm your AgroTrends e-mail", "Welcome to AgroTrends!\n\n"
+                + "Open this link within 24 hours to confirm your e-mail address:\n" + verifyLink + "\n\n"
+                + "You need a confirmed address to ask, answer and publish. "
+                + "If you did not create an account, you can ignore this e-mail.");
+    }
+
+    private void send(String to, String subject, String text) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(from);
         message.setTo(to);
-        message.setSubject("Reset your AgroTrends password");
-        message.setText("We received a request to reset your password.\n\n"
-                + "Open this link within 15 minutes to choose a new one:\n" + resetLink + "\n\n"
-                + "If you did not ask for this, you can ignore this e-mail; your password has not changed.");
+        message.setSubject(subject);
+        message.setText(text);
         mailSender.send(message);
     }
 }

@@ -1,6 +1,6 @@
 package com.project.agriculturalblogapplication.repositories;
 
-import com.project.agriculturalblogapplication.entities.PasswordResetToken;
+import com.project.agriculturalblogapplication.entities.EmailToken;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -11,12 +11,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 
 @Repository
-public interface PasswordResetTokenRepository extends JpaRepository<PasswordResetToken, Long> {
+public interface EmailTokenRepository extends JpaRepository<EmailToken, Long> {
 
-    Optional<PasswordResetToken> findByTokenHash(String tokenHash);
+    Optional<EmailToken> findByTokenHashAndPurpose(String tokenHash, EmailToken.Purpose purpose);
 
     @Modifying
     @Transactional
-    @Query("delete from PasswordResetToken t where t.userId = :userId")
-    int deleteAllByUserId(@Param("userId") Long userId);
+    @Query("delete from EmailToken t where t.userId = :userId and t.purpose = :purpose")
+    int deleteAllByUserIdAndPurpose(@Param("userId") Long userId, @Param("purpose") EmailToken.Purpose purpose);
 }

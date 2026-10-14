@@ -24,8 +24,7 @@ import java.util.stream.Collectors;
 public class AIConfig {
 
     static final String SYSTEM_PROMPT = "You are an expert agricultural advisor. "
-            + "Answer in the language of the question: Bangla for a question in Bangla, English for a question in English. "
-            + "Answer in Bangla only if the user explicitly asks for it.";
+            + "Answer in the language of the question: Bangla for a question in Bangla, English for a question in English.";
 
     // Retrieved text is written by users, so it is framed as reference material and never as instructions.
     static final String RAG_PROMPT = """

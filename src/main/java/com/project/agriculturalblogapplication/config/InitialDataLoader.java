@@ -5,7 +5,6 @@ import com.project.agriculturalblogapplication.entities.Privilege;
 import com.project.agriculturalblogapplication.entities.Role;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.enums.RoleType;
-import com.project.agriculturalblogapplication.enums.UserType;
 import com.project.agriculturalblogapplication.service.PrivilegeService;
 import com.project.agriculturalblogapplication.service.RoleService;
 import com.project.agriculturalblogapplication.service.UserService;
@@ -18,6 +17,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import java.security.SecureRandom;
+import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.project.agriculturalblogapplication.constatnt.AppConstants.*;
@@ -95,8 +95,9 @@ public class InitialDataLoader implements ApplicationListener<ApplicationReadyEv
         superAdminUser.setMobileNumber(INITIAL_MOBILE_NUMBER);
         superAdminUser.setPassword(passwordEncoder.encode(password));
         superAdminUser.setMustChangePassword(true);
+        // The address comes from the operator's own configuration, not from a sign-up form.
+        superAdminUser.setEmailVerifiedAt(LocalDateTime.now());
         superAdminUser.setRoles(roles);
-        superAdminUser.setUserTypes(Set.of(UserType.AUTHOR.name()));
         userService.saveUser(superAdminUser);
 
         if (generated) {

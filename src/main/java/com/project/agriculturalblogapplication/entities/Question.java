@@ -1,5 +1,6 @@
 package com.project.agriculturalblogapplication.entities;
 
+import com.project.agriculturalblogapplication.util.SafeHtml;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.project.agriculturalblogapplication.constatnt.AppTables.QuestionTable;
 import com.project.agriculturalblogapplication.constatnt.AppTables.UserTable;
@@ -35,4 +36,11 @@ public class Question extends AuditModel<String> {
 
     @Embedded
     private AgriMetadata agri = new AgriMetadata();
+
+    /** Stored HTML is always safe, whichever endpoint wrote it. */
+    @PrePersist
+    @PreUpdate
+    void sanitize() {
+        content = SafeHtml.clean(content);
+    }
 }

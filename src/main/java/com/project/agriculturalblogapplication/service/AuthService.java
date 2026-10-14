@@ -56,6 +56,8 @@ public class AuthService {
 
 	private final GoogleIdTokenVerifier googleIdTokenVerifier;
 
+	private final EmailVerificationService emailVerificationService;
+
 	public void validateEmail(ValidateEmailRequest request, String lang) {
 		userService.validateEmail(request.getEmail(), lang);
 	}
@@ -78,11 +80,11 @@ public class AuthService {
 				.countryCode(request.getCountryCode())
 				.mobileNumber(request.getMobileNumber())
 				.password(request.getPassword())
-                .userTypes(request.getUserType())
-                .professionalInfoRequest(request.getProfessionalInfoRequest())
 				.build();
 
-		return userService.toResponse(userService.createUser(createUserRequest, lang));
+		User user = userService.createUser(createUserRequest, lang);
+		emailVerificationService.sendLink(user);
+		return userService.toResponse(user);
 	}
 
 	public WebTokenResponse signIn(SignInRequest request, String lang, String clientIp) {
@@ -152,7 +154,7 @@ public class AuthService {
 			throw new ApplicationException(HttpStatus.UNAUTHORIZED, ErrorCode.ERROR_INVALID_CREDENTIALS, lang);
 		}
 		if (user == null) {
-			user = userService.createGoogleUser(google, request.getUserType(), lang);
+			user = userService.createGoogleUser(google, lang);
 		} else if (user.getGoogleSubject() == null) {
 			user = userService.linkGoogle(user, google.subject());
 		}

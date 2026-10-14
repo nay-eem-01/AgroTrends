@@ -34,7 +34,7 @@ class AuthorizationServiceTest {
     private void signInAs(long id, RoleType type) {
         Role role = new Role();
         role.setRoleType(type);
-        CustomUserDetails details = new CustomUserDetails(id, "n", "u" + id + "@x.com", "pw", Set.of(role), List.of(), false);
+        CustomUserDetails details = new CustomUserDetails(id, "n", "u" + id + "@x.com", "pw", Set.of(role), List.of(), false, true);
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(details, null, details.getAuthorities()));
     }

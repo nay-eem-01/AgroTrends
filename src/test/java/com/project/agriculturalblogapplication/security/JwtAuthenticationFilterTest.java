@@ -20,6 +20,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -48,12 +49,21 @@ class JwtAuthenticationFilterTest {
     }
 
     private void givenUser(boolean mustChangePassword) {
-        CustomUserDetails user = new CustomUserDetails(5L, "n", "farmer@example.com", "pw", Set.of(), List.of(), mustChangePassword);
+        givenUser(mustChangePassword, true);
+    }
+
+    private void givenUser(boolean mustChangePassword, boolean emailVerified) {
+        CustomUserDetails user = new CustomUserDetails(5L, "n", "farmer@example.com", "pw", Set.of(), List.of(),
+                mustChangePassword, emailVerified);
         when(userDetailsService.loadUserByUsername("farmer@example.com")).thenReturn(user);
     }
 
     private MockHttpServletRequest request(String uri) {
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", uri);
+        return request("GET", uri);
+    }
+
+    private MockHttpServletRequest request(String method, String uri) {
+        MockHttpServletRequest request = new MockHttpServletRequest(method, uri);
         request.setRequestURI(uri);
         request.addHeader("Authorization", "Bearer " + token);
         return request;
@@ -108,5 +118,33 @@ class JwtAuthenticationFilterTest {
         assertEquals(200, allowed.getStatus());
         assertNotNull(SecurityContextHolder.getContext().getAuthentication());
         verify(chain).doFilter(any(), any());
+    }
+
+    @Test
+    void unconfirmedEmailCanReadButNotWrite() throws Exception {
+        givenUser(false, false);
+        when(sessions.getActiveSessionByToken(token)).thenReturn(new UserSession());
+
+        MockHttpServletResponse blocked = new MockHttpServletResponse();
+        filter.doFilter(request("POST", "/api/questions/create"), blocked, chain);
+        assertEquals(403, blocked.getStatus());
+        assertTrue(blocked.getContentAsString().contains("Confirm your e-mail"));
+        verifyNoInteractions(chain);
+
+        filter.doFilter(request("GET", "/api/blogs/me/drafts"), new MockHttpServletResponse(), chain);
+        verify(chain).doFilter(any(), any());
+    }
+
+    @Test
+    void unconfirmedEmailCanStillManageTheAccount() throws Exception {
+        givenUser(false, false);
+        when(sessions.getActiveSessionByToken(token)).thenReturn(new UserSession());
+
+        for (String uri : List.of("/api/user/update", "/api/auth/resend-verification")) {
+            SecurityContextHolder.clearContext();
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            filter.doFilter(request("POST", uri), response, chain);
+            assertEquals(200, response.getStatus(), uri);
+        }
     }
 }

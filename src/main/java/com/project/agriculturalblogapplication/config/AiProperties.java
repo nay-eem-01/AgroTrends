@@ -16,6 +16,12 @@ public class AiProperties {
     /** Questions one user may ask /api/ai/ask per calendar day (server time zone). */
     private int dailyQuestionLimit = 20;
 
+    /**
+     * Paid AI calls (ask, blog assist, AI draft, related posts) one IP address may make per day, across accounts.
+     * Generous because a campus or office network puts many users behind one address.
+     */
+    private int dailyIpLimit = 200;
+
     /** Upper bound for one call to Gemini. */
     private Duration timeout = Duration.ofSeconds(60);
 

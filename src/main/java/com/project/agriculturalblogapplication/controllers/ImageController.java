@@ -31,7 +31,7 @@ public class ImageController {
 
     private final ImageService imageService;
 
-    @Operation(summary = "Upload a cover or inline image (authors; JPEG, PNG or WebP up to 5 MB); returns its URL",
+    @Operation(summary = "Upload an image (JPEG, PNG or WebP up to 5 MB); returns its URL",
             security = @SecurityRequirement(name = "jwtToken"))
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<HttpResponse> upload(@RequestPart("file") MultipartFile file,

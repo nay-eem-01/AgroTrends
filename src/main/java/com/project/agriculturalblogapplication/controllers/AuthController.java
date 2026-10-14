@@ -7,6 +7,7 @@ import com.project.agriculturalblogapplication.model.response.HttpResponse;
 import com.project.agriculturalblogapplication.model.response.UserResponse;
 import com.project.agriculturalblogapplication.model.response.WebTokenResponse;
 import com.project.agriculturalblogapplication.service.AuthService;
+import com.project.agriculturalblogapplication.service.EmailVerificationService;
 import com.project.agriculturalblogapplication.service.PasswordResetService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -34,6 +35,8 @@ public class AuthController {
 
     private final PasswordResetService passwordResetService;
 
+    private final EmailVerificationService emailVerificationService;
+
     @Operation(summary = "Sign up")
     @ApiResponse(content = @Content(schema = @Schema(implementation = UserResponse.class)), responseCode = "200")
     @PostMapping(value = "/sign-up")
@@ -60,7 +63,7 @@ public class AuthController {
     @Operation(summary = "Sign in (or up) with Google",
             description = "Send the ID token (credential) Google Identity Services gives the page. Finds the account "
                     + "linked to that Google account, else links the account with the same e-mail, else creates one "
-                    + "(no password; userType as at sign-up). Linking an account whose e-mail was never verified drops "
+                    + "(no password). Linking an account whose e-mail was never verified drops "
                     + "its password and sessions. Admin accounts must use the admin sign-in.")
     @ApiResponse(content = @Content(schema = @Schema(implementation = WebTokenResponse.class)), responseCode = "200")
     @ApiResponse(responseCode = "401", description = "Invalid Google token, unverified Google e-mail, or an admin account")
@@ -88,7 +91,7 @@ public class AuthController {
     @Operation(summary = "Request a password-reset e-mail. Always answers 200 so accounts cannot be enumerated.")
     @ApiResponse(content = @Content(schema = @Schema(implementation = HttpResponse.class)), responseCode = "200")
     @PostMapping(value = "/forgot-password")
-    public ResponseEntity<HttpResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request,
+    public ResponseEntity<HttpResponse> forgotPassword(@Valid @RequestBody EmailRequest request,
                                                        @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang,
                                                        HttpServletRequest httpServletRequest) {
         passwordResetService.requestReset(request.getEmail(), httpServletRequest.getRemoteAddr(), lang);
@@ -106,6 +109,28 @@ public class AuthController {
         return HttpResponse.getResponseEntity(
                 true,
                 "Password has been reset. Please sign in with your new password.");
+    }
+
+    @Operation(summary = "Confirm your e-mail address with the token from the confirmation e-mail")
+    @ApiResponse(content = @Content(schema = @Schema(implementation = HttpResponse.class)), responseCode = "200")
+    @ApiResponse(responseCode = "400", description = "The link is invalid or has expired; ask for a new one")
+    @PostMapping(value = "/verify-email")
+    public ResponseEntity<HttpResponse> verifyEmail(@Valid @RequestBody VerifyEmailRequest request,
+                                                    @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        emailVerificationService.verify(request.getToken(), lang);
+        return HttpResponse.getResponseEntity(true, "Your e-mail address is confirmed.");
+    }
+
+    @Operation(summary = "Send a new confirmation e-mail. Always answers 200 so accounts cannot be enumerated.")
+    @ApiResponse(content = @Content(schema = @Schema(implementation = HttpResponse.class)), responseCode = "200")
+    @ApiResponse(responseCode = "429", description = "Too many requests for this e-mail or network")
+    @PostMapping(value = "/resend-verification")
+    public ResponseEntity<HttpResponse> resendVerification(@Valid @RequestBody EmailRequest request,
+                                                           @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang,
+                                                           HttpServletRequest httpServletRequest) {
+        emailVerificationService.resend(request.getEmail(), httpServletRequest.getRemoteAddr(), lang);
+        return HttpResponse.getResponseEntity(true,
+                "If an unconfirmed account exists for that e-mail, a new confirmation link has been sent.");
     }
 
     @Operation(summary = "Sign-out.", security = @SecurityRequirement(name = "jwtToken"))

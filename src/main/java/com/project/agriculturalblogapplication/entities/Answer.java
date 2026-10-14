@@ -1,5 +1,6 @@
 package com.project.agriculturalblogapplication.entities;
 
+import com.project.agriculturalblogapplication.util.SafeHtml;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.project.agriculturalblogapplication.constatnt.AppTables.UserTable;
 import com.project.agriculturalblogapplication.constatnt.AppTables.AnswerTable;
@@ -37,4 +38,11 @@ public class Answer extends AuditModel<String> {
     @JsonIgnore
     @OneToMany(mappedBy = "parentAnswer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Answer> replies = new ArrayList<>();
+
+    /** Stored HTML is always safe, whichever endpoint wrote it. */
+    @PrePersist
+    @PreUpdate
+    void sanitize() {
+        content = SafeHtml.clean(content);
+    }
 }

@@ -4,6 +4,7 @@ import com.project.agriculturalblogapplication.config.AiProperties;
 import com.project.agriculturalblogapplication.entities.Blog;
 import com.project.agriculturalblogapplication.enums.BlogStatus;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.transformer.splitter.TextSplitter;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class DocumentService {
@@ -36,9 +38,21 @@ public class DocumentService {
 
     private final AiProperties aiProperties;
 
+    /**
+     * The index is a cache of the post, so an embedding failure (Gemini down, quota hit) is logged, never thrown:
+     * the post is already saved and a 500 would make the author retry and create a duplicate.
+     * shortcut: a failed post stays out of AI answers until its next edit or a re-index run
+     * (AI_REINDEX_ON_STARTUP); add a scheduled retry if these warnings show up in the logs.
+     */
     public void indexBlog(Blog blog) {
         // The splitter copies the blog's metadata onto every chunk, so any chunk can be traced back to its post.
-        vectorStore.add(blogTextSplitter.apply(List.of(toDocument(blog))));
+        List<Document> chunks = blogTextSplitter.apply(List.of(toDocument(blog)));
+        try {
+            vectorStore.add(chunks);
+        } catch (RuntimeException e) {
+            log.warn("Could not index blog {} into the vector store; it is missing from AI answers until re-indexed",
+                    blog.getId(), e);
+        }
     }
 
     /** Drops the blog's old chunks before indexing it again, so retrieval never sees an outdated version. */

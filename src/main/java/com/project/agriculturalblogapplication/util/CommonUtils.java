@@ -6,16 +6,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.project.agriculturalblogapplication.constatnt.AppConstants;
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
-import com.project.agriculturalblogapplication.entities.LocalizedText;
 import com.project.agriculturalblogapplication.enums.AscOrDescType;
 import com.project.agriculturalblogapplication.payloads.PaginationArgs;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -295,34 +292,6 @@ public final class CommonUtils {
 		return pageable;
 	}
 
-	public static Pageable getLocalizedPageable(PaginationArgs paginationArgs, Class<?> className) {
-		Pageable pageable;
-		String sortBy = paginationArgs.getSortBy();
-		int pageNo = paginationArgs.getPageNo();
-		int pageSize = paginationArgs.getPageSize();
-
-		try {
-			Field field = className.getDeclaredField(sortBy);
-			if (field.getType() == LocalizedText.class) {
-				sortBy = sortBy+".translations.translatedText";
-			}
-		} catch (Exception ex) {
-			sortBy = sortBy;
-		}
-
-		if (sortBy != null && sortBy.length() > 0) {
-			if (paginationArgs.getAscOrDesc().equals(AscOrDescType.asc)) {
-				pageable = PageRequest.of(pageNo, pageSize, Sort.by(sortBy).ascending());
-			} else {
-				pageable = PageRequest.of(pageNo, pageSize, Sort.by(sortBy).descending());
-			}
-		} else {
-			pageable = PageRequest.of(pageNo, pageSize);
-		}
-
-		return pageable;
-	}
-
 	public static Map<String, Object> getParameters(Map<String, Object> parameters) {
 		parameters.remove(AppConstants.PAGE_NO);
 		parameters.remove(AppConstants.PAGE_SIZE);
@@ -332,13 +301,5 @@ public final class CommonUtils {
 		parameters.remove(AppConstants.LANG);
 		parameters.remove(AppConstants.LOAD_ORIGINAL_TEXT);
 		return parameters;
-	}
-
-	public static <D, E> D mapEntityToDto(ModelMapper modelMapper, E entity, Class<D> dtoClass) {
-		return modelMapper.map(entity, dtoClass);
-	}
-
-	public static <E, D> Page<D> mapEntityPageToDtoPage(ModelMapper modelMapper, Page<E> entities, Class<D> dtoClass) {
-		return entities.map(objectEntity -> modelMapper.map(objectEntity, dtoClass));
 	}
 }

@@ -35,7 +35,7 @@ Cross-cutting rules every feature below follows:
 |---|---|
 | Caller identity comes from the token, never the body | `AuthUtil`, every service |
 | Mutations are owner-or-admin | `AuthorizationService.assertOwnerOrAdmin` |
-| Writes need a confirmed e-mail (5.7) | One check in the service layer, 403 `EMAIL_NOT_VERIFIED` |
+| Writes need a confirmed e-mail (5.7) | `JwtAuthenticationFilter.refusal`: non-GET requests answer 403 until confirmed, except `/api/auth/**` and account housekeeping |
 | User HTML is sanitised on the way in (5.9) | jsoup safelist in the services that store HTML |
 | Side effects (notifications, indexing, reputation totals) run after commit | Spring events, §9 |
 
@@ -102,7 +102,7 @@ New tables are marked with the roadmap step that adds them.
 erDiagram
     USER ||--|| PROFILE : has
     USER ||--o{ USER_SESSION : "signs in"
-    USER ||--o{ EMAIL_VERIFICATION_TOKEN : "5.6"
+    USER ||--o{ EMAIL_TOKEN : "reset, confirm (5.6)"
     USER ||--o{ BLOG : writes
     USER ||--o{ QUESTION : asks
     USER ||--o{ ANSWER : writes
@@ -228,7 +228,8 @@ sequenceDiagram
     API-->>U: 403 EMAIL_NOT_VERIFIED if not confirmed
 ```
 
-- Reuses the password-reset token design (hash stored, single use) and `MailService`.
+- Shares `EmailToken` (purpose `RESET_PASSWORD` or `VERIFY_EMAIL`, hash stored, single use) and
+  `EmailTokenService` with password reset; a mail failure at sign-up is logged, not thrown.
 - `POST /api/auth/resend-verification` is rate-limited with `AttemptLimiter`.
 - `UserResponse.emailVerified` (exists) lets the frontend show a banner.
 

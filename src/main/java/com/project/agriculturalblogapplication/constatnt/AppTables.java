@@ -17,7 +17,6 @@ public final class AppTables {
 
     public static final String ROLE_PRIVILEGE_NAME = "role_privilege";
 
-    public static final String USER_TYPES = "user_types";
 
     public static final class AuditModelTable {
 
@@ -223,55 +222,6 @@ public final class AppTables {
         public static final String USER_TYPE = "user_type";
 
         public static final String USER_ID = "user_id";
-    }
-
-    public static final class LocalizedTextTable {
-        private LocalizedTextTable() {}
-
-        public static final String TABLE_NAME = "localized_texts";
-
-        public static final String ORIGINAL_TEXT = "original_text";
-
-        public static final String ORIGINAL_LANGUAGE_CODE = "original_language_code";
-    }
-
-    public static final class TranslationTable {
-        private TranslationTable() {}
-
-        public static final String TABLE_NAME = "translations";
-
-        public static final String LANGUAGE_ID = "language_id";
-
-        public static final String LANGUAGE_CODE = "language_code";
-
-        public static final String TRANSLATED_TEXT = "translated_text";
-
-        public static final String LOCALIZED_TEXT_ID = "localized_text_id";
-    }
-
-    public static final class ErrorCodeEntityTable {
-
-        private ErrorCodeEntityTable() {}
-
-        public static final String TABLE_NAME =  "error_codes";
-
-        public static final String INTERNAL_CODE = "internal_code";
-
-        public static final String MESSAGE = "message_id";
-
-        public static final String INTERNAL_MESSAGE = "internal_message";
-    }
-    public static final class LanguageTable {
-
-        private LanguageTable() {}
-
-        public static final String TABLE_NAME =  "languages";
-
-        public static final String LANGUAGE_CODE = "language_code";
-
-        public static final String NAME = "name";
-
-        public static final String ACTIVE = "active";
     }
 
     public static final class AiAnswerTable {

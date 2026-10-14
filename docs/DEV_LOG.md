@@ -20,7 +20,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 ## Next up
 
 1. Merge `docs/product-study` and `docs/launch-plan` into `development`.
-2. Phase 5 on `feat/launch-blockers-base`: 5.1 (indexing never fails a save) first, then 5.2–5.11.
+2. Phase 5 is done (5.1–5.11). Next: Phase 6 (community Q&A and reputation) on `feat/qa-reputation-base`, 6.1 first.
 3. Then Phases 6, 7, 8; deploy (Phase 4) and live-test only after all of them.
 4. **Team:** 30–50 seeded Bangla articles; 5–10 experts invited; pick the 6–8 launch topics (categories).
 5. **Nayeem:** fix the Gemini key; roadmap 0.4 (rotate keys, purge history); set `GOOGLE_CLIENT_ID`; make
@@ -45,6 +45,198 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | After deploying 2.3a: start once with `AI_REINDEX_ON_STARTUP=true` (old chunks have no `status`, so retrieval ignores them) | whoever deploys | AI answers on existing posts |
 | Deleting a user with comments/questions/answers fails on foreign keys: decide delete vs anonymise | Nayeem | account deletion |
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
+
+---
+
+## 2026-10-13 (roadmap 5.11)
+
+**Done**
+- `spring.jpa.properties.hibernate.default_batch_fetch_size=50` instead of per-query `@EntityGraph`: a fetch join
+  on `tags` would page in memory. Measured live (show-sql): `GET /api/feed/latest` went from 11 statements for
+  5 posts to 5 statements, and stayed at 5 with 8 posts (audit A2).
+- `spring.jpa.open-in-view=false`. `CommentService` (lazy user/blog/parent) is `@Transactional`;
+  `AnswerService.viewReplies` (lazy replies) is `@Transactional(readOnly = true)`.
+- Fixed in passing: `AuthorService.profileOf` (5.5) attached a lazy `User` proxy, so blog create threw
+  `LazyInitializationException` with open-in-view off. It now loads the user.
+- **Live smoke test** on a local pgvector database (scratch script, not committed): sign-up → 403 on a write
+  before confirmation → confirmation link from the dev mail log → verify → questions, answers, replies, blog
+  draft/publish/update/by-id/by-slug, comments and replies, bookmarks, claps, follows, author profile, search,
+  feeds, AI history. No 500s, no lazy-loading errors. Sanitising (5.9) and excerpts (5.10) checked on the live
+  responses. 182 unit tests pass.
+
+**Known limitations**
+- `contextLoads` and integration tests still need a database in CI (roadmap 4.4); the smoke test was manual.
+- The smoke test left test users, questions and posts in the local database.
+
+---
+
+## 2026-10-13 (roadmap 5.10)
+
+**Done**
+- `BlogSummaryResponse`: every blog list returns a plain-text `excerpt` (up to 200 characters, cut at a word,
+  "…" appended) instead of `content` (audit A1). Covers `/api/blogs/all*`, `/api/blogs/search`,
+  `/api/blogs/me/drafts`, `/api/feed/*` and `/api/bookmarks`. `GET /api/blogs/id/{id}` and `/slug/{slug}` keep
+  the full `BlogResponse`.
+- `SafeHtml.plainText` extracts readable text from HTML.
+- Tests: `BlogSummaryResponseTest` (2). 182 unit tests pass.
+
+**Breaking API changes**
+- List items have `excerpt` and no `content`. The frontend's story cards should show `excerpt`; the editor must
+  load a draft through `GET /api/blogs/id/{id}`.
+
+---
+
+## 2026-10-13 (roadmap 5.9)
+
+**Done**
+- `SafeHtml.clean` (jsoup 1.18.3, `Safelist.relaxed()`): keeps the TipTap editor's tags and images, removes
+  scripts, event handlers, styles, frames and forms; links keep http(s), mailto or relative targets. Mirrors
+  `agrotrends-web/src/lib/sanitize.ts`. Text with no tags is plain text and is stored unchanged.
+- `Blog.content`, `Question.content`, `Answer.content`, `Comment.commentContent` are cleaned in
+  `@PrePersist`/`@PreUpdate`, so every current and future write path is covered.
+- Tests: `SafeHtmlTest` (4), `ContentSanitizingTest` (1). 180 unit tests pass.
+
+**Known limitations**
+- Content stored before this change is cleaned only when it is next edited (the frontend still sanitises on
+  display).
+
+---
+
+## 2026-10-13 (roadmap 5.8)
+
+**Done**
+- `PaidEndpointRateLimitFilter`: per-IP caps across accounts. AI calls (`POST /api/ai/ask`,
+  `POST /api/ai/blog-assist`, `POST /api/questions/id/*/ai-draft`, `GET /api/blogs/id/*/related`) share
+  `app.ai.daily-ip-limit` (default 200 per day; generous for campus networks). `POST /api/auth/google`: 30 per
+  hour. Over the cap: 429 "Too many requests from your network today…" (audit B3).
+- `HttpResponse.writeError` writes the error envelope from filters; `JwtAuthenticationFilter` uses it too.
+- Tests: `PaidEndpointRateLimitFilterTest` (3). 175 unit tests pass.
+
+**Known limitations**
+- Uses `request.getRemoteAddr()`: behind a reverse proxy every request has the proxy's IP. Roadmap 4.1 now
+  includes `server.forward-headers-strategy`; deploy must not skip it.
+- In-memory counters (single instance only, roadmap 4.8); a restart resets them.
+
+---
+
+## 2026-10-13 (roadmap 5.7)
+
+**Done**
+- `JwtAuthenticationFilter` refuses every non-GET request from a user without a confirmed e-mail with 403
+  "Confirm your e-mail address first: …". Allowed before confirmation: `/api/auth/**`, `/api/user/update`,
+  `/api/user/change-password`, `/api/user/delete`. Covers questions, answers, comments, blogs, claps, bookmarks,
+  follows, images and AI in one place, next to the existing must-change-password rule (`refusal(...)`).
+- `CustomUserDetails.emailVerified`; the seeded super-admin is created confirmed.
+- Tests: two new `JwtAuthenticationFilterTest` cases. 172 unit tests pass.
+
+**Breaking API changes**
+- Unconfirmed accounts get 403 on writes. The frontend should show a "confirm your e-mail" banner when
+  `UserResponse.emailVerified` is false, with a resend button (`POST /api/auth/resend-verification`).
+
+**Known limitations**
+- Admin accounts created before this change are unconfirmed and blocked from writes until they confirm through
+  resend (dev databases only).
+
+---
+
+## 2026-10-13 (roadmap 5.6)
+
+**Done**
+- Sign-up mails a confirmation link (24 h, single use). `POST /api/auth/verify-email {token}` sets
+  `emailVerifiedAt`; `POST /api/auth/resend-verification {email}` always answers 200 and is rate-limited
+  (3 per e-mail, 10 per IP, per hour). Google sign-in and a completed password reset already confirm.
+- `PasswordResetToken` became `EmailToken` with a `purpose` (`RESET_PASSWORD`, `VERIFY_EMAIL`); token issue,
+  hashing, expiry and rate limiting moved to `EmailTokenService`, used by both flows. A mail failure at sign-up
+  is logged, not thrown (the account exists; the user can resend).
+- `ForgotPasswordRequest` renamed `EmailRequest` (same body), used by forgot-password and resend.
+- Tests: `EmailTokenServiceTest` (5), `EmailVerificationServiceTest` (4). 170 unit tests pass.
+
+**API changes (additive)**
+- New: `POST /api/auth/verify-email`, `POST /api/auth/resend-verification`. The reset-link error now reads
+  "This link is invalid or has expired." The frontend needs a `/verify-email?token=` page.
+
+**Known limitations**
+- Tokens move to a new `email_token` table; reset links issued before the deploy stop working (15-minute
+  lifetime, so harmless). The old `password_reset_token` table stays until the Flyway baseline (4.2).
+- Nothing is gated on confirmation yet; that is 5.7.
+
+---
+
+## 2026-10-13 (roadmap 5.5)
+
+**Done**
+- `AuthorService.profileOf(userId)` returns the user's profile and creates it on first need. Used by blog
+  create, drafts and `GET`/`PUT /api/authors/me`, so every account can publish (PLAN decision 11).
+- Image upload and blog assist lost their author-only gate (still signed-in only; 5.7 adds the confirmed-e-mail
+  gate). `ERROR_AUTHOR_PROFILE_REQUIRED` is gone.
+- Removed `UserType` (AUTHOR/CONSUMER), `User.userTypes`, `ProfessionalInfoRequest`, `AuthorCreateRequest` and
+  the sign-up-time profile creation.
+- Tests: `AuthorServiceTest` (2) new; author-gate tests removed; `GoogleSignInTest` updated. 161 unit tests pass.
+- Split over `feat/single-account-type` and `feat/drop-user-type`.
+
+**Breaking API changes**
+- `POST /api/auth/sign-up` and `POST /api/auth/google`: `userType` and `professionalInfoRequest` are no longer
+  read (sent values are ignored). Profile details go through `PUT /api/authors/me`.
+- `UserResponse.userTypes` removed. `authorId` is null until the profile is first needed (first post, draft
+  list, or profile editor), not "null for readers".
+- `POST /api/blogs/create`, `GET /api/blogs/me/drafts`, `GET`/`PUT /api/authors/me`, `POST /api/images`,
+  `POST /api/ai/blog-assist` no longer return 403 for non-authors.
+
+**Known limitations**
+- Existing databases keep the `users.user_types` column (unused). The Flyway baseline (4.2) should drop it.
+
+---
+
+## 2026-10-13 (roadmap 5.4)
+
+**Done**
+- Deleted the `dtos/` package, the ModelMapper bean and dependency, and `CommonUtils.mapEntity*` (audit O4).
+- Deleted the commented-out `ForgetPasswordService` with its OTP types (`OTPChannel`,
+  `InitiateForgetPasswordRequest`, `InitiateUpdatePasswordRequest`, `ResetPasswordFromSessionTokenRequest`,
+  `SendVerificationCodeResponse`), plus `CustomSuccessHandler` and `FileStorageException` (audit O6).
+- Removed Thymeleaf: three dependencies, six templates, `spring.thymeleaf.*` (audit O5).
+- Split over `chore/delete-dead-code` and `chore/remove-thymeleaf`. 163 unit tests pass.
+
+---
+
+## 2026-10-13 (roadmap 5.3)
+
+**Done**
+- `ExceptionHandlingController` returns the `ErrorCode` message directly; it no longer queries `error_codes`
+  on every error (audit O1). The latent NullPointerException in `ErrorCodeService` is gone with it (audit B4).
+- Deleted the DB-driven localisation stack: `ErrorCodeEntity`, `Language`, `LocalizedText`, `Translation`,
+  their repositories, services and request/response types, `CommonUtils.getLocalizedPageable`, and their
+  `AppTables` entries. Deleted 100 unused `ErrorCode` constants (audit O3). 163 unit tests pass.
+- Split over two branches to keep each PR under 20 files: `chore/delete-i18n-error-stack`,
+  `chore/delete-i18n-entities`.
+
+**Known limitations**
+- Existing databases keep the empty `error_codes`, `languages`, `localized_texts` and `translations` tables
+  (`ddl-auto=update` never drops). The Flyway baseline (4.2) should leave them out.
+- The `lang` argument is still threaded through services and `ApplicationException`; removing it is audit O2
+  (roadmap **Later**).
+
+---
+
+## 2026-10-13 (roadmap 5.2)
+
+**Done**
+- System prompt: removed "Answer in Bangla only if the user explicitly asks for it", which contradicted the
+  language rule before it (audit B2). `AIConfigTest` asserts it stays gone. 163 unit tests pass.
+
+---
+
+## 2026-10-13 (roadmap 5.1)
+
+**Done**
+- `DocumentService.indexBlog` catches and logs an embedding failure instead of throwing (audit B1). Covers
+  create, publish, update (`reindexBlog`) and `reindexAll`, which all go through it. Chunking stays outside
+  the catch, so a bug in our own code still surfaces.
+- Test: `DocumentServiceTest.embeddingFailureIsSwallowedSoTheSavedPostIsNotReportedAsFailed`. 163 unit tests pass.
+
+**Known limitations**
+- A post whose embedding failed stays out of AI answers until its next edit or a start with
+  `AI_REINDEX_ON_STARTUP=true` (marked `shortcut:` in the code). On update, the old chunks are already deleted.
 
 ---
 

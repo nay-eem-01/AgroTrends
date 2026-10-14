@@ -2,7 +2,6 @@ package com.project.agriculturalblogapplication.service;
 
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
-import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import com.project.agriculturalblogapplication.storage.ImageStorage;
 import com.project.agriculturalblogapplication.storage.ImageType;
 import lombok.RequiredArgsConstructor;
@@ -17,13 +16,8 @@ public class ImageService {
 
     private final ImageStorage imageStorage;
 
-    private final AuthorService authorService;
-
-    private final AuthorizationService authorizationService;
-
-    /** Cover and inline images for posts: authors only, JPEG/PNG/WebP up to 5 MB. Returns the public URL. */
+    /** Images for posts and questions: JPEG/PNG/WebP up to 5 MB. Returns the public URL. */
     public String upload(byte[] bytes, String lang) {
-        authorService.findByUserIdOrForbidden(authorizationService.currentUserId(lang), lang);
         if (bytes == null || bytes.length == 0) {
             throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_IMAGE_REQUIRED, lang);
         }

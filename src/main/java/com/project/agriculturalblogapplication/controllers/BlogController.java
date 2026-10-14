@@ -8,6 +8,7 @@ import com.project.agriculturalblogapplication.model.AgriInfo;
 import com.project.agriculturalblogapplication.model.request.CreateBlogRequest;
 import com.project.agriculturalblogapplication.model.request.UpdateBlogRequest;
 import com.project.agriculturalblogapplication.model.response.BlogResponse;
+import com.project.agriculturalblogapplication.model.response.BlogSummaryResponse;
 import com.project.agriculturalblogapplication.model.response.HttpResponse;
 import com.project.agriculturalblogapplication.model.response.RelatedBlogResponse;
 import com.project.agriculturalblogapplication.payloads.PaginationArgs;
@@ -36,7 +37,7 @@ public class BlogController {
     private final BlogService blogService;
 
     @Operation(summary = "Published blogs - paginated; optional filters crop, season, region, soil")
-    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogResponse.class))), responseCode = "200")
+    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogSummaryResponse.class))), responseCode = "200")
     @GetMapping(value = "/all")
     public ResponseEntity<HttpResponse> getAll(@RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
                                                @RequestParam(name = PAGE_SIZE, defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
@@ -56,7 +57,7 @@ public class BlogController {
     }
 
     @Operation(summary = "Get all blogs by category - paginated")
-    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogResponse.class))), responseCode = "200")
+    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogSummaryResponse.class))), responseCode = "200")
     @GetMapping(value = "/all/category/{categoryId}")
     public ResponseEntity<HttpResponse> getAllByCategory(@RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
                                                          @RequestParam(name = PAGE_SIZE, defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
@@ -73,7 +74,7 @@ public class BlogController {
     }
 
     @Operation(summary = "Published blogs with a tag (case-insensitive) - paginated")
-    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogResponse.class))), responseCode = "200")
+    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogSummaryResponse.class))), responseCode = "200")
     @GetMapping(value = "/all/tag/{tagName}")
     public ResponseEntity<HttpResponse> getAllByTag(@RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
                                                     @RequestParam(name = PAGE_SIZE, defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
@@ -87,7 +88,7 @@ public class BlogController {
     }
 
     @Operation(summary = "Get all blogs by an author (the author.authorId shown on a blog) - paginated")
-    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogResponse.class))), responseCode = "200")
+    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogSummaryResponse.class))), responseCode = "200")
     @GetMapping(value = "/all/author/{authorId}")
     public ResponseEntity<HttpResponse> getAllByAuthor(@RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
                                                        @RequestParam(name = PAGE_SIZE, defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
@@ -104,7 +105,7 @@ public class BlogController {
     }
 
     @Operation(summary = "Search published blogs by words in the title or text (supports \"quoted phrases\" and -exclusions), best match first")
-    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogResponse.class))), responseCode = "200")
+    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogSummaryResponse.class))), responseCode = "200")
     @GetMapping(value = "/search")
     public ResponseEntity<HttpResponse> search(@RequestParam(name = "q") String q,
                                                @RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
@@ -143,8 +144,8 @@ public class BlogController {
                 true, "Data loaded successfully.", blogService.related(blogId, limit, lang));
     }
 
-    @Operation(summary = "Your own drafts - paginated (authors only)", security = @SecurityRequirement(name = "jwtToken"))
-    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogResponse.class))), responseCode = "200")
+    @Operation(summary = "Your own drafts - paginated", security = @SecurityRequirement(name = "jwtToken"))
+    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogSummaryResponse.class))), responseCode = "200")
     @GetMapping(value = "/me/drafts")
     public ResponseEntity<HttpResponse> getMyDrafts(@RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
                                                     @RequestParam(name = PAGE_SIZE, defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
