@@ -24,6 +24,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -43,6 +44,8 @@ public class QuestionService {
     private final TagService tagService;
 
     private final ImageService imageService;
+
+    private final ReputationService reputationService;
 
     public QuestionResponse create(CreateQuestionRequest request, String lang) {
         User user = userService.findByIdWithException(authorizationService.currentUserId(lang), lang);
@@ -69,7 +72,7 @@ public class QuestionService {
         Pageable pageable = CommonUtils.getPageable(paginationArgs, SORTABLE_FIELDS, lang);
         Specification<Question> spec = AgriSpecifications.<Question>matches(filter)
                 .and(inTopicWithTag(categoryId, tag, unanswered));
-        return questionRepository.findAll(spec, pageable).map(this::mapToQuestionResponse);
+        return mapToQuestionResponses(questionRepository.findAll(spec, pageable));
     }
 
     static Specification<Question> inTopicWithTag(Long categoryId, String tag, boolean unanswered) {
@@ -85,15 +88,15 @@ public class QuestionService {
         if (query == null || query.isBlank()) {
             throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_SEARCH_QUERY_REQUIRED, lang);
         }
-        return questionRepository.search(query.trim(), CommonUtils.clampedPageable(pageNo, pageSize, Sort.unsorted()))
-                .map(this::mapToQuestionResponse);
+        return mapToQuestionResponses(
+                questionRepository.search(query.trim(), CommonUtils.clampedPageable(pageNo, pageSize, Sort.unsorted())));
     }
 
     public Page<QuestionResponse> getAllByUser(PaginationArgs paginationArgs, Long userId, String lang) {
         Pageable pageable = CommonUtils.getPageable(paginationArgs, SORTABLE_FIELDS, lang);
         User user = userService.findByIdWithException(userId, lang);
         Page<Question> questions = questionRepository.findAllByUser(user, pageable);
-        return questions.map(this::mapToQuestionResponse);
+        return mapToQuestionResponses(questions);
     }
 
     public QuestionResponse update(UpdateQuestionRequest request, String lang) {
@@ -134,12 +137,23 @@ public class QuestionService {
     }
 
     private QuestionResponse mapToQuestionResponse(Question question) {
+        return mapToQuestionResponse(question, reputationService.totals(List.of(question.getUser().getId())));
+    }
+
+    /** One reputation query for the whole page. */
+    private Page<QuestionResponse> mapToQuestionResponses(Page<Question> questions) {
+        Map<Long, Long> reputation = reputationService.totals(questions.map(q -> q.getUser().getId()).toSet());
+        return questions.map(question -> mapToQuestionResponse(question, reputation));
+    }
+
+    private QuestionResponse mapToQuestionResponse(Question question, Map<Long, Long> reputation) {
         QuestionResponse response = new QuestionResponse();
         response.setQuestionId(question.getId());
         response.setUserId(question.getUser().getId());
         response.setTitle(question.getTitle());
         response.setContent(question.getContent());
         response.setAuthorName(question.getUser().getName());
+        response.setAuthorReputation(reputation.getOrDefault(question.getUser().getId(), 0L));
         response.setAgri(AgriInfo.from(question.getAgri()));
         response.setCategory(question.getCategory() == null ? null : CategoryResponse.from(question.getCategory()));
         response.setTags(question.getTags().stream().map(Tag::getName).toList());

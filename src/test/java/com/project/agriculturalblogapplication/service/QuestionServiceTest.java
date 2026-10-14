@@ -38,7 +38,8 @@ class QuestionServiceTest {
     private final TagService tagService = mock(TagService.class);
     private final ImageService imageService = mock(ImageService.class);
     private final QuestionService questionService =
-            new QuestionService(questionRepository, userService, authorization, categoryService, tagService, imageService);
+            new QuestionService(questionRepository, userService, authorization, categoryService, tagService, imageService,
+                    mock(ReputationService.class));
 
     @Test
     void questionShowsItsAuthorsNameAndIsoTimestamps() {

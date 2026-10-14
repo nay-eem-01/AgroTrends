@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -71,12 +72,11 @@ public class AnswerService {
 
     /** Direct answers (replies come from viewReplies): the accepted one first, then highest score, then oldest. */
     public List<AnswerResponse> getAllByQuestionId(Long questionId) {
-        return answerRepository.findByQuestionIdAndParentAnswerIsNull(questionId).stream()
+        return mapToAnswerResponses(answerRepository.findByQuestionIdAndParentAnswerIsNull(questionId).stream()
                 .sorted(Comparator.comparing((Answer answer) -> !isAccepted(answer))
                         .thenComparing(Answer::getScore, Comparator.reverseOrder())
                         .thenComparing(Answer::getId))
-                .map(this::mapToAnswerResponse)
-                .toList();
+                .toList());
     }
 
     /** The asker marks an answer as the one that solved the question, replacing any earlier pick. */
@@ -147,9 +147,7 @@ public class AnswerService {
     public List<AnswerResponse> viewReplies(Long parentAnswerId) {
         Answer parentAnswer = findByIdWithException(parentAnswerId);
 
-        return parentAnswer.getReplies().stream()
-                .map(this::mapToAnswerResponse)
-                .toList();
+        return mapToAnswerResponses(parentAnswer.getReplies());
     }
 
     public Answer findByIdWithException(Long answerId) {
@@ -162,13 +160,24 @@ public class AnswerService {
     }
 
 
-    private AnswerResponse mapToAnswerResponse(Answer answer){
+    private AnswerResponse mapToAnswerResponse(Answer answer) {
+        return mapToAnswerResponse(answer, reputationService.totals(List.of(answer.getUser().getId())));
+    }
+
+    /** One reputation query for the whole list. */
+    private List<AnswerResponse> mapToAnswerResponses(List<Answer> answers) {
+        Map<Long, Long> reputation = reputationService.totals(answers.stream().map(a -> a.getUser().getId()).toList());
+        return answers.stream().map(answer -> mapToAnswerResponse(answer, reputation)).toList();
+    }
+
+    private AnswerResponse mapToAnswerResponse(Answer answer, Map<Long, Long> reputation) {
         AnswerResponse response = new AnswerResponse();
         response.setAnswerId(answer.getId());
         response.setUserId(answer.getUser().getId());
         response.setQuestionId(answer.getQuestion().getId());
         response.setContent(answer.getContent());
         response.setAuthorName(answer.getUser().getName());
+        response.setAuthorReputation(reputation.getOrDefault(answer.getUser().getId(), 0L));
         response.setCreatedAt(CommonUtils.toInstant(answer.getCreationDate()));
         response.setUpdatedAt(CommonUtils.toInstant(answer.getLastModifiedDate()));
         response.setScore(answer.getScore());

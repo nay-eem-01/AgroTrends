@@ -7,18 +7,23 @@ import com.project.agriculturalblogapplication.entities.ReputationEvent;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.enums.ReputationReason;
 import com.project.agriculturalblogapplication.enums.VoteDirection;
+import com.project.agriculturalblogapplication.model.response.ReputationResponse;
+import com.project.agriculturalblogapplication.model.response.TopicReputation;
 import com.project.agriculturalblogapplication.repositories.ReputationEventRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class ReputationServiceTest {
@@ -86,6 +91,25 @@ class ReputationServiceTest {
         assertSame(answerer, ledger.get(0).getUser());
         assertSame(asker, ledger.get(1).getUser());
         assertEquals(0, points().stream().mapToInt(Integer::intValue).sum());
+    }
+
+    @Test
+    void aProfileTotalIsTheSumOfItsTopics() {
+        when(repository.byTopic(2L)).thenReturn(List.of(new TopicReputation(1L, "Rice", 30), new TopicReputation(null, null, -2)));
+
+        ReputationResponse response = reputation.of(2L);
+
+        assertEquals(28, response.total());
+        assertEquals(2, response.topics().size());
+    }
+
+    @Test
+    void totalsForAListComeFromOneQueryAndSkipTheEmptyCase() {
+        when(repository.totalsFor(List.of(1L, 2L))).thenReturn(List.<Object[]>of(new Object[]{2L, 15L}));
+
+        assertEquals(Map.of(2L, 15L), reputation.totals(List.of(1L, 2L)));
+        assertEquals(Map.of(), reputation.totals(List.of()));
+        verify(repository, never()).totalsFor(List.of());
     }
 
     @Test

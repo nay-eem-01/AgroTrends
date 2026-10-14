@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 60 of 84 steps done
+**Progress:** 61 of 84 steps done
 
 **Launch scope (decided 2026-10-13):** Phases 4–8 must all be done before the public launch. Order of work:
 5 → 6 → 7 → 8 → 4 (deploy) → live test → launch. Nothing is deployed until Phases 5–8 are done. After launch, the
@@ -137,7 +137,7 @@ Stack Overflow-style trust. Topics are the existing categories. Point values are
 | 6.4 | Votes on questions and answers: up/down, one per user, not on your own, atomic `score` | ✅ |
 | 6.5 | Accepted answer: the asker picks one (can change it); accepted answer sorts first | ✅ |
 | 6.6 | Reputation ledger: `ReputationEvent` rows per user and topic, written and reversed with votes and accepts; downvoting needs 50 points | ✅ |
-| 6.7 | Reputation on profiles and posts: totals per topic on `GET /api/users/{id}/reputation`; author reputation + badges on question/answer responses | ⬜ |
+| 6.7 | Reputation on profiles and posts: totals per topic on `GET /api/users/{id}/reputation`; author reputation + badges on question/answer responses | ✅ |
 | 6.8 | Top Contributor badge, computed per topic (250 points and 5 accepted answers) | ⬜ |
 
 ## Phase 7 — Verified experts and AI review
