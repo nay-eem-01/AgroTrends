@@ -2,13 +2,20 @@ package com.project.agriculturalblogapplication.service;
 
 import com.project.agriculturalblogapplication.config.AiProperties;
 import com.project.agriculturalblogapplication.entities.AiAnswer;
+import com.project.agriculturalblogapplication.constatnt.AppConstants;
 import com.project.agriculturalblogapplication.entities.Question;
+import com.project.agriculturalblogapplication.entities.QuestionAiAnswer;
+import com.project.agriculturalblogapplication.entities.User;
+import com.project.agriculturalblogapplication.enums.AiAnswerStatus;
+import com.project.agriculturalblogapplication.events.QuestionCreated;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.response.AiAnswerResponse;
 import com.project.agriculturalblogapplication.model.response.AiDraftAnswerResponse;
 import com.project.agriculturalblogapplication.model.response.AiHistoryItemResponse;
 import com.project.agriculturalblogapplication.model.response.AiSourceResponse;
+import com.project.agriculturalblogapplication.model.response.QuestionAiAnswerResponse;
 import com.project.agriculturalblogapplication.repositories.AiRepositories;
+import com.project.agriculturalblogapplication.repositories.QuestionAiAnswerRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -32,6 +39,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -51,8 +59,9 @@ class AiServiceTest {
     private final AiProperties aiProperties = new AiProperties();
     private final QuestionService questionService = mock(QuestionService.class);
     private final AnswerService answerService = mock(AnswerService.class);
-    private final AiService aiService =
-            new AiService(aiRepositories, chatClient, authorization, aiProperties, questionService, answerService);
+    private final QuestionAiAnswerRepository questionAiAnswers = mock(QuestionAiAnswerRepository.class);
+    private final AiService aiService = new AiService(aiRepositories, chatClient, authorization, aiProperties,
+            questionService, answerService, questionAiAnswers);
 
     @Test
     void askReturnsTheAnswerWithItsSourcesAndStoresItForTheCaller() {
@@ -161,8 +170,74 @@ class AiServiceTest {
         verify(chatClient, never()).prompt();
     }
 
+    @Test
+    void aNewQuestionGetsAStoredUncheckedAnswerWithItsSources() {
+        when(questionService.findByIdWithException(4L)).thenReturn(question("Yellow leaves", "<p>My paddy leaves turn <b>yellow</b>.</p>"));
+        when(chatClient.prompt().user("Yellow leaves\n\nMy paddy leaves turn yellow.").call().chatClientResponse())
+                .thenReturn(response("Check nitrogen.", List.of(chunk(2, "Rice nutrition"))));
+
+        aiService.answerQuestion(new QuestionCreated(4L));
+
+        ArgumentCaptor<QuestionAiAnswer> saved = ArgumentCaptor.forClass(QuestionAiAnswer.class);
+        verify(questionAiAnswers).save(saved.capture());
+        assertEquals("Check nitrogen.", saved.getValue().getAnswer());
+        assertEquals(AiAnswerStatus.UNCHECKED, saved.getValue().getStatus());
+        assertEquals(List.of(new AiSourceResponse(2L, "Rice nutrition")), saved.getValue().getSources());
+        assertEquals(4L, saved.getValue().getQuestion().getId());
+        assertEquals(120, saved.getValue().getPromptTokens());
+    }
+
+    @Test
+    void anAskerOverTheDailyLimitGetsNoAiAnswerAndTheModelIsNotCalled() {
+        aiProperties.setDailyQuestionLimit(20);
+        when(questionService.findByIdWithException(4L)).thenReturn(question("Yellow leaves", "Why?"));
+        when(questionAiAnswers.countByQuestionUserIdAndCreationDateGreaterThanEqual(9L, LocalDate.now().atStartOfDay()))
+                .thenReturn(20L);
+
+        aiService.answerQuestion(new QuestionCreated(4L));
+
+        verify(chatClient, never()).prompt();
+        verify(questionAiAnswers, never()).save(any());
+    }
+
+    @Test
+    void aFailedGenerationIsLoggedNotThrown() {
+        when(questionService.findByIdWithException(4L)).thenReturn(question("Yellow leaves", "Why?"));
+        when(chatClient.prompt().user(any(String.class)).call().chatClientResponse()).thenThrow(new RuntimeException("503"));
+
+        aiService.answerQuestion(new QuestionCreated(4L));
+
+        verify(questionAiAnswers, never()).save(any());
+    }
+
+    @Test
+    void theQuestionPromptIsCappedLikeAPrivateQuestion() {
+        assertEquals(AppConstants.AI_MAX_QUESTION_LENGTH, AiService.promptFor(question("T", "x".repeat(5000))).length());
+    }
+
+    @Test
+    void aFlaggedOrMissingAiAnswerIsNotFoundAndAnUncheckedOneCarriesTheDisclaimer() {
+        QuestionAiAnswer stored = new QuestionAiAnswer();
+        stored.setAnswer("Check nitrogen.");
+        when(questionAiAnswers.findByQuestionId(4L)).thenReturn(Optional.of(stored));
+
+        QuestionAiAnswerResponse response = aiService.questionAnswer(4L, "en");
+        assertEquals(AiAnswerStatus.UNCHECKED, response.status());
+        assertEquals(QuestionAiAnswerResponse.DISCLAIMER, response.disclaimer());
+
+        stored.setStatus(AiAnswerStatus.FLAGGED);
+        assertEquals(HttpStatus.NOT_FOUND,
+                assertThrows(ApplicationException.class, () -> aiService.questionAnswer(4L, "en")).getHttpStatus());
+        assertEquals(HttpStatus.NOT_FOUND,
+                assertThrows(ApplicationException.class, () -> aiService.questionAnswer(5L, "en")).getHttpStatus());
+    }
+
     private static Question question(String title, String content) {
+        User asker = new User();
+        asker.setId(9L);
         Question question = new Question();
+        question.setId(4L);
+        question.setUser(asker);
         question.setTitle(title);
         question.setContent(content);
         return question;

@@ -49,6 +49,7 @@ public class SecurityConstants {
             "/api/questions/search",
             "/api/users/*/reputation",
             "/api/questions/id/*",
+            "/api/questions/id/*/ai-answer",
             "/api/answers/question/*",
             "/api/answers/replies/*",
             "/api/answers/id/*",

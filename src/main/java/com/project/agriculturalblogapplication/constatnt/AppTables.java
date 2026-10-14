@@ -278,6 +278,21 @@ public final class AppTables {
         public static final String USER_ID = "user_id";
     }
 
+    public static final class QuestionAiAnswerTable {
+
+        public static final String NAME = "question_ai_answers";
+
+        public static final String ANSWER = "answer";
+
+        public static final String SOURCES = "sources";
+
+        public static final String STATUS = "status";
+
+        public static final String PROMPT_TOKENS = "prompt_tokens";
+
+        public static final String COMPLETION_TOKENS = "completion_tokens";
+    }
+
     public static final class AiAnswerTable {
 
         private AiAnswerTable() {}
