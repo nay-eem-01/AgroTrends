@@ -179,6 +179,8 @@ public final class AppTables {
 
         public static final String DETAILS = "details";
 
+        public static final String SNAPSHOT = "snapshot";
+
         public static final String STATUS = "status";
     }
 

@@ -13,5 +13,7 @@ public enum NotificationType {
     /** Your expert application was approved or rejected. */
     APPLICATION_DECIDED,
     /** Someone replied to your comment. */
-    COMMENT_REPLY
+    COMMENT_REPLY,
+    /** A moderator removed your post after a report. */
+    CONTENT_REMOVED
 }

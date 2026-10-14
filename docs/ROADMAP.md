@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 75 of 87 steps done
+**Progress:** 76 of 88 steps done
 
 **Launch scope (decided 2026-10-13):** Phases 4–8 must all be done before the public launch. Order of work:
 5 → 6 → 7 → 8 → 4 (deploy) → live test → launch. Nothing is deployed until Phases 5–8 are done. After launch, the
@@ -167,7 +167,8 @@ The old `feature/kafka-impl` branch can be deleted.
 | 8.1b | Triggers: new review item in your topic, application decided, reply to your comment | ✅ |
 | 8.2 | `/api/notifications` for the caller only: list, unread count, mark one / all read | ✅ |
 | 8.3 | Reports: `POST /api/reports` (blog, question, answer, AI answer, comment, user; reason); one per user per target | ✅ |
-| 8.4 | Moderation: admin report queue, hide content (out of public lists and RAG, reputation reversed), ban user (sessions revoked), revoke expert badge | ⬜ |
+| 8.4a | Moderation: admin report queue, dismiss, remove reported content (deleted through the existing paths: out of lists and RAG, reputation reversed; snapshot kept on the reports; author notified); AI answers hidden; badge revocation is 7.2 | ✅ |
+| 8.4b | Ban a user: sign-in and token refresh refused, sessions revoked; unban | ⬜ |
 
 ## Later — after the 8-week launch test
 

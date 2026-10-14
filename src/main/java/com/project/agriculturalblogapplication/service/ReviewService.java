@@ -104,6 +104,18 @@ public class ReviewService {
                 userService.findByIdWithException(userId, lang), null, ErrorCode.ERROR_AI_ANSWER_ALREADY_REVIEWED, lang);
     }
 
+    /**
+     * Moderator: hides an AI answer whatever its review state and returns what it said. No reviewer is recorded, so
+     * the asker is not notified and the moderator stays anonymous.
+     */
+    @Transactional
+    public String hide(Long questionId, String lang) {
+        QuestionAiAnswer aiAnswer = find(questionId, lang);
+        move(aiAnswer, Set.of(AiAnswerStatus.UNCHECKED, AiAnswerStatus.CONFIRMED, AiAnswerStatus.CORRECTED),
+                AiAnswerStatus.FLAGGED, null, null, ErrorCode.ERROR_AI_ANSWER_ALREADY_REVIEWED, lang);
+        return aiAnswer.getAnswer();
+    }
+
     /** Admin: back to UNCHECKED. A correction stays posted as an ordinary answer. */
     @Transactional
     public QuestionAiAnswerResponse reopen(Long questionId, String lang) {

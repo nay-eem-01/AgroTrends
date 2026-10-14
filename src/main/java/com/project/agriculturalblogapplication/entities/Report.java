@@ -43,6 +43,10 @@ public class Report extends AuditModel<String> {
     @Column(name = ReportTable.DETAILS, length = 500)
     private String details;
 
+    /** What the removed content said, kept as evidence once the post itself is gone. */
+    @Column(name = ReportTable.SNAPSHOT, columnDefinition = "TEXT")
+    private String snapshot;
+
     @Enumerated(EnumType.STRING)
     @Column(name = ReportTable.STATUS, nullable = false)
     private ReportStatus status = ReportStatus.OPEN;
