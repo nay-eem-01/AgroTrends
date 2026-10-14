@@ -14,6 +14,7 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.type.SqlTypes;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,6 +42,21 @@ public class QuestionAiAnswer extends AuditModel<String> {
     @Enumerated(EnumType.STRING)
     @Column(name = QuestionAiAnswerTable.STATUS, nullable = false)
     private AiAnswerStatus status = AiAnswerStatus.UNCHECKED;
+
+    /** The expert who confirmed, corrected or flagged it; null while unchecked. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = QuestionAiAnswerTable.REVIEWED_BY)
+    @OnDelete(action = OnDeleteAction.SET_NULL)
+    private User reviewedBy;
+
+    @Column(name = QuestionAiAnswerTable.REVIEWED_AT)
+    private LocalDateTime reviewedAt;
+
+    /** CORRECTED only: the expert's answer posted in its place. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = QuestionAiAnswerTable.CORRECTION_ANSWER_ID)
+    @OnDelete(action = OnDeleteAction.SET_NULL)
+    private Answer correction;
 
     @Column(name = QuestionAiAnswerTable.PROMPT_TOKENS)
     private Integer promptTokens;
