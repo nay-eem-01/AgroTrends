@@ -94,7 +94,7 @@ class BlogServiceTest {
     void deleteByAStrangerKeepsTheVectors() {
         when(blogRepositories.findById(7L)).thenReturn(Optional.of(blog(7L)));
         doThrow(new ApplicationException(HttpStatus.FORBIDDEN, "forbidden"))
-                .when(authorization).assertOwnerAdminOrModerator(anyLong(), any());
+                .when(authorization).assertOwnerOrAdmin(anyLong(), any());
 
         assertThrows(ApplicationException.class, () -> blogService.delete(7L, LANG));
 

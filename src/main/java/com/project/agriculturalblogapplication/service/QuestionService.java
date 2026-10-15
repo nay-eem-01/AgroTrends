@@ -138,11 +138,28 @@ public class QuestionService {
     /** Hidden questions can still be deleted, by their author or a moderator confirming the reports. */
     @Transactional
     public void delete(Long id, String lang) {
-        Question question = questionRepository.findById(id).orElseThrow(() ->
+        Question question = findIncludingHidden(id);
+        authorizationService.assertOwnerOrAdmin(question.getUser().getId(), lang);
+        remove(question);
+    }
+
+    /**
+     * Deletes after a moderator confirmed reports about it; the authorization is the moderation endpoint's.
+     * Package-private: only ModerationService may skip the owner-or-admin check.
+     */
+    @Transactional
+    void removeForModeration(Long id) {
+        remove(findIncludingHidden(id));
+    }
+
+    private Question findIncludingHidden(Long id) {
+        return questionRepository.findById(id).orElseThrow(() ->
                 new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_QUESTION_NOT_FOUND));
-        authorizationService.assertOwnerAdminOrModerator(question.getUser().getId(), lang);
+    }
+
+    private void remove(Question question) {
         questionRepository.delete(question);
-        eventPublisher.publishEvent(new QuestionDeleted(id));
+        eventPublisher.publishEvent(new QuestionDeleted(question.getId()));
     }
 
     /** A hidden question is a 404 here, so it cannot be read, edited, answered or voted on while under review. */

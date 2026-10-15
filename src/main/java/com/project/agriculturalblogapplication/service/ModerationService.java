@@ -146,10 +146,10 @@ public class ModerationService {
                 LocalDateTime.now());
         if (post != null) {
             switch (type) {
-                case BLOG -> blogService.delete(id, lang);
-                case QUESTION -> questionService.delete(id, lang);
-                case ANSWER -> answerService.delete(id, lang);
-                default -> commentService.delete(id, lang);
+                case BLOG -> blogService.removeForModeration(id);
+                case QUESTION -> questionService.removeForModeration(id);
+                case ANSWER -> answerService.removeForModeration(id);
+                default -> commentService.removeForModeration(id);
             }
             notify(post, NotificationType.CONTENT_REMOVED);
         }

@@ -8,8 +8,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -30,6 +32,14 @@ class SpringEventNotificationPublisherTest {
 
         publisher.deliver(message);
         verify(notificationService).store(message);
+    }
+
+    @Test
+    void aFailedStoreIsLoggedNotThrown() {
+        // Regression: without a transaction delivery runs inline, so a failure here failed the action itself.
+        doThrow(new RuntimeException("recipient deleted")).when(notificationService).store(message);
+
+        assertDoesNotThrow(() -> publisher.deliver(message));
     }
 
     @Test

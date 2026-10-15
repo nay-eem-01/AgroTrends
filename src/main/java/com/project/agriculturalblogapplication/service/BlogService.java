@@ -199,7 +199,19 @@ public class BlogService {
 
     public void delete(Long id, String lang) {
         Blog blog = findByIdWithException(id);
-        authorizationService.assertOwnerAdminOrModerator(blog.getAuthor().getUser().getId(), lang);
+        authorizationService.assertOwnerOrAdmin(blog.getAuthor().getUser().getId(), lang);
+        remove(blog);
+    }
+
+    /**
+     * Deletes after a moderator confirmed reports about it; the authorization is the moderation endpoint's.
+     * Package-private: only ModerationService may skip the owner-or-admin check.
+     */
+    void removeForModeration(Long id) {
+        remove(findByIdWithException(id));
+    }
+
+    private void remove(Blog blog) {
         blogRepositories.delete(blog);
         documentService.deleteBlog(blog.getId());
     }

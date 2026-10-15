@@ -214,6 +214,16 @@ class ExpertServiceTest {
     }
 
     @Test
+    void anAdminDecidingTheirOwnApplicationIsNotNotified() {
+        pendingApplication(category(3L, "Poultry"));
+        when(authorization.currentUserId(LANG)).thenReturn(APPLICANT);
+
+        expertService.approve(9L, decision(null, null), LANG);
+
+        verify(notifications, never()).publish(any());
+    }
+
+    @Test
     void rejectingNeedsAReason() {
         when(authorization.currentUserId(LANG)).thenReturn(ADMIN);
         ExpertApplication application = pendingApplication(category(3L, "Poultry"));
