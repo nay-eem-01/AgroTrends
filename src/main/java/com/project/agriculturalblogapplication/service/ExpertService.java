@@ -192,8 +192,9 @@ public class ExpertService {
         }
         application.setStatus(status);
         application.setReviewNote(reviewNote);
+        // No actor: applicants are not told which admin decided (as with moderation).
         notificationPublisher.publish(new NotificationMessage(application.getUser().getId(),
-                authorizationService.currentUserId(lang), NotificationType.APPLICATION_DECIDED,
+                null, NotificationType.APPLICATION_DECIDED,
                 NotificationTarget.EXPERT_APPLICATION, application.getId()));
         return ExpertApplicationResponse.from(application);
     }

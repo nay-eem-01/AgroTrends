@@ -19,6 +19,8 @@ import java.util.Optional;
 @Component
 public class AuthorizationService {
 
+    public static final String CONTENT_MODERATE = "CONTENT_MODERATE";
+
     public CustomUserDetails currentPrincipal(String lang) {
         return signedInPrincipal().orElseThrow(() ->
                 new ApplicationException(HttpStatus.UNAUTHORIZED, ErrorCode.ERROR_UNAUTHORIZED_ACCESS, lang));
@@ -66,6 +68,15 @@ public class AuthorizationService {
     public boolean isOwnerOrAdmin(Long ownerUserId, String lang) {
         CustomUserDetails principal = currentPrincipal(lang);
         return isAdmin(principal) || (ownerUserId != null && ownerUserId.equals(principal.getId()));
+    }
+
+    /** For deleting posts: the owner, any admin, or a moderator (CONTENT_MODERATE); otherwise 403. */
+    public void assertOwnerAdminOrModerator(Long ownerUserId, String lang) {
+        boolean moderator = currentPrincipal(lang).getAuthorities().stream()
+                .anyMatch(authority -> CONTENT_MODERATE.equals(authority.getAuthority()));
+        if (!moderator) {
+            assertOwnerOrAdmin(ownerUserId, lang);
+        }
     }
 
     /** Passes for the owner of a resource or any admin; otherwise 403. */

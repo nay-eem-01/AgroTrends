@@ -53,8 +53,12 @@ class JwtAuthenticationFilterTest {
     }
 
     private void givenUser(boolean mustChangePassword, boolean emailVerified) {
+        givenUser(mustChangePassword, emailVerified, false);
+    }
+
+    private void givenUser(boolean mustChangePassword, boolean emailVerified, boolean banned) {
         CustomUserDetails user = new CustomUserDetails(5L, "n", "farmer@example.com", "pw", Set.of(), List.of(),
-                mustChangePassword, emailVerified);
+                mustChangePassword, emailVerified, banned);
         when(userDetailsService.loadUserByUsername("farmer@example.com")).thenReturn(user);
     }
 
@@ -133,6 +137,21 @@ class JwtAuthenticationFilterTest {
 
         filter.doFilter(request("GET", "/api/blogs/me/drafts"), new MockHttpServletResponse(), chain);
         verify(chain).doFilter(any(), any());
+    }
+
+    @Test
+    void aBannedUsersStillActiveSessionIsRefusedEvenForReads() throws Exception {
+        // Regression: the ban was checked only when tokens were issued, so a session created while the ban was being
+        // applied kept working.
+        givenUser(false, true, true);
+        when(sessions.getActiveSessionByToken(token)).thenReturn(new UserSession());
+
+        MockHttpServletResponse blocked = new MockHttpServletResponse();
+        filter.doFilter(request("GET", "/api/user/me"), blocked, chain);
+
+        assertEquals(403, blocked.getStatus());
+        assertTrue(blocked.getContentAsString().contains("suspended"));
+        verifyNoInteractions(chain);
     }
 
     @Test

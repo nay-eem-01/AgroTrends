@@ -82,7 +82,7 @@ public class AnswerService {
     @Transactional
     public void delete(Long answerId, String lang) {
         Answer answer = findByIdWithException(answerId);
-        authorizationService.assertOwnerOrAdmin(answer.getUser().getId(), lang);
+        authorizationService.assertOwnerAdminOrModerator(answer.getUser().getId(), lang);
         // The loaded question must not point at a deleted row when the session flushes. The answer's reputation
         // events go with it (ON DELETE CASCADE), so nothing is written to the ledger here.
         if (isAccepted(answer)) {

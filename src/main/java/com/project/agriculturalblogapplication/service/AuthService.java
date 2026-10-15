@@ -153,6 +153,10 @@ public class AuthService {
 		if (user != null && !isConsumer(user)) {
 			throw new ApplicationException(HttpStatus.UNAUTHORIZED, ErrorCode.ERROR_INVALID_CREDENTIALS, lang);
 		}
+		// Refused before linking: a refused sign-in must not change the account.
+		if (user != null && user.getBannedAt() != null) {
+			throw new ApplicationException(HttpStatus.FORBIDDEN, ErrorCode.ERROR_ACCOUNT_BANNED, lang);
+		}
 		if (user == null) {
 			user = userService.createGoogleUser(google, lang);
 		} else if (user.getGoogleSubject() == null) {
