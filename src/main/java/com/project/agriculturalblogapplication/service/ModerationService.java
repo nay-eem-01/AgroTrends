@@ -17,12 +17,16 @@ import com.project.agriculturalblogapplication.notification.NotificationPublishe
 import com.project.agriculturalblogapplication.repositories.ReportRepository;
 import com.project.agriculturalblogapplication.util.CommonUtils;
 import com.project.agriculturalblogapplication.util.SafeHtml;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.AuditorAware;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 /**
  * The moderators' report queue (roadmap 8.4). Removing content deletes it through the owners' own delete paths, so
@@ -34,6 +38,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class ModerationService {
 
     static final int SNAPSHOT_LENGTH = 2000;
+
+    static final String ALREADY_GONE = "(already removed)";
 
     private final ReportRepository reportRepository;
 
@@ -51,6 +57,10 @@ public class ModerationService {
 
     private final UserService userService;
 
+    private final EntityManager entityManager;
+
+    private final AuditorAware<String> auditorAware;
+
     /** Reports in one status, oldest first. */
     @Transactional(readOnly = true)
     public Page<ReportResponse> reports(ReportStatus status, int pageNo, int pageSize) {
@@ -61,53 +71,66 @@ public class ModerationService {
 
     @Transactional
     public ReportResponse dismiss(Long reportId, String lang) {
-        Report report = open(reportId, lang);
-        report.setStatus(ReportStatus.DISMISSED);
-        return ReportResponse.from(report);
+        open(reportId, lang);
+        if (reportRepository.dismissIfOpen(reportId, moderator(), LocalDateTime.now()) == 0) {
+            throw new ApplicationException(HttpStatus.CONFLICT, ErrorCode.ERROR_REPORT_ALREADY_CLOSED, lang);
+        }
+        return ReportResponse.from(reportRepository.findById(reportId).orElseThrow());
     }
 
-    /** Removes the reported content and closes every open report on it; the author is told. */
+    /**
+     * Removes the reported content and closes every open report on it; the author is told. Content that is already
+     * gone (removed with its question, deleted by its author) just closes the reports.
+     */
     @Transactional
     public ReportResponse removeContent(Long reportId, String lang) {
         Report report = open(reportId, lang);
         Long id = report.getTargetId();
-        // Snapshot and author are read before the delete; the delete comes last so nothing outlives a failure.
-        Runnable delete;
-        String snapshot;
-        NotificationMessage notice;
+        // Looked up with find (null, not an exception): an exception out of another transactional service would
+        // mark this transaction rollback-only. The delete comes last so nothing outlives a failure.
+        Runnable delete = () -> { };
+        String snapshot = ALREADY_GONE;
+        NotificationMessage notice = null;
         switch (report.getTargetType()) {
             case BLOG -> {
-                Blog blog = blogService.findByIdWithException(id);
-                snapshot = blog.getTitle() + "\n\n" + SafeHtml.plainText(blog.getContent());
-                notice = removed(blog.getAuthor().getUser().getId(), NotificationTarget.BLOG, id);
-                delete = () -> blogService.delete(id, lang);
+                Blog blog = entityManager.find(Blog.class, id);
+                if (blog != null) {
+                    snapshot = blog.getTitle() + "\n\n" + SafeHtml.plainText(blog.getContent());
+                    notice = removed(blog.getAuthor().getUser().getId(), NotificationTarget.BLOG, id);
+                    delete = () -> blogService.delete(id, lang);
+                }
             }
             case QUESTION -> {
-                Question question = questionService.findByIdWithException(id);
-                snapshot = question.getTitle() + "\n\n" + SafeHtml.plainText(question.getContent());
-                notice = removed(question.getUser().getId(), NotificationTarget.QUESTION, id);
-                delete = () -> questionService.delete(id, lang);
+                Question question = entityManager.find(Question.class, id);
+                if (question != null) {
+                    snapshot = question.getTitle() + "\n\n" + SafeHtml.plainText(question.getContent());
+                    notice = removed(question.getUser().getId(), NotificationTarget.QUESTION, id);
+                    delete = () -> questionService.delete(id, lang);
+                }
             }
             case ANSWER -> {
-                Answer answer = answerService.findByIdWithException(id);
-                snapshot = SafeHtml.plainText(answer.getContent());
-                notice = removed(answer.getUser().getId(), NotificationTarget.QUESTION, answer.getQuestion().getId());
-                delete = () -> answerService.delete(id, lang);
+                Answer answer = entityManager.find(Answer.class, id);
+                if (answer != null) {
+                    snapshot = SafeHtml.plainText(answer.getContent());
+                    notice = removed(answer.getUser().getId(), NotificationTarget.QUESTION, answer.getQuestion().getId());
+                    delete = () -> answerService.delete(id, lang);
+                }
             }
             case COMMENT -> {
-                Comment comment = commentService.findByIdWithException(id);
-                snapshot = comment.getCommentContent();
-                notice = removed(comment.getUser().getId(), NotificationTarget.BLOG, comment.getBlog().getId());
-                delete = () -> commentService.delete(id, lang);
+                Comment comment = entityManager.find(Comment.class, id);
+                if (comment != null) {
+                    snapshot = comment.getCommentContent();
+                    notice = removed(comment.getUser().getId(), NotificationTarget.BLOG, comment.getBlog().getId());
+                    delete = () -> commentService.delete(id, lang);
+                }
             }
             case AI_ANSWER -> {
-                snapshot = reviewService.hide(id, lang);
-                notice = null;
-                delete = () -> { };
+                String hidden = reviewService.hide(id);
+                snapshot = hidden == null ? ALREADY_GONE : hidden;
             }
             default -> throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_BAN_INSTEAD, lang);
         }
-        reportRepository.closeAsActioned(report.getTargetType(), id, cut(snapshot));
+        reportRepository.closeAsActioned(report.getTargetType(), id, cut(snapshot), moderator(), LocalDateTime.now());
         delete.run();
         if (notice != null) {
             notificationPublisher.publish(notice);
@@ -119,7 +142,8 @@ public class ModerationService {
     @Transactional
     public void ban(Long userId, String reason, String lang) {
         userService.ban(userId, reason, lang);
-        reportRepository.closeAsActioned(ReportTarget.USER, userId, "Banned: " + reason.strip());
+        reportRepository.closeAsActioned(ReportTarget.USER, userId, "Banned: " + reason.strip(), moderator(),
+                LocalDateTime.now());
     }
 
     @Transactional
@@ -139,6 +163,10 @@ public class ModerationService {
     // No actor: authors are not told which moderator acted.
     private static NotificationMessage removed(Long authorId, NotificationTarget target, Long targetId) {
         return new NotificationMessage(authorId, null, NotificationType.CONTENT_REMOVED, target, targetId);
+    }
+
+    private String moderator() {
+        return auditorAware.getCurrentAuditor().orElse("SYSTEM");
     }
 
     private static String cut(String text) {

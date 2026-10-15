@@ -2,9 +2,12 @@ package com.project.agriculturalblogapplication.service;
 
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import com.project.agriculturalblogapplication.entities.Report;
+import com.project.agriculturalblogapplication.enums.AiAnswerStatus;
+import com.project.agriculturalblogapplication.enums.BlogStatus;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.request.CreateReportRequest;
 import com.project.agriculturalblogapplication.model.response.ReportResponse;
+import com.project.agriculturalblogapplication.repositories.QuestionAiAnswerRepository;
 import com.project.agriculturalblogapplication.repositories.ReportRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +28,7 @@ public class ReportService {
 
     private final AnswerService answerService;
 
-    private final AiService aiService;
+    private final QuestionAiAnswerRepository aiAnswerRepository;
 
     private final CommentService commentService;
 
@@ -54,10 +57,19 @@ public class ReportService {
     private void assertExists(CreateReportRequest request, Long reporterId, String lang) {
         Long id = request.getTargetId();
         switch (request.getTargetType()) {
-            case BLOG -> blogService.findByIdWithException(id);
+            case BLOG -> {
+                // A draft is private: reporting one must not confirm that it exists.
+                if (blogService.findByIdWithException(id).getStatus() != BlogStatus.PUBLISHED) {
+                    throw new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_BLOG_NOT_FOUND, lang);
+                }
+            }
             case QUESTION -> questionService.findByIdWithException(id);
             case ANSWER -> answerService.findByIdWithException(id);
-            case AI_ANSWER -> aiService.questionAnswer(id, lang);
+            case AI_ANSWER -> {
+                if (!aiAnswerRepository.existsByQuestionIdAndStatusNot(id, AiAnswerStatus.FLAGGED)) {
+                    throw new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_AI_ANSWER_NOT_FOUND, lang);
+                }
+            }
             case COMMENT -> commentService.findByIdWithException(id);
             case USER -> {
                 if (id.equals(reporterId)) {
