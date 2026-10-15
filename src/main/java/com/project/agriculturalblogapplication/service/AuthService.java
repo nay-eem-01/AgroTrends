@@ -132,7 +132,7 @@ public class AuthService {
 		if (adminPortal) {
 			userSessionService.deactivatePreviousSession(user.getId());
 		}
-		return issueTokens(user);
+		return issueTokens(user, lang);
 	}
 
 	/**
@@ -153,13 +153,17 @@ public class AuthService {
 		if (user != null && !isConsumer(user)) {
 			throw new ApplicationException(HttpStatus.UNAUTHORIZED, ErrorCode.ERROR_INVALID_CREDENTIALS, lang);
 		}
+		// Refused before linking: a refused sign-in must not change the account.
+		if (user != null && user.getBannedAt() != null) {
+			throw new ApplicationException(HttpStatus.FORBIDDEN, ErrorCode.ERROR_ACCOUNT_BANNED, lang);
+		}
 		if (user == null) {
 			user = userService.createGoogleUser(google, lang);
 		} else if (user.getGoogleSubject() == null) {
 			user = userService.linkGoogle(user, google.subject());
 		}
 		log.info("User {} signed in with Google", user.getId());
-		return issueTokens(user);
+		return issueTokens(user, lang);
 	}
 
 	/**
@@ -178,10 +182,14 @@ public class AuthService {
 
 		User user = userService.findByIdWithException(stored.getUserId(), lang);
 		userSessionService.deactivateExpiredSessions(user.getId());
-		return issueTokens(user);
+		return issueTokens(user, lang);
 	}
 
-	private WebTokenResponse issueTokens(User user) {
+	/** Every way in (password, Google, refresh) ends here, so a ban is enforced once. */
+	private WebTokenResponse issueTokens(User user, String lang) {
+		if (user.getBannedAt() != null) {
+			throw new ApplicationException(HttpStatus.FORBIDDEN, ErrorCode.ERROR_ACCOUNT_BANNED, lang);
+		}
 		String jwt = jwtUtil.generateAccessToken(user.getEmail());
 
 		CreateUserSessionRequest createUserSessionRequest = CreateUserSessionRequest.builder()

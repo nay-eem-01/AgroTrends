@@ -9,6 +9,10 @@ import com.project.agriculturalblogapplication.entities.Question;
 import com.project.agriculturalblogapplication.entities.QuestionAiAnswer;
 import com.project.agriculturalblogapplication.enums.AiAnswerStatus;
 import com.project.agriculturalblogapplication.events.QuestionCreated;
+import com.project.agriculturalblogapplication.enums.NotificationTarget;
+import com.project.agriculturalblogapplication.enums.NotificationType;
+import com.project.agriculturalblogapplication.notification.NotificationMessage;
+import com.project.agriculturalblogapplication.notification.NotificationPublisher;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.request.AskExpertsRequest;
 import com.project.agriculturalblogapplication.model.request.CreateQuestionRequest;
@@ -71,6 +75,10 @@ public class AiService {
 
     private final AttemptLimiter attemptLimiter;
 
+    private final ExpertService expertService;
+
+    private final NotificationPublisher notificationPublisher;
+
     public AiAnswerResponse ask(String question, String lang) {
         Long userId = authorizationService.currentUserId(lang);
         assertDailyLimitNotReached(userId, lang);
@@ -118,7 +126,20 @@ public class AiService {
         aiAnswer.setAnswer(ask.getAiAnswer());
         aiAnswer.setSources(ask.getSources());
         questionAiAnswerRepository.save(aiAnswer);
+        notifyReviewers(question);
         return created;
+    }
+
+    /** Tells every Verified Expert in the topic that the AI answer waits; the asker is the actor, so never themselves. */
+    // shortcut: one row per expert per question; switch to a digest if topics grow past a few dozen experts.
+    private void notifyReviewers(Question question) {
+        if (question.getCategory() == null) {
+            return;
+        }
+        for (Long expertId : expertService.expertsIn(question.getCategory().getId())) {
+            notificationPublisher.publish(new NotificationMessage(expertId, question.getUser().getId(), NotificationType.NEW_REVIEW_ITEM,
+                    NotificationTarget.QUESTION, question.getId()));
+        }
     }
 
     /** The first line of the asked text, cut to fit a title. */
@@ -159,6 +180,7 @@ public class AiService {
             aiAnswer.setPromptTokens(usage.getPromptTokens());
             aiAnswer.setCompletionTokens(usage.getCompletionTokens());
             questionAiAnswerRepository.save(aiAnswer);
+            notifyReviewers(question);
         } catch (RuntimeException e) {
             log.error("AI answer for question {} failed", event.questionId(), e);
         }
@@ -200,7 +222,7 @@ public class AiService {
     /** The question's AI answer; 404 while it is being generated, when there is none, or when it was flagged. */
     public QuestionAiAnswerResponse questionAnswer(Long questionId, String lang) {
         return questionAiAnswerRepository.findByQuestionId(questionId)
-                .filter(aiAnswer -> aiAnswer.getStatus() != AiAnswerStatus.FLAGGED)
+                .filter(aiAnswer -> aiAnswer.getStatus() != AiAnswerStatus.FLAGGED && !aiAnswer.getQuestion().isHidden())
                 .map(QuestionAiAnswerResponse::from)
                 .orElseThrow(() -> new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_AI_ANSWER_NOT_FOUND, lang));
     }

@@ -17,6 +17,10 @@ import com.project.agriculturalblogapplication.repositories.ExpertApplicationRep
 import com.project.agriculturalblogapplication.repositories.ExpertBadgeRepository;
 import com.project.agriculturalblogapplication.repositories.QuestionAiAnswerRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
+import com.project.agriculturalblogapplication.enums.NotificationTarget;
+import com.project.agriculturalblogapplication.enums.NotificationType;
+import com.project.agriculturalblogapplication.notification.NotificationMessage;
+import com.project.agriculturalblogapplication.notification.NotificationPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -47,6 +51,7 @@ class ExpertServiceTest {
 
     private static final String LANG = "en";
     private static final long APPLICANT = 7L;
+    private static final long ADMIN = 1L;
 
     private final ExpertApplicationRepository repository = mock(ExpertApplicationRepository.class);
     private final UserService userService = mock(UserService.class);
@@ -54,10 +59,11 @@ class ExpertServiceTest {
     private final ImageService imageService = mock(ImageService.class);
     private final AuthorizationService authorization = mock(AuthorizationService.class);
     private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
+    private final NotificationPublisher notifications = mock(NotificationPublisher.class);
     private final QuestionAiAnswerRepository aiAnswers = mock(QuestionAiAnswerRepository.class);
     private final ExpertBadgeRepository badgeRepository = mock(ExpertBadgeRepository.class);
     private final ExpertService expertService = new ExpertService(repository, badgeRepository, aiAnswers,
-            userService, categoryService, imageService, authorization, events);
+            userService, categoryService, imageService, authorization, events, notifications);
 
     @BeforeEach
     void setUp() {
@@ -208,7 +214,18 @@ class ExpertServiceTest {
     }
 
     @Test
+    void anAdminDecidingTheirOwnApplicationIsNotNotified() {
+        pendingApplication(category(3L, "Poultry"));
+        when(authorization.currentUserId(LANG)).thenReturn(APPLICANT);
+
+        expertService.approve(9L, decision(null, null), LANG);
+
+        verify(notifications, never()).publish(any());
+    }
+
+    @Test
     void rejectingNeedsAReason() {
+        when(authorization.currentUserId(LANG)).thenReturn(ADMIN);
         ExpertApplication application = pendingApplication(category(3L, "Poultry"));
 
         ApplicationException e = assertThrows(ApplicationException.class,
@@ -217,6 +234,8 @@ class ExpertServiceTest {
 
         assertEquals(ApplicationStatus.REJECTED, expertService.reject(9L, decision(null, "Blurry proof"), LANG).status());
         assertEquals("Blurry proof", application.getReviewNote());
+        verify(notifications).publish(new NotificationMessage(APPLICANT, null, NotificationType.APPLICATION_DECIDED,
+                NotificationTarget.EXPERT_APPLICATION, 9L));
         verify(badgeRepository, never()).save(any());
     }
 

@@ -56,7 +56,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String jwt = authHeader.substring(SecurityConstants.TOKEN_PREFIX.length());
             CustomUserDetails userDetails = authenticate(jwt);
 
-            if (userDetails != null) {
+            // A banned account's token counts as no token: public reads still work, everything else is a 401, and
+            // the client's refresh then gets the ban message.
+            if (userDetails != null && !userDetails.isBanned()) {
                 String refusal = refusal(userDetails, request);
                 if (refusal != null) {
                     HttpResponse.writeError(response, HttpStatus.FORBIDDEN, refusal);

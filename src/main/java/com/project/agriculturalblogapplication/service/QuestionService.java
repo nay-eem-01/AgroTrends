@@ -89,6 +89,7 @@ public class QuestionService {
     static Specification<Question> inTopicWithTag(Long categoryId, String tag, boolean unanswered) {
         String tagName = TagService.normalize(tag);
         return (root, query, cb) -> cb.and(
+                cb.isFalse(root.get("hidden")),
                 categoryId == null ? cb.conjunction() : cb.equal(root.get("category").get("id"), categoryId),
                 tagName.isEmpty() ? cb.conjunction() : cb.equal(root.join("tags").get("name"), tagName),
                 unanswered ? cb.equal(root.get("answerCount"), 0L) : cb.conjunction());
@@ -106,7 +107,7 @@ public class QuestionService {
     public Page<QuestionResponse> getAllByUser(PaginationArgs paginationArgs, Long userId, String lang) {
         Pageable pageable = CommonUtils.getPageable(paginationArgs, SORTABLE_FIELDS, lang);
         User user = userService.findByIdWithException(userId, lang);
-        Page<Question> questions = questionRepository.findAllByUser(user, pageable);
+        Page<Question> questions = questionRepository.findAllByUserAndHiddenFalse(user, pageable);
         return mapToQuestionResponses(questions);
     }
 
@@ -134,16 +135,36 @@ public class QuestionService {
         return mapToQuestionResponse(question);
     }
 
+    /** Hidden questions can still be deleted, by their author or a moderator confirming the reports. */
     @Transactional
     public void delete(Long id, String lang) {
-        Question question = findByIdWithException(id);
+        Question question = findIncludingHidden(id);
         authorizationService.assertOwnerOrAdmin(question.getUser().getId(), lang);
-        questionRepository.delete(question);
-        eventPublisher.publishEvent(new QuestionDeleted(id));
+        remove(question);
     }
 
+    /**
+     * Deletes after a moderator confirmed reports about it; the authorization is the moderation endpoint's.
+     * Package-private: only ModerationService may skip the owner-or-admin check.
+     */
+    @Transactional
+    void removeForModeration(Long id) {
+        remove(findIncludingHidden(id));
+    }
+
+    private Question findIncludingHidden(Long id) {
+        return questionRepository.findById(id).orElseThrow(() ->
+                new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_QUESTION_NOT_FOUND));
+    }
+
+    private void remove(Question question) {
+        questionRepository.delete(question);
+        eventPublisher.publishEvent(new QuestionDeleted(question.getId()));
+    }
+
+    /** A hidden question is a 404 here, so it cannot be read, edited, answered or voted on while under review. */
     public Question findByIdWithException(Long questionId) {
-        return questionRepository.findById(questionId).orElseThrow(() ->
+        return questionRepository.findById(questionId).filter(question -> !question.isHidden()).orElseThrow(() ->
                 new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_QUESTION_NOT_FOUND));
     }
 
@@ -177,7 +198,8 @@ public class QuestionService {
         response.setImageUrls(List.copyOf(question.getImageUrls()));
         response.setAnswerCount(question.getAnswerCount());
         response.setScore(question.getScore());
-        response.setAcceptedAnswerId(question.getAcceptedAnswer() == null ? null : question.getAcceptedAnswer().getId());
+        // Regression: reading acceptedAnswer.hidden here hit a lazy proxy outside a session (500 on every read).
+        response.setAcceptedAnswerId(question.getVisibleAcceptedAnswerId());
         response.setCreatedAt(CommonUtils.toInstant(question.getCreationDate()));
         response.setUpdatedAt(CommonUtils.toInstant(question.getLastModifiedDate()));
 

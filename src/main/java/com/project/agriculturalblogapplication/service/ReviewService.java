@@ -6,6 +6,10 @@ import com.project.agriculturalblogapplication.entities.QuestionAiAnswer;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.enums.AiAnswerStatus;
 import com.project.agriculturalblogapplication.events.AiAnswerReviewed;
+import com.project.agriculturalblogapplication.enums.NotificationTarget;
+import com.project.agriculturalblogapplication.enums.NotificationType;
+import com.project.agriculturalblogapplication.notification.NotificationMessage;
+import com.project.agriculturalblogapplication.notification.NotificationPublisher;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.AuthorStanding;
 import com.project.agriculturalblogapplication.model.request.CreateAnswerRequest;
@@ -48,6 +52,8 @@ public class ReviewService {
 
     private final ApplicationEventPublisher eventPublisher;
 
+    private final NotificationPublisher notificationPublisher;
+
     /** Unchecked AI answers in the caller's expert topics, oldest first. */
     @Transactional(readOnly = true)
     public Page<ReviewItemResponse> queue(int pageNo, int pageSize, String lang) {
@@ -55,7 +61,7 @@ public class ReviewService {
         if (topics.isEmpty()) {
             throw new ApplicationException(HttpStatus.FORBIDDEN, ErrorCode.ERROR_NOT_AN_EXPERT, lang);
         }
-        return aiAnswerRepository.findAllByStatusAndQuestionCategoryIdIn(AiAnswerStatus.UNCHECKED, topics,
+        return aiAnswerRepository.findAllByStatusAndQuestionCategoryIdInAndQuestionHiddenFalse(AiAnswerStatus.UNCHECKED, topics,
                         CommonUtils.clampedPageable(pageNo, pageSize, Sort.by(Sort.Direction.ASC, "creationDate")))
                 .map(ReviewItemResponse::from);
     }
@@ -98,6 +104,32 @@ public class ReviewService {
                 userService.findByIdWithException(userId, lang), null, ErrorCode.ERROR_AI_ANSWER_ALREADY_REVIEWED, lang);
     }
 
+    /**
+     * Moderator: hides the question's AI answer whatever its review state and returns what it said, or null when
+     * the question has none. The reviewer stays on record; nobody is notified, so the moderator stays anonymous.
+     */
+    @Transactional
+    public String hide(Long questionId) {
+        return aiAnswerRepository.findByQuestionId(questionId).map(aiAnswer -> {
+            if (aiAnswer.getStatus() != AiAnswerStatus.FLAGGED) {
+                aiAnswerRepository.hide(questionId);
+                eventPublisher.publishEvent(new AiAnswerReviewed(questionId));
+            }
+            return aiAnswer.getAnswer();
+        }).orElse(null);
+    }
+
+    /**
+     * Undoes a moderation hide when the reports are dismissed: back to the status it had, confirmed answers
+     * included. An AI answer an expert flagged themselves stays flagged.
+     */
+    @Transactional
+    public void restore(Long questionId) {
+        if (aiAnswerRepository.unhide(questionId) > 0) {
+            eventPublisher.publishEvent(new AiAnswerReviewed(questionId));
+        }
+    }
+
     /** Admin: back to UNCHECKED. A correction stays posted as an ordinary answer. */
     @Transactional
     public QuestionAiAnswerResponse reopen(Long questionId, String lang) {
@@ -106,7 +138,7 @@ public class ReviewService {
     }
 
     private QuestionAiAnswer find(Long questionId, String lang) {
-        return aiAnswerRepository.findByQuestionId(questionId).orElseThrow(() ->
+        return aiAnswerRepository.findByQuestionId(questionId).filter(aiAnswer -> !aiAnswer.getQuestion().isHidden()).orElseThrow(() ->
                 new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_AI_ANSWER_NOT_FOUND, lang));
     }
 
@@ -141,6 +173,10 @@ public class ReviewService {
             throw new ApplicationException(HttpStatus.CONFLICT, conflict, lang);
         }
         eventPublisher.publishEvent(new AiAnswerReviewed(aiAnswer.getQuestion().getId()));
+        if (reviewer != null) {
+            notificationPublisher.publish(new NotificationMessage(aiAnswer.getQuestion().getUser().getId(), reviewer.getId(),
+                    NotificationType.AI_ANSWER_REVIEWED, NotificationTarget.QUESTION, aiAnswer.getQuestion().getId()));
+        }
         return QuestionAiAnswerResponse.from(find(aiAnswer.getQuestion().getId(), lang));
     }
 }

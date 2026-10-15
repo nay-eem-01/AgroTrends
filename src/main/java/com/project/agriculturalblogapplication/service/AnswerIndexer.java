@@ -78,7 +78,8 @@ public class AnswerIndexer {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void on(AiAnswerReviewed event) {
         aiAnswerRepository.findByQuestionId(event.questionId()).ifPresent(aiAnswer ->
-                documentService.syncAiAnswer(aiAnswer, aiAnswer.getStatus() == AiAnswerStatus.CONFIRMED));
+                documentService.syncAiAnswer(aiAnswer,
+                        aiAnswer.getStatus() == AiAnswerStatus.CONFIRMED && !aiAnswer.getQuestion().isHidden()));
     }
 
     @Async("indexingExecutor")
@@ -93,10 +94,10 @@ public class AnswerIndexer {
 
     /** Accepted by someone else (a self-accept vets nothing), or written by a Verified Expert in the topic. */
     private static boolean isVetted(Answer answer, Set<Long> authorExpertTopics) {
-        if (answer.getParentAnswer() != null) {
+        Question question = answer.getQuestion();
+        if (answer.getParentAnswer() != null || answer.isHidden() || question.isHidden()) {
             return false;
         }
-        Question question = answer.getQuestion();
         boolean acceptedByAsker = question.getAcceptedAnswer() != null
                 && question.getAcceptedAnswer().getId().equals(answer.getId())
                 && !question.getUser().getId().equals(answer.getUser().getId());

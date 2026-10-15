@@ -43,6 +43,11 @@ public class QuestionAiAnswer extends AuditModel<String> {
     @Column(name = QuestionAiAnswerTable.STATUS, nullable = false)
     private AiAnswerStatus status = AiAnswerStatus.UNCHECKED;
 
+    /** The status it had when the report threshold hid it; restored if the reports are dismissed. Null otherwise. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = QuestionAiAnswerTable.STATUS_BEFORE_HIDE)
+    private AiAnswerStatus statusBeforeHide;
+
     /** The expert who confirmed, corrected or flagged it; null while unchecked. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = QuestionAiAnswerTable.REVIEWED_BY)

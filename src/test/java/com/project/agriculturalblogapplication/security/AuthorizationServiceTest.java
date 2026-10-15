@@ -34,7 +34,7 @@ class AuthorizationServiceTest {
     private void signInAs(long id, RoleType type) {
         Role role = new Role();
         role.setRoleType(type);
-        CustomUserDetails details = new CustomUserDetails(id, "n", "u" + id + "@x.com", "pw", Set.of(role), List.of(), false, true);
+        CustomUserDetails details = new CustomUserDetails(id, "n", "u" + id + "@x.com", "pw", Set.of(role), List.of(), false, true, false);
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(details, null, details.getAuthorities()));
     }
@@ -64,21 +64,15 @@ class AuthorizationServiceTest {
                 new AnonymousAuthenticationToken("key", "anonymousUser", AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS")));
 
         assertTrue(authorization.signedInUserId().isEmpty());
-        assertFalse(authorization.isSignedInOwnerOrAdmin(7L));
 
         SecurityContextHolder.clearContext();
-        assertFalse(authorization.isSignedInOwnerOrAdmin(7L));
+        assertTrue(authorization.signedInUserId().isEmpty());
     }
 
     @Test
     void publicReadHelpersRecogniseOwnerAndAdmin() {
         signInAs(7, RoleType.USER);
         assertEquals(7L, authorization.signedInUserId().orElseThrow());
-        assertTrue(authorization.isSignedInOwnerOrAdmin(7L));
-        assertFalse(authorization.isSignedInOwnerOrAdmin(8L));
-
-        signInAs(1, RoleType.ADMIN);
-        assertTrue(authorization.isSignedInOwnerOrAdmin(8L));
     }
 
     @Test

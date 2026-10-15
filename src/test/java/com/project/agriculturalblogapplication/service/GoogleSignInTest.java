@@ -15,6 +15,7 @@ import com.project.agriculturalblogapplication.security.service.AuthorizationSer
 import com.project.agriculturalblogapplication.security.service.GoogleIdTokenVerifier;
 import com.project.agriculturalblogapplication.security.service.GoogleIdentity;
 import com.project.agriculturalblogapplication.security.service.UserSessionService;
+import com.project.agriculturalblogapplication.model.request.SignUpRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -71,6 +72,29 @@ class GoogleSignInTest {
         assertEquals("access", tokens.getAccessToken());
         verify(userService).createGoogleUser(new GoogleIdentity(SUBJECT, EMAIL, true, "Rahim"), "en");
         verify(userService, never()).linkGoogle(any(), any());
+    }
+
+    @Test
+    void aBannedAccountFoundByEmailIsRefusedBeforeItIsLinkedToGoogle() {
+        User banned = user(RoleType.USER, null);
+        banned.setBannedAt(java.time.LocalDateTime.now());
+        when(userService.findByEmail(EMAIL)).thenReturn(banned);
+
+        assertThrows(ApplicationException.class, () -> authService.signInWithGoogle(request(), "en"));
+
+        verify(userService, never()).linkGoogle(any(), any());
+    }
+
+    @Test
+    void aBannedAccountGetsNoTokens() {
+        User banned = user(RoleType.USER, SUBJECT);
+        banned.setBannedAt(java.time.LocalDateTime.now());
+        when(userService.findByGoogleSubject(SUBJECT)).thenReturn(Optional.of(banned));
+
+        ApplicationException e = assertThrows(ApplicationException.class, () -> authService.signInWithGoogle(request(), "en"));
+
+        assertEquals(org.springframework.http.HttpStatus.FORBIDDEN, e.getHttpStatus());
+        verify(refreshTokenService, never()).createRefreshToken(any());
     }
 
     @Test

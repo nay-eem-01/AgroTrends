@@ -28,6 +28,8 @@ public class CustomUserDetails implements UserDetails {
     private Collection<? extends GrantedAuthority> grantedAuthorities;
     private boolean mustChangePassword;
     private boolean emailVerified;
+    /** Checked on every request, so a ban also stops a session created while it was being applied. */
+    private boolean banned;
 
     public static CustomUserDetails build(User user) {
         List<GrantedAuthority> authorities = new ArrayList<>();
@@ -48,7 +50,8 @@ public class CustomUserDetails implements UserDetails {
                 user.getRoles(),
                 authorities,
                 Boolean.TRUE.equals(user.getMustChangePassword()),
-                user.getEmailVerifiedAt() != null);
+                user.getEmailVerifiedAt() != null,
+                user.getBannedAt() != null);
     }
 
     @Override

@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 71 of 86 steps done
+**Progress:** 80 of 91 steps done
 
 **Launch scope (decided 2026-10-13):** Phases 4–8 must all be done before the public launch. Order of work:
 5 → 6 → 7 → 8 → 4 (deploy) → live test → launch. Nothing is deployed until Phases 5–8 are done. After launch, the
@@ -163,10 +163,15 @@ The old `feature/kafka-impl` branch can be deleted.
 
 | # | Step | Status |
 |---|---|---|
-| 8.1 | `@TransactionalEventListener(AFTER_COMMIT)` writes `Notification` rows: answer on your question, your answer accepted, AI answer on your question checked, new review item in your topic, application decided, reply to your comment | ⬜ |
-| 8.2 | `/api/notifications` for the caller only: list, unread count, mark one / all read | ⬜ |
-| 8.3 | Reports: `POST /api/reports` (blog, question, answer, AI answer, comment, user; reason); one per user per target | ⬜ |
-| 8.4 | Moderation: admin report queue, hide content (out of public lists and RAG, reputation reversed), ban user (sessions revoked), revoke expert badge | ⬜ |
+| 8.1a | `NotificationPublisher` interface, transport chosen by `app.notifications.transport` (`spring` = after-commit Spring events; a broker later is config + one class); `Notification` rows; triggers: answer on your question, your answer accepted, AI answer on your question reviewed | ✅ |
+| 8.1b | Triggers: new review item in your topic, application decided, reply to your comment | ✅ |
+| 8.2 | `/api/notifications` for the caller only: list, unread count, mark one / all read | ✅ |
+| 8.3 | Reports: `POST /api/reports` (blog, question, answer, AI answer, comment, user; reason); one per user per target | ✅ |
+| 8.4a | Moderation: admin report queue, dismiss, remove reported content (deleted through the existing paths: out of lists and RAG, reputation reversed; snapshot kept on the reports; author notified); AI answers hidden; badge revocation is 7.2 | ✅ |
+| 8.4b | Ban a user: sign-in and token refresh refused, sessions revoked; unban | ✅ |
+| 8.5a | Visibility: drafts for their author only (not admins); blog status `HIDDEN` (nobody, no edits/republish); comments only on visible posts; banned e-mail refused at sign-up | ✅ |
+| 8.5b | Hidden questions, answers and comments: out of every list, search, single read and the AI index; frozen while hidden | ✅ |
+| 8.5c | Report threshold: N open reports hide a post (snapshot kept, author told); admin confirms → deleted, admin dismisses → all its reports closed and the post restored | ✅ |
 
 ## Later — after the 8-week launch test
 

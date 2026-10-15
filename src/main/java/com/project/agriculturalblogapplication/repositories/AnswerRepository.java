@@ -13,7 +13,10 @@ import java.util.List;
 @Repository
 public interface AnswerRepository extends JpaRepository<Answer, Long> {
 
+    /** Every direct answer, hidden ones included: for the AI index, which must also drop hidden ones. */
     List<Answer> findByQuestionIdAndParentAnswerIsNull(Long questionId);
+
+    List<Answer> findByQuestionIdAndParentAnswerIsNullAndHiddenFalse(Long questionId);
 
     List<Answer> findAllByUserIdAndQuestionCategoryIdAndParentAnswerIsNull(Long userId, Long categoryId);
 

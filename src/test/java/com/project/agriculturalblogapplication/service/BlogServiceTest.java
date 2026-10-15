@@ -196,17 +196,41 @@ class BlogServiceTest {
     }
 
     @Test
-    void someoneElsesOrAnAnonymousReadersDraftIsA404AndTheOwnersDraftIsVisible() {
+    void aDraftIsVisibleToItsAuthorOnlyNotToStrangersAnonymousReadersOrAdmins() {
         Blog draft = blog(9L);
         draft.setStatus(BlogStatus.DRAFT);
         when(blogRepositories.findById(9L)).thenReturn(Optional.of(draft));
-        // false for a stranger and for an anonymous reader alike: never a 401 that would confirm the draft exists
-        when(authorization.isSignedInOwnerOrAdmin(10L)).thenReturn(false, true);
+        // a stranger or an admin (99), then an anonymous reader: never a 401 that would confirm the draft exists
+        when(authorization.signedInUserId()).thenReturn(Optional.of(99L), Optional.empty(), Optional.of(10L));
 
-        ApplicationException e = assertThrows(ApplicationException.class, () -> blogService.getById(9L, LANG));
-        assertEquals(HttpStatus.NOT_FOUND, e.getHttpStatus());
-
+        assertEquals(HttpStatus.NOT_FOUND, assertThrows(ApplicationException.class, () -> blogService.getById(9L, LANG)).getHttpStatus());
+        assertEquals(HttpStatus.NOT_FOUND, assertThrows(ApplicationException.class, () -> blogService.getById(9L, LANG)).getHttpStatus());
         assertEquals(9L, blogService.getById(9L, LANG).id());
+    }
+
+    @Test
+    void aHiddenPostIsInvisibleEvenToItsAuthorAndCannotBeEditedOrRepublished() {
+        Blog hidden = blog(9L);
+        hidden.setStatus(BlogStatus.HIDDEN);
+        when(blogRepositories.findById(9L)).thenReturn(Optional.of(hidden));
+        when(authorization.signedInUserId()).thenReturn(Optional.of(10L));
+
+        assertEquals(HttpStatus.NOT_FOUND, assertThrows(ApplicationException.class, () -> blogService.getById(9L, LANG)).getHttpStatus());
+        assertEquals(HttpStatus.CONFLICT, assertThrows(ApplicationException.class, () -> blogService.publish(9L, LANG)).getHttpStatus());
+        verify(documentService, never()).indexBlog(any());
+    }
+
+    @Test
+    void aClientCannotCreateAPostAlreadyHidden() {
+        CreateBlogRequest request = new CreateBlogRequest();
+        request.setCategoryId(30L);
+        request.setTitle("Sneaky");
+        request.setContent("x");
+        request.setStatus(BlogStatus.HIDDEN);
+
+        assertEquals(HttpStatus.BAD_REQUEST, assertThrows(ApplicationException.class,
+                () -> blogService.create(request, LANG)).getHttpStatus());
+        verify(blogRepositories, never()).save(any());
     }
 
     @Test

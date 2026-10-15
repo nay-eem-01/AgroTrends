@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 71 of 86 steps done): launch blockers and one account type with
+- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 80 of 91 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -20,8 +20,9 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 ## Next up
 
 1. Merge `docs/product-study` and `docs/launch-plan` into `development`.
-2. Phases 5, 6 and 7 are done (Phase 7 on `feat/experts-review-base`, not yet merged into `development`).
-   Next: Phase 8 (notifications and moderation), 8.1 first.
+2. Phases 5, 6 and 7 are on `development`; Phase 8 is done on `feat/notifications-moderation-base` (not yet
+   merged; includes the 8.5 report-threshold redesign). Next: Phase 4 (ship it: profiles, Flyway, Docker,
+   Testcontainers, CI), then deploy and live-test.
 3. Then Phases 6, 7, 8; deploy (Phase 4) and live-test only after all of them.
 4. **Team:** 30–50 seeded Bangla articles; 5–10 experts invited; pick the 6–8 launch topics (categories).
 5. **Nayeem:** fix the Gemini key; roadmap 0.4 (rotate keys, purge history); set `GOOGLE_CLIENT_ID`; make
@@ -48,6 +49,260 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-14 (Phase 8 review fixes, round 3: hiding and restoring)
+
+**Done** — review of 8.5a–c (15 findings), each with a regression test:
+- `QuestionAiAnswer.statusBeforeHide`: the threshold hide remembers the status, a dismiss restores it
+  (`unhide`), so a confirmed AI answer comes back confirmed and re-indexed; an expert's own flag (no
+  remembered status) is never undone. (Was: only never-reviewed AI answers came back.)
+- `closeAsActioned` keeps an existing snapshot (`coalesce`): the text saved at hide time survives an author
+  deleting the hidden post before the admin confirms.
+- `CommentService.findByIdWithException`: 404 unless the comment, its parent and its post (PUBLISHED) are
+  visible; `AnswerService` also hides replies under a hidden answer.
+- `POST /api/blogs/create` refuses `status: HIDDEN` (400); AI answers of hidden questions cannot be reported;
+  `app.moderation.auto-hide-reports` is `@Min(1)` (0 stopped one report from being enough to hide anything:
+  startup now fails).
+- Moderation notices skip the user who caused them (moderator on their own post, author whose own report
+  tipped the threshold).
+- `Blog.status` uses `EnumNameConverter`; the boot-time `DROP CONSTRAINT` patch from 8.5a is removed.
+- The banned-e-mail check moved into `UserService.validateEmail` (one lookup on sign-up); dead
+  `AuthorizationService.isSignedInOwnerOrAdmin` removed.
+- Checked live: 14/14 (confirmed AI answer hidden and restored with reviewer and vectors, snapshot kept after
+  author delete, comment on hidden blog 404 for read/edit/report, HIDDEN create 400, banned sign-up 403;
+  threshold 0 refuses to start) and every Phase 8 run again.
+
+**Not changed, with reasons**
+- Threshold race (two reports at the same instant can both count below, or both above, the threshold): the
+  worst case is a hide one report late or a duplicate CONTENT_HIDDEN notice. Logged, not locked.
+- Hiding a blog drops its vectors before commit: the vector store is the same Postgres, so it cannot be
+  down while the report insert succeeds.
+- One Hibernate `@Filter` for hidden rows instead of per-path checks: a larger change; the rule lives in each
+  service's `findByIdWithException` and list query, pinned by tests.
+
+## 2026-10-14 (Phase 8 review fixes, round 2)
+
+**Done** — a second review (12 findings) of the first round of fixes:
+- Reverted `assertOwnerAdminOrModerator`: it let any `CONTENT_MODERATE` holder delete any post, an admin's
+  included, through the public endpoints with no snapshot, audit or notice. Public deletes are owner-or-admin
+  again; `ModerationService` deletes through package-private `removeForModeration` in the four services.
+- A banned account's token is treated as no token in `JwtAuthenticationFilter`: public reads keep working
+  and everything else is a 401 (was a 403 on every request, sign-out and public reads included); the refresh
+  flow then answers 403 with the ban. `unban` revokes credentials too, so a session created while the ban
+  was being applied is not revived.
+- An admin deciding their own application is not notified (the null actor had disabled the self-skip).
+- Regression tests for the Google pre-link ban refusal and for `deliver` swallowing a failed store.
+- Checked live: fix checks 16/16 (moderator 403 outside the queue, decision audited, banned token reads
+  public pages and gets 401 elsewhere) and 8.4a, 8.4b, 8.5a–c again.
+
+**Not changed, with reasons**
+- "Expert decisions are not audited": verified live as a false alarm; the entity is dirtied after the
+  conditional update, so auditing stamps `lastModifiedBy`.
+- Ban via `isAccountNonLocked`: Spring checks it before the password, so a banned user would get the
+  generic "invalid credentials" instead of the ban message.
+- `docs/ROADMAP.md` for review fixes: there is no step row to tick; the dev log records them.
+
+## 2026-10-14 (roadmap 8.5c)
+
+**Done**
+- `app.moderation.auto-hide-reports` (env `MODERATION_AUTO_HIDE_REPORTS`, default 3): when that many
+  different users have open reports on a blog, question, answer, comment or AI answer,
+  `ModerationService.hideForReview` hides it (blog → `HIDDEN`, others → `hidden`, AI answer → `FLAGGED`),
+  drops it from the AI index, records its text as `snapshot` on the open reports, and sends the author
+  `CONTENT_HIDDEN`. Users are never banned automatically.
+- `POST /api/admin/reports/{id}/remove-content` (confirm): deletes the post for good, as in 8.4a.
+- `POST /api/admin/reports/{id}/dismiss`: now dismisses every open report on that post (one decision per
+  post) and restores it if it was hidden: back in lists and the AI index, author told `CONTENT_RESTORED`.
+  Conditional: 409 if another moderator closed them first.
+- Checked live: 28/28 (2 reports nothing, 3rd hides; snapshot on all three; vectors out and back; dismiss
+  restores and closes all; confirm deletes and reverses reputation; blog hidden and restored; user reports
+  never ban), and every Phase 8 run again.
+
+**Decisions**
+- Reputation stays while a post is hidden (it may come back) and goes when an admin confirms (delete).
+- A dismissed AI answer goes back to `UNCHECKED` only if no expert had reviewed it; an expert-reviewed one
+  stays hidden until an admin reopens it (safer for farming advice).
+
+**Known limitations**
+- Hiding a blog drops its vectors inside the transaction (like unpublish); a rollback right after would
+  leave a published post out of AI answers until its next edit.
+- Three accounts can hide any post until a moderator looks; e-mail confirmation and one report per user
+  are the brakes. Watch the queue at launch.
+
+## 2026-10-14 (roadmap 8.5b)
+
+**Done**
+- `hidden` (default false) on `Question`, `Answer`, `Comment`. `findByIdWithException` in their services
+  answers 404 for hidden rows (and for answers on a hidden question), which covers single reads, edits,
+  answering, replies, votes and accepts; delete reads the repository directly, so an author or a moderator
+  can still delete a hidden post.
+- Lists filter it: question list (specification), search, the author's questions, answers on a question,
+  replies, comments on a post and their replies; `answerCount` counts visible answers only. The AI answer of
+  a hidden question is a 404 and leaves the review queue. `AnswerIndexer` never indexes a hidden answer or
+  an answer/AI answer on a hidden question.
+- `Question.visibleAcceptedAnswerId` (`@Formula` subselect) replaces reading the accepted answer: found live
+  before commit, reading `acceptedAnswer.hidden` hit a lazy proxy outside a session and made every question
+  read with an accepted answer a 500.
+- Checked live: 19/19 (+2 for visible accepts), and 8.2, 8.4a, 8.5a runs again.
+
+## 2026-10-14 (roadmap 8.5a)
+
+**Done** — moderation redesign (Nayeem, 2026-10-14): a post is hidden once enough users report it and deleted
+only when an admin confirms the reports; 8.5a–c. This step sets the visibility rules:
+- `BlogService.findVisibleBlog`: `PUBLISHED` for everyone; `DRAFT` for its author only (admins no longer);
+  new `HIDDEN` for nobody, not even the author. A hidden post cannot be edited or republished (409
+  `ERROR_UNDER_REVIEW`).
+- `SchemaPatches.DROP_ENUM_CHECKS` drops `blogs_status_check` before Hibernate runs, so existing databases
+  accept `HIDDEN` (new ones get a CHECK that already lists it).
+- Comments: create, reply and the per-post list use `findVisibleBlog`. Fixed on the way: anyone could
+  comment on, or list the comments of, someone else's draft by its id.
+- Sign-up with a banned account's e-mail answers 403 with the ban (sign-in, Google and refresh already did).
+- Checked live: 17/17.
+
+**Breaking API changes**
+- `GET /api/comments/blog/{blogId}` and comment create/reply answer 404 for a draft that is not yours.
+- Admins no longer see other users' drafts.
+
+**Known limitations**
+- A banned person can still sign up with a different e-mail address.
+
+## 2026-10-14 (Phase 8 review fixes)
+
+**Done** — a phase-end review of 8.1a–8.4b (21 findings) led to these fixes, with regression tests:
+- `AuthorizationService.assertOwnerAdminOrModerator` on the blog/question/answer/comment deletes: a moderator
+  role without `ADMIN` (holding `CONTENT_MODERATE`) can remove content (was 403 and a rollback).
+- Remove-content on a target that is already gone closes its reports as `ACTIONED` with "(already removed)":
+  answers removed with their question, posts deleted by their author, AI answers already hidden. Targets are
+  looked up with `EntityManager.find` so no exception marks the transaction rollback-only.
+- Bans are enforced per request (`CustomUserDetails.banned`, refused in `JwtAuthenticationFilter`), closing
+  the race with a sign-in in flight; Google sign-in refuses a banned account before linking it.
+- `dismissIfOpen` and `closeAsActioned` are conditional and set `lastModifiedBy`/`lastModifiedDate` (bulk
+  updates skip auditing).
+- `ReviewService.hide` only changes the status: `reviewedBy` and any correction stay on record.
+- Drafts cannot be reported (404, so their existence is not confirmed); AI-answer reports use
+  `existsByQuestionIdAndStatusNot` instead of pulling in `AiService`.
+- `APPLICATION_DECIDED` has no actor (admins stay anonymous, as moderators do). `deliver` catches failures,
+  so an inline notification never fails a comment reply or stops the expert loop.
+- `EnumNameConverter<E>` replaces three copied converters; `Report.targetType` and `status` are converted too.
+  Databases created before this keep their old CHECK on those two columns (none deployed; drop by hand).
+- `NOTIFICATIONS_TRANSPORT` added to `.env.example` (another value needs its implementation, or startup fails).
+- Checked live: 13/13 fix checks (a non-admin moderator removes and is recorded; orphaned report closes;
+  reviewer kept; hidden AI answer not reportable; dismiss audited; draft 404; banned live session 403) and
+  every Phase 8 run again (12 + 12 + 14 + 11 + 25 + 12).
+
+**Deferred, with reasons**
+- A double-tapped report: 500 from the unique constraint (as votes; 4.7 error clean-up).
+- An expert's correction still notifies the asker twice (logged in 8.1a).
+- `CONTENT_REMOVED` on a removed blog or question links to a page that is gone; the UI shows the type.
+- Replies under answers notify nobody (not in the 8.1 trigger list).
+- Admin-only service methods rely on `@PreAuthorize`, as `CategoryService` does.
+- One transaction per expert notification (`shortcut:` in `AiService.notifyReviewers`).
+
+## 2026-10-14 (roadmap 8.4b)
+
+**Done**
+- `User.bannedAt`, `banReason`. `POST /api/admin/users/{userId}/ban {reason}` and `DELETE` on the same path
+  (`CONTENT_MODERATE`). A ban revokes every session and refresh token; `AuthService.issueTokens` (the end of
+  password, Google and refresh sign-in) refuses a banned account with 403 `ERROR_ACCOUNT_BANNED`, after the
+  credentials check, so a wrong password still gets the generic 401. Admin accounts cannot be banned. Open
+  reports about the user close as `ACTIONED` ("Banned: <reason>").
+- Checked live: 12/12.
+
+**Known limitations**
+- A banned user's posts stay up; moderators remove them one by one through their reports.
+
+## 2026-10-14 (roadmap 8.4a)
+
+**Done**
+- New privilege `CONTENT_MODERATE` (super-admin role). `GET /api/admin/reports?status=OPEN` (oldest first;
+  reporter id and name), `POST /api/admin/reports/{id}/dismiss`, `POST /api/admin/reports/{id}/remove-content`.
+- Remove = delete through the owners' delete paths (admin passes owner-or-admin): out of every list, AI
+  vectors dropped, earned reputation gone (`ON DELETE CASCADE`), accepted mark cleared. All open reports on
+  the target become `ACTIONED` with `snapshot` (the text, ≤ 2000 chars) as evidence; the author gets
+  `CONTENT_REMOVED` with no actor. A reported AI answer is hidden (`FLAGGED`, `ReviewService.hide`, no
+  reviewer recorded, asker not notified). A `USER` report answers 400: ban instead (8.4b).
+- Checked live: 25/25 (an accepted, indexed answer reported twice: both closed, row, accept, 15 points and
+  vectors gone, author told; dismiss leaves content; AI answer hidden; comment and question removal; 403
+  for non-admins).
+- Roadmap 8.4 split into 8.4a/8.4b.
+
+**Decisions**
+- Removal, not a restorable hide (decided 2026-10-14 with Nayeem): one small step instead of a `hidden`
+  filter on every read path; the snapshot keeps the evidence.
+
+**Known limitations**
+- Not restorable. Removing a question also removes the answers others wrote on it.
+- Moderators need an admin role: the delete paths check owner-or-admin, not the privilege.
+
+## 2026-10-14 (roadmap 8.3)
+
+**Done**
+- `Report`: reporter (`ON DELETE CASCADE`), `targetType` (`BLOG`, `QUESTION`, `ANSWER`, `AI_ANSWER` by its
+  question's id, `COMMENT`, `USER`), `targetId` (no foreign key: targets live in several tables), `reason`
+  (`HARMFUL_ADVICE`, `SPAM`, `ABUSE`, `FALSE_CREDENTIALS`, `OTHER`; converted, no CHECK), `details` (≤ 500),
+  `status` (`OPEN`, `ACTIONED`, `DISMISSED`). Unique per reporter and target.
+- `POST /api/reports`: target must exist (404; a hidden or missing AI answer counts as missing), once per
+  target (409), not yourself (400).
+- Checked live: 11/11.
+
+**Known limitations**
+- Two simultaneous reports of the same target by one user: the unique constraint turns the second into a
+  500 (as with votes; 4.7 error clean-up).
+
+## 2026-10-14 (roadmap 8.2)
+
+**Done**
+- `GET /api/notifications?unreadOnly=&pageNo=&pageSize=` (newest first): `{id, type, targetType, targetId,
+  actorId, actorName, read, createdAt}`; `GET /api/notifications/unread-count` → `{count}`;
+  `POST /api/notifications/{id}/read` (404 for anyone else's); `POST /api/notifications/read-all` →
+  `{updated}`. The first read time is kept.
+- Checked live: 14/14.
+
+**Known limitations**
+- Polling only (no push/WebSocket); the frontend polls `unread-count`.
+
+## 2026-10-14 (roadmap 8.1b)
+
+**Done**
+- `NEW_REVIEW_ITEM` to every active Verified Expert in the topic when an AI answer is stored (after
+  generation, and from "ask the experts"); the asker is the actor, so an expert's own question does not
+  notify them. `ExpertService.expertsIn(topicId)`.
+- `APPLICATION_DECIDED` to the applicant on approve or reject (target `EXPERT_APPLICATION`, actor the admin).
+- `COMMENT_REPLY` to the parent comment's author (target `BLOG`).
+- Checked live: 12/12 (reply and self-reply, both decisions and no note on a refused second decision, each
+  expert notified once, an expert's own question skipped); 8.1a run still 12/12.
+
+**Known limitations**
+- One row per expert per new question (`shortcut:` in `AiService.notifyReviewers`); a digest if topics get
+  large.
+
+## 2026-10-14 (roadmap 8.1a)
+
+**Done**
+- `notification` package: `NotificationPublisher` (the only way services notify), `NotificationMessage`
+  (recipient, actor, type, target type and id — plain values any transport can serialize) and
+  `SpringEventNotificationPublisher`, active for `app.notifications.transport=spring` (default; env
+  `NOTIFICATIONS_TRANSPORT`): publishes an application event, stored by a `@TransactionalEventListener`
+  after the commit (`fallbackExecution` for background work without a transaction).
+- `NotificationService.store` (own `REQUIRES_NEW` transaction; skips self-notifications) writes
+  `Notification` rows: recipient (`ON DELETE CASCADE`), actor (`SET NULL`), `type`, `targetType`
+  (`QUESTION`, `BLOG`, `EXPERT_APPLICATION`), `targetId`, `readAt`.
+- Triggers: `ANSWER_ON_YOUR_QUESTION` (asker), `ANSWER_ACCEPTED` (answerer), `AI_ANSWER_REVIEWED` (asker, on
+  confirm/correct/flag; not on an admin reopen).
+- Found live and fixed before commit: `columnDefinition` does not stop Hibernate's enum CHECK constraint;
+  `type`/`targetType` use `AttributeConverter`s so new types need no schema change (test pins it).
+- Checked live: 12/12 (no CHECK on the table, self-actions and a rolled-back answer notify nobody, re-accept
+  does not duplicate, reopen is silent).
+- Roadmap 8.1 split into 8.1a/8.1b.
+
+**Decisions**
+- Switching to Kafka or RabbitMQ later = one new `NotificationPublisher` implementation (its consumer calls
+  `NotificationService.store`) plus `app.notifications.transport=kafka`; no caller changes. Not built now.
+
+**Known limitations**
+- In-process delivery: a crash between commit and store loses that notification; one instance only
+  (`shortcut:` in `SpringEventNotificationPublisher`).
+- An expert's correction notifies the asker twice: a new answer, and the AI answer reviewed.
 
 ## 2026-10-14 (Phase 7 review fixes)
 

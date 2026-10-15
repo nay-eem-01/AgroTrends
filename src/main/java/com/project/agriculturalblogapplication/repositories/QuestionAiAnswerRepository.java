@@ -29,6 +29,27 @@ public interface QuestionAiAnswerRepository extends JpaRepository<QuestionAiAnsw
             + " and a.status = :status")
     List<Long> reviewedBy(@Param("userId") Long userId, @Param("topicId") Long topicId, @Param("status") AiAnswerStatus status);
 
+    /**
+     * Moderator hide: FLAGGED, remembering the status it had; who reviewed it (and any correction) stays on record.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("""
+            update QuestionAiAnswer a set a.statusBeforeHide = a.status,
+                   a.status = com.project.agriculturalblogapplication.enums.AiAnswerStatus.FLAGGED
+            where a.question.id = :questionId
+              and a.status <> com.project.agriculturalblogapplication.enums.AiAnswerStatus.FLAGGED""")
+    int hide(@Param("questionId") Long questionId);
+
+    /** Undoes a moderation hide; 0 when it was not hidden by moderation (an expert's own flag stays). */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("""
+            update QuestionAiAnswer a set a.status = a.statusBeforeHide, a.statusBeforeHide = null
+            where a.question.id = :questionId and a.statusBeforeHide is not null
+              and a.status = com.project.agriculturalblogapplication.enums.AiAnswerStatus.FLAGGED""")
+    int unhide(@Param("questionId") Long questionId);
+
+    boolean existsByQuestionIdAndStatusNotAndQuestionHiddenFalse(Long questionId, AiAnswerStatus status);
+
     /** Puts these AI answers back to UNCHECKED. */
     @Modifying(flushAutomatically = true)
     @Query("""
@@ -46,8 +67,9 @@ public interface QuestionAiAnswerRepository extends JpaRepository<QuestionAiAnsw
     int reopenCorrectedBy(@Param("answerId") Long answerId);
 
     @EntityGraph(attributePaths = "question")
-    Page<QuestionAiAnswer> findAllByStatusAndQuestionCategoryIdIn(AiAnswerStatus status, Collection<Long> topicIds,
-                                                                 Pageable pageable);
+    Page<QuestionAiAnswer> findAllByStatusAndQuestionCategoryIdInAndQuestionHiddenFalse(AiAnswerStatus status,
+                                                                                    Collection<Long> topicIds,
+                                                                                    Pageable pageable);
 
     /** Moves the review state only if it is still in {@code from}: two reviewers at once cannot both win. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)

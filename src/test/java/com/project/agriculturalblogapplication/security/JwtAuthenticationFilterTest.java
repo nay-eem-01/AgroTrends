@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -53,8 +54,12 @@ class JwtAuthenticationFilterTest {
     }
 
     private void givenUser(boolean mustChangePassword, boolean emailVerified) {
+        givenUser(mustChangePassword, emailVerified, false);
+    }
+
+    private void givenUser(boolean mustChangePassword, boolean emailVerified, boolean banned) {
         CustomUserDetails user = new CustomUserDetails(5L, "n", "farmer@example.com", "pw", Set.of(), List.of(),
-                mustChangePassword, emailVerified);
+                mustChangePassword, emailVerified, banned);
         when(userDetailsService.loadUserByUsername("farmer@example.com")).thenReturn(user);
     }
 
@@ -133,6 +138,21 @@ class JwtAuthenticationFilterTest {
 
         filter.doFilter(request("GET", "/api/blogs/me/drafts"), new MockHttpServletResponse(), chain);
         verify(chain).doFilter(any(), any());
+    }
+
+    @Test
+    void aBannedUsersTokenCountsAsNoTokenEvenWithAnActiveSession() {
+        // Regressions: the ban was checked only when tokens were issued, so a session created while the ban was
+        // applied kept working; then a 403 on every request blocked public reads and sign-out.
+        givenUser(false, true, true);
+        when(sessions.getActiveSessionByToken(token)).thenReturn(new UserSession());
+
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        assertDoesNotThrow(() -> filter.doFilter(request("GET", "/api/blogs/all"), response, chain));
+
+        assertEquals(200, response.getStatus());
+        assertNull(SecurityContextHolder.getContext().getAuthentication());
+        assertDoesNotThrow(() -> verify(chain).doFilter(any(), any()));
     }
 
     @Test

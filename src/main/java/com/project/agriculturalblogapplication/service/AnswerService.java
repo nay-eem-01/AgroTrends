@@ -8,6 +8,10 @@ import com.project.agriculturalblogapplication.entities.Category;
 import com.project.agriculturalblogapplication.entities.Question;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.events.AnswerChanged;
+import com.project.agriculturalblogapplication.enums.NotificationTarget;
+import com.project.agriculturalblogapplication.enums.NotificationType;
+import com.project.agriculturalblogapplication.notification.NotificationMessage;
+import com.project.agriculturalblogapplication.notification.NotificationPublisher;
 import com.project.agriculturalblogapplication.model.request.CreateAnswerRequest;
 import com.project.agriculturalblogapplication.model.request.ReplyToAnswerRequest;
 import com.project.agriculturalblogapplication.model.request.UpdateAnswerRequest;
@@ -44,6 +48,8 @@ public class AnswerService {
 
     private final ApplicationEventPublisher eventPublisher;
 
+    private final NotificationPublisher notificationPublisher;
+
     @Transactional
     public AnswerResponse create(CreateAnswerRequest request, String lang) {
         Question question = questionService.findByIdWithException(request.getQuestionId());
@@ -56,6 +62,8 @@ public class AnswerService {
         answer.setQuestion(question);
         answer = answerRepository.save(answer);
         eventPublisher.publishEvent(new AnswerChanged(answer.getId()));
+        notificationPublisher.publish(new NotificationMessage(question.getUser().getId(), user.getId(),
+                NotificationType.ANSWER_ON_YOUR_QUESTION, NotificationTarget.QUESTION, question.getId()));
 
         return mapToAnswerResponse(answer);
     }
@@ -73,21 +81,41 @@ public class AnswerService {
 
     @Transactional
     public void delete(Long answerId, String lang) {
-        Answer answer = findByIdWithException(answerId);
+        Answer answer = findIncludingHidden(answerId);
         authorizationService.assertOwnerOrAdmin(answer.getUser().getId(), lang);
+        remove(answer);
+    }
+
+    /**
+     * Deletes after a moderator confirmed reports about it; the authorization is the moderation endpoint's.
+     * Package-private: only ModerationService may skip the owner-or-admin check.
+     */
+    @Transactional
+    void removeForModeration(Long answerId) {
+        remove(findIncludingHidden(answerId));
+    }
+
+    // Hidden answers can still be deleted, by their author or a moderator confirming the reports.
+    private Answer findIncludingHidden(Long answerId) {
+        return answerRepository.findById(answerId).orElseThrow(() ->
+                new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_ANSWER_NOT_FOUND));
+    }
+
+    private void remove(Answer answer) {
         // The loaded question must not point at a deleted row when the session flushes. The answer's reputation
         // events go with it (ON DELETE CASCADE), so nothing is written to the ledger here.
         if (isAccepted(answer)) {
             answer.getQuestion().setAcceptedAnswer(null);
         }
-        aiAnswerRepository.reopenCorrectedBy(answerId);
+        aiAnswerRepository.reopenCorrectedBy(answer.getId());
         answerRepository.delete(answer);
-        eventPublisher.publishEvent(new AnswerChanged(answerId));
+        eventPublisher.publishEvent(new AnswerChanged(answer.getId()));
     }
 
     /** Direct answers (replies come from viewReplies): the accepted one first, then highest score, then oldest. */
     public List<AnswerResponse> getAllByQuestionId(Long questionId) {
-        return mapToAnswerResponses(answerRepository.findByQuestionIdAndParentAnswerIsNull(questionId).stream()
+        questionService.findByIdWithException(questionId);
+        return mapToAnswerResponses(answerRepository.findByQuestionIdAndParentAnswerIsNullAndHiddenFalse(questionId).stream()
                 .sorted(Comparator.comparing((Answer answer) -> !isAccepted(answer))
                         .thenComparing(Answer::getScore, Comparator.reverseOrder())
                         .thenComparing(Answer::getId))
@@ -111,6 +139,8 @@ public class AnswerService {
             answer.getQuestion().setAcceptedAnswer(answer);
             reputationService.accepted(answer);
             eventPublisher.publishEvent(new AnswerChanged(answer.getId()));
+            notificationPublisher.publish(new NotificationMessage(answer.getUser().getId(), answer.getQuestion().getUser().getId(),
+                    NotificationType.ANSWER_ACCEPTED, NotificationTarget.QUESTION, answer.getQuestion().getId()));
         }
         return mapToAnswerResponse(answer);
     }
@@ -165,12 +195,15 @@ public class AnswerService {
     public List<AnswerResponse> viewReplies(Long parentAnswerId) {
         Answer parentAnswer = findByIdWithException(parentAnswerId);
 
-        return mapToAnswerResponses(parentAnswer.getReplies());
+        return mapToAnswerResponses(parentAnswer.getReplies().stream().filter(reply -> !reply.isHidden()).toList());
     }
 
+    /** Hidden, or on a hidden question or under a hidden answer: a 404, so it cannot be read, edited, accepted or voted on meanwhile. */
     public Answer findByIdWithException(Long answerId) {
-        return answerRepository.findById(answerId).orElseThrow(() ->
-                new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_ANSWER_NOT_FOUND));
+        return answerRepository.findById(answerId)
+                .filter(answer -> !answer.isHidden() && !answer.getQuestion().isHidden()
+                        && (answer.getParentAnswer() == null || !answer.getParentAnswer().isHidden()))
+                .orElseThrow(() -> new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_ANSWER_NOT_FOUND));
     }
 
     public AnswerResponse findById(Long answerId) {

@@ -65,6 +65,10 @@ public final class AppTables {
         public static final String GOOGLE_SUBJECT = "google_subject";
 
         public static final String EMAIL_VERIFIED_AT = "email_verified_at";
+
+        public static final String BANNED_AT = "banned_at";
+
+        public static final String BAN_REASON = "ban_reason";
     }
 
     public static final class FollowTable {
@@ -146,6 +150,42 @@ public final class AppTables {
         public static final String NAME = "expert_badges";
 
         public static final String REVOKED_AT = "revoked_at";
+    }
+
+    public static final class NotificationTable {
+
+        public static final String NAME = "notifications";
+
+        public static final String RECIPIENT_ID = "recipient_id";
+
+        public static final String ACTOR_ID = "actor_id";
+
+        public static final String TYPE = "type";
+
+        public static final String TARGET_TYPE = "target_type";
+
+        public static final String TARGET_ID = "target_id";
+
+        public static final String READ_AT = "read_at";
+    }
+
+    public static final class ReportTable {
+
+        public static final String NAME = "reports";
+
+        public static final String REPORTER_ID = "reporter_id";
+
+        public static final String TARGET_TYPE = "target_type";
+
+        public static final String TARGET_ID = "target_id";
+
+        public static final String REASON = "reason";
+
+        public static final String DETAILS = "details";
+
+        public static final String SNAPSHOT = "snapshot";
+
+        public static final String STATUS = "status";
     }
 
     public static final class TagTable {
@@ -297,6 +337,8 @@ public final class AppTables {
         public static final String REVIEWED_AT = "reviewed_at";
 
         public static final String CORRECTION_ANSWER_ID = "correction_answer_id";
+
+        public static final String STATUS_BEFORE_HIDE = "status_before_hide";
     }
 
     public static final class AiAnswerTable {
