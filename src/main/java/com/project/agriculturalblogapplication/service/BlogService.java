@@ -148,6 +148,7 @@ public class BlogService {
         if (blog.getStatus() == BlogStatus.PUBLISHED) {
             throw new ApplicationException(HttpStatus.CONFLICT, ErrorCode.ERROR_BLOG_ALREADY_PUBLISHED, lang);
         }
+        assertNotUnderReview(blog, lang);
         blog.setStatus(BlogStatus.PUBLISHED);
         if (blog.getPublishedAt() == null) {
             blog.setPublishedAt(LocalDateTime.now());
@@ -174,6 +175,7 @@ public class BlogService {
         Blog blog = findByIdWithException(request.getBlogId());
         authorizationService.assertOwnerOrAdmin(blog.getAuthor().getUser().getId(), lang);
 
+        assertNotUnderReview(blog, lang);
         Category category = categoryService.findByIdWithException(request.getCategoryId());
         blog.setTitle(request.getTitle());
         blog.setContent(request.getContent());
@@ -297,14 +299,29 @@ public class BlogService {
         throw new IllegalStateException("Could not find a free slug for base " + base);
     }
 
-    /** Published posts for everyone, signed in or not; a draft only for its author and admins, and a 404 for anyone else. */
+    /**
+     * Published posts for everyone, signed in or not; a draft only for its author (not even admins); a hidden post
+     * for nobody. Anyone else gets a 404, so a draft's existence is never confirmed.
+     */
     public Blog findVisibleBlog(Long blogId, String lang) {
         Blog blog = findByIdWithException(blogId);
-        if (blog.getStatus() != BlogStatus.PUBLISHED
-                && !authorizationService.isSignedInOwnerOrAdmin(blog.getAuthor().getUser().getId())) {
+        boolean visible = switch (blog.getStatus()) {
+            case PUBLISHED -> true;
+            case DRAFT -> authorizationService.signedInUserId()
+                    .map(userId -> userId.equals(blog.getAuthor().getUser().getId())).orElse(false);
+            case HIDDEN -> false;
+        };
+        if (!visible) {
             throw new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_BLOG_NOT_FOUND, lang);
         }
         return blog;
+    }
+
+    /** A hidden post stays as the reports saw it until a moderator decides: no edits, no republishing. */
+    private static void assertNotUnderReview(Blog blog, String lang) {
+        if (blog.getStatus() == BlogStatus.HIDDEN) {
+            throw new ApplicationException(HttpStatus.CONFLICT, ErrorCode.ERROR_UNDER_REVIEW, lang);
+        }
     }
 
     public Blog findByIdWithException(Long blogId) {

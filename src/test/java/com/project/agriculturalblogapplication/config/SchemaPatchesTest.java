@@ -43,7 +43,9 @@ class SchemaPatchesTest {
 
         patches.convertColumns();
 
-        verify(jdbc, never()).execute(anyString());
+        // Only the idempotent enum CHECK drops run.
+        SchemaPatches.DROP_ENUM_CHECKS.forEach(sql -> verify(jdbc).execute(sql));
+        verify(jdbc, org.mockito.Mockito.times(SchemaPatches.DROP_ENUM_CHECKS.size())).execute(anyString());
     }
 
     @Test

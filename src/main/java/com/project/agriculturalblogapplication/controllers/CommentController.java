@@ -33,11 +33,12 @@ public class CommentController {
     @Operation(summary = "Get all comments by blog id")
     @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = Comment.class))), responseCode = "200")
     @GetMapping(value = "/blog/{blogId}")
-    public ResponseEntity<HttpResponse> getAllCommentsByBlogId(@PathVariable Long blogId) {
+    public ResponseEntity<HttpResponse> getAllCommentsByBlogId(@PathVariable Long blogId,
+                                                               @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
         return HttpResponse.getResponseEntity(
                 true,
                 "Comments loaded successfully.",
-                commentService.getAllByBlogId(blogId));
+                commentService.getAllByBlogId(blogId, lang));
     }
 
     @Operation(summary = "Get all replies by parent comment id")

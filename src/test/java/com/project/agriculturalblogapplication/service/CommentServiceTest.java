@@ -79,7 +79,7 @@ class CommentServiceTest {
         replier.setId(8L);
         when(authorization.currentUserId("en")).thenReturn(8L);
         when(userService.findByIdWithException(8L, "en")).thenReturn(replier);
-        when(blogService.findByIdWithException(3L)).thenReturn(blog);
+        when(blogService.findVisibleBlog(3L, "en")).thenReturn(blog);
         when(commentRepository.findById(10L)).thenReturn(Optional.of(comment(10L, null)));
         when(commentRepository.save(any(Comment.class))).thenAnswer(call -> call.getArgument(0));
         ReplyCommentRequest request = new ReplyCommentRequest();
@@ -120,7 +120,7 @@ class CommentServiceTest {
     void createUsesTheAuthenticatedUserNotAnythingFromTheBody() {
         when(authorization.currentUserId("en")).thenReturn(7L);
         when(userService.findByIdWithException(7L, "en")).thenReturn(author);
-        when(blogService.findByIdWithException(3L)).thenReturn(blog);
+        when(blogService.findVisibleBlog(3L, "en")).thenReturn(blog);
         when(commentRepository.save(any(Comment.class))).thenAnswer(inv -> {
             Comment saved = inv.getArgument(0);
             saved.setId(1L);
