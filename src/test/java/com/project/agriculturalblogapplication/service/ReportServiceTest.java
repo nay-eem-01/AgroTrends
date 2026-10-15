@@ -65,7 +65,7 @@ class ReportServiceTest {
 
     @Test
     void anAiAnswerIsFoundThroughItsQuestionAndBlankDetailsAreDropped() {
-        when(aiAnswers.existsByQuestionIdAndStatusNot(4L, AiAnswerStatus.FLAGGED)).thenReturn(true);
+        when(aiAnswers.existsByQuestionIdAndStatusNotAndQuestionHiddenFalse(4L, AiAnswerStatus.FLAGGED)).thenReturn(true);
 
         assertNull(reportService.report(request(ReportTarget.AI_ANSWER, 4L, " "), LANG).details());
         assertEquals(HttpStatus.NOT_FOUND, assertThrows(ApplicationException.class,
