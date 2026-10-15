@@ -97,6 +97,8 @@ public final class ErrorCode {
     public static final String ERROR_BAN_INSTEAD = "A user cannot be removed; ban the account instead.";
     public static final String ERROR_ACCOUNT_BANNED = "This account has been suspended by the moderators.";
     public static final String ERROR_CANNOT_BAN_ADMIN = "Admin accounts cannot be banned.";
+    public static final String ERROR_ONLY_ADMIN_ROLES = "Only roles of type ADMIN can be managed here.";
+    public static final String ERROR_PRIVILEGE_NOT_GRANTABLE = "Role-management privileges stay with the super-admin.";
     public static final String ERROR_BAN_REASON_REQUIRED = "Give a reason for the ban (at most 500 characters).";
     public static final String ERROR_INVALID_BLOG_STATUS = "A new post is either a DRAFT or PUBLISHED.";
     public static final String ERROR_UNDER_REVIEW = "This post is hidden while the moderators review reports about it.";
