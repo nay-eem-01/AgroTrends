@@ -15,5 +15,9 @@ public enum NotificationType {
     /** Someone replied to your comment. */
     COMMENT_REPLY,
     /** A moderator removed your post after a report. */
-    CONTENT_REMOVED
+    CONTENT_REMOVED,
+    /** Several users reported your post: it is hidden until a moderator reviews it. */
+    CONTENT_HIDDEN,
+    /** A moderator found the reports unfounded: your post is visible again. */
+    CONTENT_RESTORED
 }

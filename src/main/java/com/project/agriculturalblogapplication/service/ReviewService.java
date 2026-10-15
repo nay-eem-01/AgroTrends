@@ -119,6 +119,21 @@ public class ReviewService {
         }).orElse(null);
     }
 
+    /**
+     * Undoes a moderation hide when the reports are dismissed: back to UNCHECKED, into the review queue. Only an AI
+     * answer that no expert had reviewed (reviewer null) is restored; one an expert flagged stays flagged.
+     */
+    @Transactional
+    public void restore(Long questionId) {
+        aiAnswerRepository.findByQuestionId(questionId)
+                .filter(aiAnswer -> aiAnswer.getStatus() == AiAnswerStatus.FLAGGED && aiAnswer.getReviewedBy() == null)
+                .ifPresent(aiAnswer -> {
+                    aiAnswerRepository.transition(aiAnswer.getId(), Set.of(AiAnswerStatus.FLAGGED), AiAnswerStatus.UNCHECKED,
+                            null, null, null);
+                    eventPublisher.publishEvent(new AiAnswerReviewed(questionId));
+                });
+    }
+
     /** Admin: back to UNCHECKED. A correction stays posted as an ordinary answer. */
     @Transactional
     public QuestionAiAnswerResponse reopen(Long questionId, String lang) {

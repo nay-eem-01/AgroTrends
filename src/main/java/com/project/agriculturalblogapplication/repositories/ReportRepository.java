@@ -33,11 +33,27 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     int closeAsActioned(@Param("targetType") ReportTarget targetType, @Param("targetId") Long targetId,
                         @Param("snapshot") String snapshot, @Param("by") String by, @Param("at") LocalDateTime at);
 
-    /** Dismisses one report only if it is still open: a removal or ban at the same moment wins, not this. */
+    long countByTargetTypeAndTargetIdAndStatus(ReportTarget targetType, Long targetId, ReportStatus status);
+
+    /** Keeps what a post said on its open reports when it is hidden, so moderators can judge it. */
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            update Report r set r.snapshot = :snapshot
+            where r.targetType = :targetType and r.targetId = :targetId
+              and r.status = com.project.agriculturalblogapplication.enums.ReportStatus.OPEN""")
+    int recordSnapshot(@Param("targetType") ReportTarget targetType, @Param("targetId") Long targetId,
+                       @Param("snapshot") String snapshot);
+
+    /**
+     * Dismisses every open report on one target; 0 when none is open any more, e.g. another moderator removed the
+     * post a moment earlier. Bulk updates skip auditing, so the moderator and time are set here.
+     */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("""
             update Report r set r.status = com.project.agriculturalblogapplication.enums.ReportStatus.DISMISSED,
                    r.lastModifiedBy = :by, r.lastModifiedDate = :at
-            where r.id = :id and r.status = com.project.agriculturalblogapplication.enums.ReportStatus.OPEN""")
-    int dismissIfOpen(@Param("id") Long id, @Param("by") String by, @Param("at") LocalDateTime at);
+            where r.targetType = :targetType and r.targetId = :targetId
+              and r.status = com.project.agriculturalblogapplication.enums.ReportStatus.OPEN""")
+    int dismissAllOpen(@Param("targetType") ReportTarget targetType, @Param("targetId") Long targetId,
+                       @Param("by") String by, @Param("at") LocalDateTime at);
 }

@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 79 of 91 steps done): launch blockers and one account type with
+- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 80 of 91 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -48,6 +48,33 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-14 (roadmap 8.5c)
+
+**Done**
+- `app.moderation.auto-hide-reports` (env `MODERATION_AUTO_HIDE_REPORTS`, default 3): when that many
+  different users have open reports on a blog, question, answer, comment or AI answer,
+  `ModerationService.hideForReview` hides it (blog → `HIDDEN`, others → `hidden`, AI answer → `FLAGGED`),
+  drops it from the AI index, records its text as `snapshot` on the open reports, and sends the author
+  `CONTENT_HIDDEN`. Users are never banned automatically.
+- `POST /api/admin/reports/{id}/remove-content` (confirm): deletes the post for good, as in 8.4a.
+- `POST /api/admin/reports/{id}/dismiss`: now dismisses every open report on that post (one decision per
+  post) and restores it if it was hidden: back in lists and the AI index, author told `CONTENT_RESTORED`.
+  Conditional: 409 if another moderator closed them first.
+- Checked live: 28/28 (2 reports nothing, 3rd hides; snapshot on all three; vectors out and back; dismiss
+  restores and closes all; confirm deletes and reverses reputation; blog hidden and restored; user reports
+  never ban), and every Phase 8 run again.
+
+**Decisions**
+- Reputation stays while a post is hidden (it may come back) and goes when an admin confirms (delete).
+- A dismissed AI answer goes back to `UNCHECKED` only if no expert had reviewed it; an expert-reviewed one
+  stays hidden until an admin reopens it (safer for farming advice).
+
+**Known limitations**
+- Hiding a blog drops its vectors inside the transaction (like unpublish); a rollback right after would
+  leave a published post out of AI answers until its next edit.
+- Three accounts can hide any post until a moderator looks; e-mail confirmation and one report per user
+  are the brakes. Watch the queue at launch.
 
 ## 2026-10-14 (roadmap 8.5b)
 

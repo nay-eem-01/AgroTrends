@@ -1,9 +1,12 @@
 package com.project.agriculturalblogapplication.service;
 
+import com.project.agriculturalblogapplication.config.AppProperties;
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import com.project.agriculturalblogapplication.entities.Report;
 import com.project.agriculturalblogapplication.enums.AiAnswerStatus;
 import com.project.agriculturalblogapplication.enums.BlogStatus;
+import com.project.agriculturalblogapplication.enums.ReportStatus;
+import com.project.agriculturalblogapplication.enums.ReportTarget;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.request.CreateReportRequest;
 import com.project.agriculturalblogapplication.model.response.ReportResponse;
@@ -36,6 +39,10 @@ public class ReportService {
 
     private final AuthorizationService authorizationService;
 
+    private final ModerationService moderationService;
+
+    private final AppProperties appProperties;
+
     /** One report per user and target; the target must exist (404 otherwise). */
     @Transactional
     public ReportResponse report(CreateReportRequest request, String lang) {
@@ -51,7 +58,13 @@ public class ReportService {
         report.setTargetId(request.getTargetId());
         report.setReason(request.getReason());
         report.setDetails(request.getDetails() == null || request.getDetails().isBlank() ? null : request.getDetails().strip());
-        return ReportResponse.from(reportRepository.save(report));
+        ReportResponse response = ReportResponse.from(reportRepository.save(report));
+        // Enough different users (one report each) hide a post until a moderator decides; users are never auto-banned.
+        if (request.getTargetType() != ReportTarget.USER && reportRepository.countByTargetTypeAndTargetIdAndStatus(
+                request.getTargetType(), request.getTargetId(), ReportStatus.OPEN) >= appProperties.getModeration().getAutoHideReports()) {
+            moderationService.hideForReview(request.getTargetType(), request.getTargetId());
+        }
+        return response;
     }
 
     private void assertExists(CreateReportRequest request, Long reporterId, String lang) {
