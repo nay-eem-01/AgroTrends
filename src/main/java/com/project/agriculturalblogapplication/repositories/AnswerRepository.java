@@ -24,4 +24,6 @@ public interface AnswerRepository extends JpaRepository<Answer, Long> {
     @Modifying
     @Query("UPDATE Answer x SET x.score = x.score + :delta WHERE x.id = :id")
     void addToScore(@Param("id") Long id, @Param("delta") long delta);
+
+    long countByUserId(Long userId);
 }

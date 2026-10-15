@@ -76,4 +76,6 @@ public interface BlogRepositories extends JpaRepository<Blog, Long>, JpaSpecific
             """,
             nativeQuery = true)
     Page<Blog> search(@Param("query") String query, Pageable pageable);
+
+    long countByStatus(BlogStatus status);
 }

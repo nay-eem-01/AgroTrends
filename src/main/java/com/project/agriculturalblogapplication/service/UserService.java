@@ -10,7 +10,6 @@ import com.project.agriculturalblogapplication.entities.Role;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.model.request.ChangePasswordRequest;
 import com.project.agriculturalblogapplication.model.request.UpdateUserRequest;
-import com.project.agriculturalblogapplication.payloads.PaginationArgs;
 import com.project.agriculturalblogapplication.repositories.UserRepository;
 import com.project.agriculturalblogapplication.model.request.CreateUserRequest;
 import com.project.agriculturalblogapplication.security.service.GoogleIdentity;
@@ -20,8 +19,6 @@ import com.project.agriculturalblogapplication.security.service.UserSessionServi
 import com.project.agriculturalblogapplication.util.AuthUtil;
 import com.project.agriculturalblogapplication.util.CommonUtils;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -171,11 +168,6 @@ public class UserService {
 
     public User saveUser(User user) {
         return userRepository.save(user);
-    }
-
-    public Page<UserResponse> getAllPaginatedUser(PaginationArgs paginationArgs, String lang){
-        Pageable pageable = CommonUtils.getPageable(paginationArgs, Set.of("creationDate", "name", "email"), lang);
-        return userRepository.findAll(pageable).map(this::toResponse);
     }
 
     public void deleteUser(User user){
