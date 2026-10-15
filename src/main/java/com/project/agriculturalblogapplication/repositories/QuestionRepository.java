@@ -35,4 +35,6 @@ public interface QuestionRepository extends JpaRepository<Question, Long>, JpaSp
     @Modifying
     @Query("UPDATE Question x SET x.score = x.score + :delta WHERE x.id = :id")
     void addToScore(@Param("id") Long id, @Param("delta") long delta);
+
+    long countByUserId(Long userId);
 }

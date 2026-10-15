@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 80 of 91 steps done
+**Progress:** 81 of 94 steps done
 
 **Launch scope (decided 2026-10-13):** Phases 4–8 must all be done before the public launch. Order of work:
 5 → 6 → 7 → 8 → 4 (deploy) → live test → launch. Nothing is deployed until Phases 5–8 are done. After launch, the
@@ -172,6 +172,16 @@ The old `feature/kafka-impl` branch can be deleted.
 | 8.5a | Visibility: drafts for their author only (not admins); blog status `HIDDEN` (nobody, no edits/republish); comments only on visible posts; banned e-mail refused at sign-up | ✅ |
 | 8.5b | Hidden questions, answers and comments: out of every list, search, single read and the AI index; frozen while hidden | ✅ |
 | 8.5c | Report threshold: N open reports hide a post (snapshot kept, author told); admin confirms → deleted, admin dismisses → all its reports closed and the post restored | ✅ |
+
+## Phase 9 — Admin dashboard
+
+What the web admin dashboard needs on top of Phases 7–8 (queues and actions already exist). Part of launch scope.
+
+| # | Step | Status |
+|---|---|---|
+| 9.1 | Admin users: `GET /api/admin/users` (search name/e-mail, banned filter, ban state shown) and `GET /api/admin/users/{id}` (post counts, open reports, expert topics); replaces `/api/user/paginated` | ✅ |
+| 9.2 | Overview counts: `GET /api/admin/stats` (users, new this week, banned, questions, answers, stories, open reports, pending applications, unchecked AI answers) | ⬜ |
+| 9.3 | Admin roles: list privileges and roles, create/edit/delete `ADMIN` roles, grant or remove one on a user (super-admin only); who moderates becomes a dashboard setting | ⬜ |
 
 ## Later — after the 8-week launch test
 
