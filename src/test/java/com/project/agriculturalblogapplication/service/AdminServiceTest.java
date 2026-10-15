@@ -4,23 +4,30 @@ import com.project.agriculturalblogapplication.entities.Category;
 import com.project.agriculturalblogapplication.entities.ExpertBadge;
 import com.project.agriculturalblogapplication.entities.Role;
 import com.project.agriculturalblogapplication.entities.User;
+import com.project.agriculturalblogapplication.enums.AiAnswerStatus;
+import com.project.agriculturalblogapplication.enums.ApplicationStatus;
 import com.project.agriculturalblogapplication.enums.BlogStatus;
 import com.project.agriculturalblogapplication.enums.ReportStatus;
 import com.project.agriculturalblogapplication.enums.ReportTarget;
+import com.project.agriculturalblogapplication.model.response.AdminStatsResponse;
 import com.project.agriculturalblogapplication.model.response.AdminUserDetailResponse;
 import com.project.agriculturalblogapplication.model.response.AdminUserDetailResponse.CategoryRef;
 import com.project.agriculturalblogapplication.model.response.AdminUserResponse;
 import com.project.agriculturalblogapplication.repositories.AnswerRepository;
 import com.project.agriculturalblogapplication.repositories.BlogRepositories;
+import com.project.agriculturalblogapplication.repositories.ExpertApplicationRepository;
 import com.project.agriculturalblogapplication.repositories.ExpertBadgeRepository;
+import com.project.agriculturalblogapplication.repositories.QuestionAiAnswerRepository;
 import com.project.agriculturalblogapplication.repositories.QuestionRepository;
 import com.project.agriculturalblogapplication.repositories.ReportRepository;
 import com.project.agriculturalblogapplication.repositories.UserRepository;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -48,8 +55,32 @@ class AdminServiceTest {
     private final BlogRepositories blogRepositories = mock(BlogRepositories.class);
     private final ReportRepository reportRepository = mock(ReportRepository.class);
     private final ExpertBadgeRepository badgeRepository = mock(ExpertBadgeRepository.class);
+    private final ExpertApplicationRepository applicationRepository = mock(ExpertApplicationRepository.class);
+    private final QuestionAiAnswerRepository aiAnswerRepository = mock(QuestionAiAnswerRepository.class);
     private final AdminService admin = new AdminService(userRepository, userService, authorService, questionRepository,
-            answerRepository, blogRepositories, reportRepository, badgeRepository);
+            answerRepository, blogRepositories, reportRepository, badgeRepository, applicationRepository,
+            aiAnswerRepository);
+
+    @Test
+    void statsCountOnlyWhatIsWaitingAndTheLastSevenDays() {
+        when(userRepository.count()).thenReturn(50L);
+        when(userRepository.countByCreationDateAfter(any())).thenReturn(6L);
+        when(userRepository.countByBannedAtIsNotNull()).thenReturn(2L);
+        when(questionRepository.count()).thenReturn(40L);
+        when(questionRepository.countByCreationDateAfter(any())).thenReturn(8L);
+        when(answerRepository.count()).thenReturn(90L);
+        when(blogRepositories.countByStatus(BlogStatus.PUBLISHED)).thenReturn(12L);
+        when(reportRepository.countByStatus(ReportStatus.OPEN)).thenReturn(3L);
+        when(applicationRepository.countByStatus(ApplicationStatus.PENDING)).thenReturn(4L);
+        when(aiAnswerRepository.countByStatusAndQuestionHiddenFalse(AiAnswerStatus.UNCHECKED)).thenReturn(7L);
+
+        assertEquals(new AdminStatsResponse(50, 6, 2, 40, 8, 90, 12, 3, 4, 7), admin.stats());
+
+        ArgumentCaptor<LocalDateTime> since = ArgumentCaptor.forClass(LocalDateTime.class);
+        verify(userRepository).countByCreationDateAfter(since.capture());
+        long days = Duration.between(since.getValue(), LocalDateTime.now()).toDays();
+        assertEquals(7, days);
+    }
 
     @Test
     void theSearchTermIsTrimmedAndLowerCasedAndBanStateIsShown() {

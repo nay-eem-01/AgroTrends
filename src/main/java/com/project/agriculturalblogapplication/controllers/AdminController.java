@@ -3,6 +3,7 @@ package com.project.agriculturalblogapplication.controllers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.project.agriculturalblogapplication.config.CommonApiResponses;
 import com.project.agriculturalblogapplication.model.request.SignInRequest;
+import com.project.agriculturalblogapplication.model.response.AdminStatsResponse;
 import com.project.agriculturalblogapplication.model.response.AdminUserDetailResponse;
 import com.project.agriculturalblogapplication.model.response.AdminUserResponse;
 import com.project.agriculturalblogapplication.model.response.HttpResponse;
@@ -72,5 +73,14 @@ public class AdminController {
     public ResponseEntity<HttpResponse> user(@PathVariable Long userId,
                                              @RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
         return HttpResponse.getResponseEntity(true, "Data loaded successfully.", adminService.user(userId, lang));
+    }
+
+    @Operation(summary = "Admin: overview counts for the dashboard (any admin privilege)",
+            security = @SecurityRequirement(name = "jwtToken"))
+    @ApiResponse(content = @Content(schema = @Schema(implementation = AdminStatsResponse.class)), responseCode = "200")
+    @PreAuthorize("hasAnyAuthority('USER_READ', 'CONTENT_MODERATE', 'EXPERT_REVIEW')")
+    @GetMapping("/stats")
+    public ResponseEntity<HttpResponse> stats() {
+        return HttpResponse.getResponseEntity(true, "Data loaded successfully.", adminService.stats());
     }
 }
