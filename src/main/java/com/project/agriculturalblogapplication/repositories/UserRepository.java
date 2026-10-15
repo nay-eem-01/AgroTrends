@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Set;
 
@@ -43,4 +44,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
             where (locate(:query, lower(u.name)) > 0 or locate(:query, lower(u.email)) > 0)
               and (:banned is null or (:banned = true and u.bannedAt is not null) or (:banned = false and u.bannedAt is null))""")
     Page<User> search(@Param("query") String query, @Param("banned") Boolean banned, Pageable pageable);
+
+    long countByCreationDateAfter(LocalDateTime since);
+
+    long countByBannedAtIsNotNull();
 }

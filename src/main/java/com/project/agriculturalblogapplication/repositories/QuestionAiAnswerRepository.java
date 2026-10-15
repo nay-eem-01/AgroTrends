@@ -80,4 +80,6 @@ public interface QuestionAiAnswerRepository extends JpaRepository<QuestionAiAnsw
     int transition(@Param("id") Long id, @Param("from") Collection<AiAnswerStatus> from, @Param("to") AiAnswerStatus to,
                    @Param("reviewer") User reviewer, @Param("reviewedAt") LocalDateTime reviewedAt,
                    @Param("correction") Answer correction);
+
+    long countByStatusAndQuestionHiddenFalse(AiAnswerStatus status);
 }

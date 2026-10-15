@@ -24,4 +24,6 @@ public interface ExpertApplicationRepository extends JpaRepository<ExpertApplica
 
     @EntityGraph(attributePaths = "user")
     Page<ExpertApplication> findAllByStatus(ApplicationStatus status, Pageable pageable);
+
+    long countByStatus(ApplicationStatus status);
 }

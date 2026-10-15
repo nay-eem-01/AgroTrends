@@ -1,15 +1,20 @@
 package com.project.agriculturalblogapplication.service;
 
 import com.project.agriculturalblogapplication.entities.User;
+import com.project.agriculturalblogapplication.enums.AiAnswerStatus;
+import com.project.agriculturalblogapplication.enums.ApplicationStatus;
 import com.project.agriculturalblogapplication.enums.BlogStatus;
 import com.project.agriculturalblogapplication.enums.ReportStatus;
 import com.project.agriculturalblogapplication.enums.ReportTarget;
+import com.project.agriculturalblogapplication.model.response.AdminStatsResponse;
 import com.project.agriculturalblogapplication.model.response.AdminUserDetailResponse;
 import com.project.agriculturalblogapplication.model.response.AdminUserDetailResponse.CategoryRef;
 import com.project.agriculturalblogapplication.model.response.AdminUserResponse;
 import com.project.agriculturalblogapplication.repositories.AnswerRepository;
 import com.project.agriculturalblogapplication.repositories.BlogRepositories;
+import com.project.agriculturalblogapplication.repositories.ExpertApplicationRepository;
 import com.project.agriculturalblogapplication.repositories.ExpertBadgeRepository;
+import com.project.agriculturalblogapplication.repositories.QuestionAiAnswerRepository;
 import com.project.agriculturalblogapplication.repositories.QuestionRepository;
 import com.project.agriculturalblogapplication.repositories.ReportRepository;
 import com.project.agriculturalblogapplication.repositories.UserRepository;
@@ -20,6 +25,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Locale;
 
 /** Read side of the admin dashboard (roadmap 9.x). Acting on users stays in {@link ModerationService}. */
@@ -42,6 +48,26 @@ public class AdminService {
     private final ReportRepository reportRepository;
 
     private final ExpertBadgeRepository expertBadgeRepository;
+
+    private final ExpertApplicationRepository expertApplicationRepository;
+
+    private final QuestionAiAnswerRepository questionAiAnswerRepository;
+
+    @Transactional(readOnly = true)
+    public AdminStatsResponse stats() {
+        LocalDateTime weekAgo = LocalDateTime.now().minusDays(7);
+        return new AdminStatsResponse(
+                userRepository.count(),
+                userRepository.countByCreationDateAfter(weekAgo),
+                userRepository.countByBannedAtIsNotNull(),
+                questionRepository.count(),
+                questionRepository.countByCreationDateAfter(weekAgo),
+                answerRepository.count(),
+                blogRepositories.countByStatus(BlogStatus.PUBLISHED),
+                reportRepository.countByStatus(ReportStatus.OPEN),
+                expertApplicationRepository.countByStatus(ApplicationStatus.PENDING),
+                questionAiAnswerRepository.countByStatusAndQuestionHiddenFalse(AiAnswerStatus.UNCHECKED));
+    }
 
     /** Users whose name or e-mail contains {@code query}, optionally only (un)banned ones, newest first. */
     @Transactional(readOnly = true)

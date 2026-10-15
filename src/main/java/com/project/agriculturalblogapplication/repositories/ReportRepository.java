@@ -57,4 +57,6 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
               and r.status = com.project.agriculturalblogapplication.enums.ReportStatus.OPEN""")
     int dismissAllOpen(@Param("targetType") ReportTarget targetType, @Param("targetId") Long targetId,
                        @Param("by") String by, @Param("at") LocalDateTime at);
+
+    long countByStatus(ReportStatus status);
 }
