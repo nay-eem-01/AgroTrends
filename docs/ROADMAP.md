@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 78 of 91 steps done
+**Progress:** 79 of 91 steps done
 
 **Launch scope (decided 2026-10-13):** Phases 4–8 must all be done before the public launch. Order of work:
 5 → 6 → 7 → 8 → 4 (deploy) → live test → launch. Nothing is deployed until Phases 5–8 are done. After launch, the
@@ -170,7 +170,7 @@ The old `feature/kafka-impl` branch can be deleted.
 | 8.4a | Moderation: admin report queue, dismiss, remove reported content (deleted through the existing paths: out of lists and RAG, reputation reversed; snapshot kept on the reports; author notified); AI answers hidden; badge revocation is 7.2 | ✅ |
 | 8.4b | Ban a user: sign-in and token refresh refused, sessions revoked; unban | ✅ |
 | 8.5a | Visibility: drafts for their author only (not admins); blog status `HIDDEN` (nobody, no edits/republish); comments only on visible posts; banned e-mail refused at sign-up | ✅ |
-| 8.5b | Hidden questions, answers and comments: out of every list, search, single read and the AI index; frozen while hidden | ⬜ |
+| 8.5b | Hidden questions, answers and comments: out of every list, search, single read and the AI index; frozen while hidden | ✅ |
 | 8.5c | Report threshold: N open reports hide a post (snapshot kept, author told); admin confirms → deleted, admin dismisses → all its reports closed and the post restored | ⬜ |
 
 ## Later — after the 8-week launch test

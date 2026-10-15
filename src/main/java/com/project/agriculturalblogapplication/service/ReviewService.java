@@ -61,7 +61,7 @@ public class ReviewService {
         if (topics.isEmpty()) {
             throw new ApplicationException(HttpStatus.FORBIDDEN, ErrorCode.ERROR_NOT_AN_EXPERT, lang);
         }
-        return aiAnswerRepository.findAllByStatusAndQuestionCategoryIdIn(AiAnswerStatus.UNCHECKED, topics,
+        return aiAnswerRepository.findAllByStatusAndQuestionCategoryIdInAndQuestionHiddenFalse(AiAnswerStatus.UNCHECKED, topics,
                         CommonUtils.clampedPageable(pageNo, pageSize, Sort.by(Sort.Direction.ASC, "creationDate")))
                 .map(ReviewItemResponse::from);
     }
@@ -127,7 +127,7 @@ public class ReviewService {
     }
 
     private QuestionAiAnswer find(Long questionId, String lang) {
-        return aiAnswerRepository.findByQuestionId(questionId).orElseThrow(() ->
+        return aiAnswerRepository.findByQuestionId(questionId).filter(aiAnswer -> !aiAnswer.getQuestion().isHidden()).orElseThrow(() ->
                 new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_AI_ANSWER_NOT_FOUND, lang));
     }
 

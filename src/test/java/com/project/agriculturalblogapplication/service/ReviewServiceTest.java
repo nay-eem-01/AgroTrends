@@ -186,7 +186,7 @@ class ReviewServiceTest {
                 assertThrows(ApplicationException.class, () -> reviewService.queue(0, 20, LANG)).getHttpStatus());
 
         standing(Set.of(), Set.of(TOPIC, 5L));
-        when(repository.findAllByStatusAndQuestionCategoryIdIn(eq(AiAnswerStatus.UNCHECKED), eq(Set.of(TOPIC, 5L)), any()))
+        when(repository.findAllByStatusAndQuestionCategoryIdInAndQuestionHiddenFalse(eq(AiAnswerStatus.UNCHECKED), eq(Set.of(TOPIC, 5L)), any()))
                 .thenReturn(org.springframework.data.domain.Page.empty());
         assertEquals(0, reviewService.queue(0, 20, LANG).getTotalElements());
     }

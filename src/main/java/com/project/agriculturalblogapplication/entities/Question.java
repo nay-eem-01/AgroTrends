@@ -65,8 +65,12 @@ public class Question extends AuditModel<String> {
     @OnDelete(action = OnDeleteAction.SET_NULL)
     private Answer acceptedAnswer;
 
+    /** The accepted answer's id while it is not hidden; read with the question, so no lazy load is needed. */
+    @Formula("(select a.id from answers a where a.id = accepted_answer_id and a.hidden = false)")
+    private Long visibleAcceptedAnswerId;
+
     /** Direct answers, not replies to answers; computed by the database so it can never drift. */
-    @Formula("(select count(*) from answers a where a.question_id = id and a.answer_id is null)")
+    @Formula("(select count(*) from answers a where a.question_id = id and a.answer_id is null and a.hidden = false)")
     private long answerCount;
 
     /** Upvotes minus downvotes, kept in step by VoteService so lists need no count query. */
@@ -81,6 +85,11 @@ public class Question extends AuditModel<String> {
 
     @Embedded
     private AgriMetadata agri = new AgriMetadata();
+
+    /** Set while enough reports about it await a moderator (roadmap 8.5): invisible to everyone, frozen. */
+    @ColumnDefault("false")
+    @Column(name = "hidden", nullable = false)
+    private boolean hidden;
 
     /** Stored HTML is always safe, whichever endpoint wrote it. */
     @PrePersist

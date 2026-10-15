@@ -5,6 +5,7 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.project.agriculturalblogapplication.model.AuditModel;
+import org.hibernate.annotations.ColumnDefault;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -45,6 +46,12 @@ public class Comment extends AuditModel<String> {
     )
     @JsonIgnore
     private List<Comment> replies = new ArrayList<>();
+
+    /** Set while enough reports about it await a moderator (roadmap 8.5): invisible to everyone, frozen. */
+    @ColumnDefault("false")
+    @Column(name = "hidden", nullable = false)
+    private boolean hidden;
+
 
     /** Stored HTML is always safe, whichever endpoint wrote it. */
     @PrePersist

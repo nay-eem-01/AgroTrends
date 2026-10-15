@@ -113,6 +113,23 @@ class QuestionServiceTest {
     }
 
     @Test
+    void aHiddenQuestionIsNotFoundForReadsAndEditsButCanStillBeDeleted() {
+        User owner = new User();
+        owner.setId(7L);
+        Question hidden = new Question();
+        hidden.setId(4L);
+        hidden.setUser(owner);
+        hidden.setHidden(true);
+        when(questionRepository.findById(4L)).thenReturn(Optional.of(hidden));
+
+        assertEquals(HttpStatus.NOT_FOUND,
+                assertThrows(ApplicationException.class, () -> questionService.findById(4L)).getHttpStatus());
+
+        questionService.delete(4L, "en");
+        verify(questionRepository).delete(hidden);
+    }
+
+    @Test
     void searchNeedsSomethingToSearchFor() {
         ApplicationException refused = assertThrows(ApplicationException.class, () -> questionService.search("  ", 0, 10, "en"));
         assertEquals(HttpStatus.BAD_REQUEST, refused.getHttpStatus());

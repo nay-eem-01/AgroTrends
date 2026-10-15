@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 78 of 91 steps done): launch blockers and one account type with
+- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 79 of 91 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -48,6 +48,22 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-10-14 (roadmap 8.5b)
+
+**Done**
+- `hidden` (default false) on `Question`, `Answer`, `Comment`. `findByIdWithException` in their services
+  answers 404 for hidden rows (and for answers on a hidden question), which covers single reads, edits,
+  answering, replies, votes and accepts; delete reads the repository directly, so an author or a moderator
+  can still delete a hidden post.
+- Lists filter it: question list (specification), search, the author's questions, answers on a question,
+  replies, comments on a post and their replies; `answerCount` counts visible answers only. The AI answer of
+  a hidden question is a 404 and leaves the review queue. `AnswerIndexer` never indexes a hidden answer or
+  an answer/AI answer on a hidden question.
+- `Question.visibleAcceptedAnswerId` (`@Formula` subselect) replaces reading the accepted answer: found live
+  before commit, reading `acceptedAnswer.hidden` hit a lazy proxy outside a session and made every question
+  read with an accepted answer a 500.
+- Checked live: 19/19 (+2 for visible accepts), and 8.2, 8.4a, 8.5a runs again.
 
 ## 2026-10-14 (roadmap 8.5a)
 

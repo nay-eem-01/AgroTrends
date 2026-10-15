@@ -142,7 +142,7 @@ class AnswerServiceTest {
         Answer accepted = answer(3L, -2);
         Answer newLow = answer(4L, 1);
         question.setAcceptedAnswer(accepted);
-        when(answerRepository.findByQuestionIdAndParentAnswerIsNull(1L)).thenReturn(List.of(newLow, oldLow, high, accepted));
+        when(answerRepository.findByQuestionIdAndParentAnswerIsNullAndHiddenFalse(1L)).thenReturn(List.of(newLow, oldLow, high, accepted));
 
         Category rice = new Category();
         rice.setId(5L);

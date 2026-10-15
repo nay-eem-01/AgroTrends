@@ -222,7 +222,7 @@ public class AiService {
     /** The question's AI answer; 404 while it is being generated, when there is none, or when it was flagged. */
     public QuestionAiAnswerResponse questionAnswer(Long questionId, String lang) {
         return questionAiAnswerRepository.findByQuestionId(questionId)
-                .filter(aiAnswer -> aiAnswer.getStatus() != AiAnswerStatus.FLAGGED)
+                .filter(aiAnswer -> aiAnswer.getStatus() != AiAnswerStatus.FLAGGED && !aiAnswer.getQuestion().isHidden())
                 .map(QuestionAiAnswerResponse::from)
                 .orElseThrow(() -> new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_AI_ANSWER_NOT_FOUND, lang));
     }
