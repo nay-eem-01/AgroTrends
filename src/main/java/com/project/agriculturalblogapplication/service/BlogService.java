@@ -84,6 +84,9 @@ public class BlogService {
         if (request.getTags() != null) {
             blog.setTags(tagService.resolve(request.getTags()));
         }
+        if (request.getStatus() == BlogStatus.HIDDEN) {
+            throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_INVALID_BLOG_STATUS, lang);
+        }
         blog.setStatus(request.getStatus() == null ? BlogStatus.PUBLISHED : request.getStatus());
         if (blog.getStatus() == BlogStatus.PUBLISHED) {
             blog.setPublishedAt(LocalDateTime.now());

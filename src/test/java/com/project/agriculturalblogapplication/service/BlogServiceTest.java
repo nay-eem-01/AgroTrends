@@ -221,6 +221,19 @@ class BlogServiceTest {
     }
 
     @Test
+    void aClientCannotCreateAPostAlreadyHidden() {
+        CreateBlogRequest request = new CreateBlogRequest();
+        request.setCategoryId(30L);
+        request.setTitle("Sneaky");
+        request.setContent("x");
+        request.setStatus(BlogStatus.HIDDEN);
+
+        assertEquals(HttpStatus.BAD_REQUEST, assertThrows(ApplicationException.class,
+                () -> blogService.create(request, LANG)).getHttpStatus());
+        verify(blogRepositories, never()).save(any());
+    }
+
+    @Test
     void createRetriesWhenTheRandomSlugIsTaken() {
         when(categoryService.findByIdWithException(30L)).thenReturn(blog(1L).getCategory());
         when(authorService.profileOf(any())).thenReturn(blog(1L).getAuthor());

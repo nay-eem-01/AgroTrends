@@ -47,12 +47,12 @@ public class Answer extends AuditModel<String> {
     @OneToMany(mappedBy = "parentAnswer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Answer> replies = new ArrayList<>();
 
-    /** Stored HTML is always safe, whichever endpoint wrote it. */
     /** Set while enough reports about it await a moderator (roadmap 8.5): invisible to everyone, frozen. */
     @ColumnDefault("false")
     @Column(name = "hidden", nullable = false)
     private boolean hidden;
 
+    /** Stored HTML is always safe, whichever endpoint wrote it. */
     @PrePersist
     @PreUpdate
     void sanitize() {

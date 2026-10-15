@@ -44,13 +44,6 @@ public class AuthorizationService {
         return signedInPrincipal().map(CustomUserDetails::getId);
     }
 
-    /** Like {@link #isOwnerOrAdmin} but false, not 401, for an anonymous caller (public read endpoints). */
-    public boolean isSignedInOwnerOrAdmin(Long ownerUserId) {
-        return signedInPrincipal()
-                .map(principal -> isAdmin(principal) || (ownerUserId != null && ownerUserId.equals(principal.getId())))
-                .orElse(false);
-    }
-
     public boolean isAdmin(CustomUserDetails principal) {
         if (principal.getRoles() == null) {
             return false;

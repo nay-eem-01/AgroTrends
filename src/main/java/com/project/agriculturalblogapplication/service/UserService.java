@@ -60,6 +60,10 @@ public class UserService {
         }
 
         User existingUser = findByEmail(email);
+        // A banned account's e-mail gets the ban, not "already registered" (it reveals no more).
+        if (existingUser != null && existingUser.getBannedAt() != null) {
+            throw new ApplicationException(HttpStatus.FORBIDDEN, ErrorCode.ERROR_ACCOUNT_BANNED, lang);
+        }
         if (existingUser != null) {
             throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_USER_ALREADY_EXISTS_WITH_EMAIL, lang);
         }

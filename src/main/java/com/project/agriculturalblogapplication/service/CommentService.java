@@ -12,6 +12,7 @@ import com.project.agriculturalblogapplication.model.request.UpdateCommentReques
 import com.project.agriculturalblogapplication.model.response.CommentResponse;
 import com.project.agriculturalblogapplication.repositories.CommentRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
+import com.project.agriculturalblogapplication.enums.BlogStatus;
 import com.project.agriculturalblogapplication.enums.NotificationTarget;
 import com.project.agriculturalblogapplication.enums.NotificationType;
 import com.project.agriculturalblogapplication.notification.NotificationMessage;
@@ -126,9 +127,15 @@ public class CommentService {
                 .toList();
     }
 
-    /** A hidden comment is a 404 here: it cannot be read, edited or replied to while under review. */
+    /**
+     * A 404 unless the comment, its parent and its post are all visible (only published posts take comments from
+     * others), so nothing under review can be read, edited, replied to or reported.
+     */
     public Comment findByIdWithException(Long commentId) {
-        return commentRepository.findById(commentId).filter(comment -> !comment.isHidden()).orElseThrow(() ->
+        return commentRepository.findById(commentId)
+                .filter(comment -> !comment.isHidden() && comment.getBlog().getStatus() == BlogStatus.PUBLISHED
+                        && (comment.getParentComment() == null || !comment.getParentComment().isHidden()))
+                .orElseThrow(() ->
                 new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_COMMENT_NOT_FOUND));
     }
 
