@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 82 of 94 steps done
+**Progress:** 83 of 94 steps done
 
 **Launch scope (decided 2026-10-13):** Phases 4–8 must all be done before the public launch. Order of work:
 5 → 6 → 7 → 8 → 4 (deploy) → live test → launch. Nothing is deployed until Phases 5–8 are done. After launch, the
@@ -181,7 +181,7 @@ What the web admin dashboard needs on top of Phases 7–8 (queues and actions al
 |---|---|---|
 | 9.1 | Admin users: `GET /api/admin/users` (search name/e-mail, banned filter, ban state shown) and `GET /api/admin/users/{id}` (post counts, open reports, expert topics); replaces `/api/user/paginated` | ✅ |
 | 9.2 | Overview counts: `GET /api/admin/stats` (users, new this week, banned, questions, answers, stories, open reports, pending applications, unchecked AI answers) | ✅ |
-| 9.3 | Admin roles: list privileges and roles, create/edit/delete `ADMIN` roles, grant or remove one on a user (super-admin only); who moderates becomes a dashboard setting | ⬜ |
+| 9.3 | Admin roles: list privileges and roles, create/edit/delete `ADMIN` roles, grant or remove one on a user (super-admin only); who moderates becomes a dashboard setting | ✅ |
 
 ## Later — after the 8-week launch test
 

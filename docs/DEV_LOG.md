@@ -10,9 +10,9 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–8** (`docs/ROADMAP.md`, 80 of 91 steps done): launch blockers and one account type with
+- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 83 of 94 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
-  in-process notifications + moderation (8). The Kafka phase is dropped.
+  in-process notifications + moderation (8), admin dashboard endpoints (9). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
 - **Branch model:** `development` -> `staging` -> `production`; feature base off `development`, serial step PRs into
   the base. `main` is frozen. See the `git-workflow` skill.
@@ -20,8 +20,8 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 ## Next up
 
 1. Merge `docs/product-study` and `docs/launch-plan` into `development`.
-2. Phases 5, 6 and 7 are on `development`; Phase 8 is done on `feat/notifications-moderation-base` (not yet
-   merged; includes the 8.5 report-threshold redesign). Next: Phase 4 (ship it: profiles, Flyway, Docker,
+2. Phases 5–8 are on `development` (PR #110). Phase 9 (admin dashboard) is done on `feat/admin-dashboard-base`:
+   merge 9.1 → 9.2 → 9.3, then the base into `development`. Next: Phase 4 (ship it: profiles, Flyway, Docker,
    Testcontainers, CI), then deploy and live-test.
 3. Then Phases 6, 7, 8; deploy (Phase 4) and live-test only after all of them.
 4. **Team:** 30–50 seeded Bangla articles; 5–10 experts invited; pick the 6–8 launch topics (categories).
@@ -37,7 +37,8 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | Create a local `.env` from `.env.example` (DB_PASSWORD, GEMINI_API_KEY, JWT_SECRET) — the app no longer starts without them | Nayeem | running the app locally |
 | Any database that still holds `text-embedding-004` vectors: start once with `AI_REINDEX_ON_STARTUP=true` | whoever owns that DB | retrieval on old data |
 | Client errors (400/401) are logged at ERROR by `ExceptionHandlingController` — noisy | roadmap 4.7 | — |
-| Launch topics (categories), reputation numbers, who reviews expert applications and reports | team decision (partner doc) | 6.1, 7.2, 8.4 |
+| Launch topics (categories), reputation numbers | team decision (partner doc) | 6.1 |
+| Who reviews expert applications and reports: now a setting (9.3). Super-admin creates an ADMIN role with `EXPERT_REVIEW` / `CONTENT_MODERATE` / `USER_READ` and grants it | Nayeem | moderators other than the super-admin |
 | Frontend: `sources[].type` is `blog` (link `/api/blogs/id/{blogId}`) or `answer` (link the question `questionId`); `ai-draft` is gone — poll `GET /api/questions/id/{id}/ai-answer` and show its `disclaimer` and `status` | frontend | — |
 | Frontend must stop sending `userId` / `authorUserId`, use `/api/auth/refresh-token`, and handle 401 vs 403 | frontend | frontend integration |
 | `contextLoads` fails without a local Postgres | roadmap 4.4 | CI |
@@ -47,6 +48,39 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | After deploying 2.3a: start once with `AI_REINDEX_ON_STARTUP=true` (old chunks have no `status`, so retrieval ignores them) | whoever deploys | AI answers on existing posts |
 | Deleting a user with comments/questions/answers fails on foreign keys: decide delete vs anonymise | Nayeem | account deletion |
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
+
+---
+
+## 2026-10-15 (Phase 9: admin dashboard endpoints)
+
+**Done**
+- 9.1 `GET /api/admin/users` (`q` inside name or e-mail, case-insensitive, `%`/`_` literal; `banned=true|false`;
+  newest first) returns `AdminUserResponse` with `banned`, `bannedAt`, `banReason`, `roles`. `GET
+  /api/admin/users/{id}`: question/answer/published-story counts (hidden posts included), open reports about
+  the account, active expert topics (`{id, name}` for the revoke-badge button). Both `USER_READ`.
+- 9.2 `GET /api/admin/stats`: users, new users (7 days), banned, questions, new questions (7 days), answers,
+  published stories, open reports, pending expert applications, unchecked AI answers on visible questions.
+  Any of `USER_READ`, `CONTENT_MODERATE`, `EXPERT_REVIEW`.
+- 9.3 `GET /api/admin/privileges` (grantable only), `GET/POST/PUT /api/admin/roles`, `DELETE
+  /api/admin/roles/{id}`, `POST/DELETE /api/admin/users/{userId}/roles/{roleId}`; `ROLE_*` privileges.
+- Checked live: 9.1 11/11, 9.2 6/6 (counts equal SQL counts), 9.3 19/19 (a granted moderator's existing token
+  moderates at once and loses it at once on removal; cannot manage roles; cannot be banned).
+
+**Decisions**
+- Only `ADMIN`-type roles are created, edited, deleted, granted or removed through the API; the seeded `USER` and
+  `SUPER ADMIN` roles are fixed. `ROLE_*` privileges are never grantable, so role management stays with the
+  super-admin and an admin role cannot create more admins.
+- Privileges are read from the database on every request (`CustomUserDetailService`), so grants and removals
+  apply without a new sign-in. Admin-portal sign-in needs an `ADMIN`/`SUPER_ADMIN` role, so a granted moderator
+  can sign in there too.
+- Stats are plain `count` queries, no cache: fine at launch size.
+
+**Breaking API changes**
+- `GET /api/user/paginated` removed (unused by the web app; its filters were ignored): use `GET /api/admin/users`.
+
+**Known limitations**
+- Holding an ADMIN role makes an account unbannable (8.4b rule); remove the role first.
+- No audit trail of who granted which role beyond `lastModifiedBy` on the user row.
 
 ---
 
