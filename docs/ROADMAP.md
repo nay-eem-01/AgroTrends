@@ -183,6 +183,19 @@ What the web admin dashboard needs on top of Phases 7–8 (queues and actions al
 | 9.2 | Overview counts: `GET /api/admin/stats` (users, new this week, banned, questions, answers, stories, open reports, pending applications, unchecked AI answers) | ✅ |
 | 9.3 | Admin roles: list privileges and roles, create/edit/delete `ADMIN` roles, grant or remove one on a user (super-admin only); who moderates becomes a dashboard setting | ✅ |
 
+## Phase 10 — Phone sign-up
+
+Sign up with an e-mail, a phone number or both; add the other later. Phones are confirmed by an SMS code. Part of
+launch scope (most of the audience has a phone before an e-mail).
+
+| # | Step | Status |
+|---|---|---|
+| 10.1 | JWT subject is the user id (not the e-mail); sign-in takes `identifier` (e-mail or phone; `email` still accepted); phones stored in E.164 | ✅ |
+| 10.2 | Sign-up with e-mail, phone or both; `phoneVerifiedAt`; a confirmed e-mail **or** phone opens writes; profile update adds or changes either | ⬜ |
+| 10.3 | SMS codes: `SmsService` (logged in dev), 6-digit code at sign-up and on a phone change, `POST /api/auth/verify-phone`, `POST /api/auth/resend-phone-code` | ⬜ |
+| 10.4 | Forgot password by phone: SMS code, then `POST /api/auth/reset-password-with-code` | ⬜ |
+| 10.5 | A real SMS provider (after the team picks one) | ⏸ |
+
 ## Later — after the 8-week launch test
 
 Not counted in progress. Each one waits for the week-8 decision (`docs/PLAN.md` §6) and is tested by hand

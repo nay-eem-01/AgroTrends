@@ -62,7 +62,8 @@ public final class ErrorCode {
     public static final String ERROR_ANSWER_NOT_FOUND = "Answer not found";
     public static final String ERROR_ANSWER_QUESTION_MISMATCH  = "Answer And Question mismatch";
 
-    public static final String ERROR_INVALID_CREDENTIALS = "Invalid email or password.";
+    public static final String ERROR_INVALID_CREDENTIALS = "Invalid e-mail, phone number or password.";
+    public static final String ERROR_EMAIL_OR_PHONE_IS_REQUIRED = "E-mail or phone number is required.";
     public static final String ERROR_TOO_MANY_ATTEMPTS = "Too many attempts. Please try again later.";
     public static final String ERROR_FORBIDDEN = "You do not have permission to perform this action.";
     public static final String ERROR_INVALID_GOOGLE_TOKEN = "Google sign-in failed. Please try again.";

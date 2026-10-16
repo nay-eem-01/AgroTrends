@@ -41,7 +41,7 @@ class JwtAuthenticationFilterTest {
     @BeforeEach
     void setUp() {
         SecurityContextHolder.clearContext();
-        token = jwtUtil.generateAccessToken("farmer@example.com");
+        token = jwtUtil.generateAccessToken("5");
     }
 
     @AfterEach
@@ -60,7 +60,7 @@ class JwtAuthenticationFilterTest {
     private void givenUser(boolean mustChangePassword, boolean emailVerified, boolean banned) {
         CustomUserDetails user = new CustomUserDetails(5L, "n", "farmer@example.com", "pw", Set.of(), List.of(),
                 mustChangePassword, emailVerified, banned);
-        when(userDetailsService.loadUserByUsername("farmer@example.com")).thenReturn(user);
+        when(userDetailsService.loadUserById(5L)).thenReturn(user);
     }
 
     private MockHttpServletRequest request(String uri) {
@@ -94,6 +94,17 @@ class JwtAuthenticationFilterTest {
 
         assertNull(SecurityContextHolder.getContext().getAuthentication());
         verify(chain).doFilter(any(), any());
+    }
+
+    @Test
+    void tokenFromBeforeTheSubjectBecameTheUserIdStaysUnauthenticated() throws Exception {
+        token = jwtUtil.generateAccessToken("farmer@example.com");
+
+        filter.doFilter(request("/api/blogs/id/1"), new MockHttpServletResponse(), chain);
+
+        assertNull(SecurityContextHolder.getContext().getAuthentication());
+        verify(chain).doFilter(any(), any());
+        verifyNoInteractions(sessions);
     }
 
     @Test
