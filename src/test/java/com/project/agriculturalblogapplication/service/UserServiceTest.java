@@ -1,6 +1,8 @@
 package com.project.agriculturalblogapplication.service;
 
+import com.project.agriculturalblogapplication.entities.Role;
 import com.project.agriculturalblogapplication.entities.User;
+import com.project.agriculturalblogapplication.model.request.CreateUserRequest;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.request.UpdateUserRequest;
 import com.project.agriculturalblogapplication.repositories.UserRepository;
@@ -29,10 +31,11 @@ class UserServiceTest {
 
     private final UserRepository userRepository = mock(UserRepository.class);
     private final AuthorizationService authorization = mock(AuthorizationService.class);
+    private final RoleService roleService = mock(RoleService.class);
     private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
     private final UserSessionService sessions = mock(UserSessionService.class);
     private final UserService userService = new UserService(userRepository, mock(PasswordEncoder.class),
-            mock(RoleService.class), mock(AuthorService.class), authorization,
+            roleService, mock(AuthorService.class), authorization,
             mock(RefreshTokenService.class), sessions, mock(AttemptLimiter.class), events);
 
     private User signedIn(String email, String mobileNumber) {
@@ -95,6 +98,21 @@ class UserServiceTest {
         assertEquals(HttpStatus.BAD_REQUEST, assertThrows(ApplicationException.class,
                 () -> userService.update(update(" ", null), "en")).getHttpStatus());
         verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void aNewAccountAsksToConfirmWhatItSignedUpWith() {
+        when(roleService.findRoleByNameWithException(any(), any())).thenReturn(new Role());
+        when(userRepository.save(any())).thenAnswer(invocation -> {
+            User saved = invocation.getArgument(0);
+            saved.setId(9L);
+            return saved;
+        });
+
+        userService.createUser(CreateUserRequest.builder().name("Rahim").mobileNumber("+8801712345678")
+                .password("Passw0rd!").build(), "en");
+
+        verify(events).publishEvent(new ContactChangedEvent(9L, false, true));
     }
 
     @Test

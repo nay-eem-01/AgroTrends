@@ -108,7 +108,11 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(createUserRequest.getPassword()));
         user.setMobileNumber(createUserRequest.getMobileNumber());
         user.setRoles(new HashSet<>(Set.of(role)));
-        return userRepository.save(user);
+        user = userRepository.save(user);
+        // Sends the e-mail link and/or the SMS code.
+        eventPublisher.publishEvent(new ContactChangedEvent(user.getId(), user.getEmail() != null,
+                user.getMobileNumber() != null));
+        return user;
     }
 
     /**
@@ -147,6 +151,11 @@ public class UserService {
 
     public User findByEmail(String email) {
         return userRepository.findTopByEmailEqualsIgnoreCase(email).orElse(null);
+    }
+
+    /** {@code mobileNumber} in E.164. */
+    public User findByMobileNumber(String mobileNumber) {
+        return userRepository.findTopByMobileNumber(mobileNumber).orElse(null);
     }
 
     public User findByEmailWithException(String email, String lang) {

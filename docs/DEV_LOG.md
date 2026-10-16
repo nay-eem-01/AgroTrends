@@ -43,6 +43,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | Frontend must stop sending `userId` / `authorUserId`, use `/api/auth/refresh-token`, and handle 401 vs 403 | frontend | frontend integration |
 | `contextLoads` fails without a local Postgres | roadmap 4.4 | CI |
 | No SMTP configured: reset links are written to the log (dev only) | an SMTP account | production password reset |
+| No SMS provider: phone codes are written to the log (dev only). Pick one (SSL Wireless, BulkSMSBD, Twilio…) | team | phone sign-up in production (10.5) |
 | Hotfix path is not defined yet (proposal: branch off `production`, PR into `production`, then back-merge into `development`) | Nayeem to confirm | — |
 | Gemini chat calls fail with "API key not valid" since 2026-10-06 evening (embeddings still work); `.env` key is 53 chars (a key is 39) — check the line for quotes/comments | Nayeem | live checks of 3.6–3.8, 7.3a generation, 7.6b answer citations, 7.7 farm details |
 | After deploying 2.3a: start once with `AI_REINDEX_ON_STARTUP=true` (old chunks have no `status`, so retrieval ignores them) | whoever deploys | AI answers on existing posts |
@@ -61,6 +62,11 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
   number; a banned account's phone gets the ban). `PUT /api/user/update` adds, changes or removes either while one
   remains; a new one starts unconfirmed (a new e-mail gets its link). `phoneVerifiedAt`; `UserResponse` and
   `AdminUserResponse` gain `phoneVerified`. Writes need a confirmed e-mail or phone.
+- 10.3 SMS codes: 6 digits, SHA-256 (salted with the user id) stored, 10 minutes, single use, dead after 5 wrong
+  tries; 3 sends per number and 10 per IP an hour, 20 checks per IP per 15 minutes. Sent at sign-up and on a new or
+  changed number (`ContactChangedEvent`, which now also sends the e-mail link). `POST /api/auth/verify-phone`
+  `{countryCode, mobileNumber, code}`; `POST /api/auth/resend-phone-code` `{countryCode, mobileNumber}` (always 200).
+  `SmsService` with a logging fallback while `SMS_PROVIDER` is unset (codes appear in the log as `[DEV SMS]`).
 
 **Decisions**
 - Phone sign-up is confirmed by an SMS code (team choice 2026-10-17); a confirmed e-mail or phone opens writes.
