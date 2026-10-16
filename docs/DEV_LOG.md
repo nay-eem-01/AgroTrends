@@ -67,6 +67,9 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
   changed number (`ContactChangedEvent`, which now also sends the e-mail link). `POST /api/auth/verify-phone`
   `{countryCode, mobileNumber, code}`; `POST /api/auth/resend-phone-code` `{countryCode, mobileNumber}` (always 200).
   `SmsService` with a logging fallback while `SMS_PROVIDER` is unset (codes appear in the log as `[DEV SMS]`).
+- 10.4 Forgot password by phone: `POST /api/auth/forgot-password/phone` `{countryCode, mobileNumber}` (always 200)
+  and `POST /api/auth/reset-password/phone` `{countryCode, mobileNumber, code, newPassword}`; the policy is checked
+  before the code is used, the code confirms the number, every session is signed out.
 
 **Decisions**
 - Phone sign-up is confirmed by an SMS code (team choice 2026-10-17); a confirmed e-mail or phone opens writes.

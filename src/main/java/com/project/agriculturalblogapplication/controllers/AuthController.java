@@ -9,6 +9,7 @@ import com.project.agriculturalblogapplication.model.response.WebTokenResponse;
 import com.project.agriculturalblogapplication.service.AuthService;
 import com.project.agriculturalblogapplication.service.EmailVerificationService;
 import com.project.agriculturalblogapplication.service.PasswordResetService;
+import com.project.agriculturalblogapplication.service.PhonePasswordResetService;
 import com.project.agriculturalblogapplication.service.PhoneVerificationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -39,6 +40,8 @@ public class AuthController {
     private final EmailVerificationService emailVerificationService;
 
     private final PhoneVerificationService phoneVerificationService;
+
+    private final PhonePasswordResetService phonePasswordResetService;
 
     @Operation(summary = "Sign up")
     @ApiResponse(content = @Content(schema = @Schema(implementation = UserResponse.class)), responseCode = "200")
@@ -112,6 +115,30 @@ public class AuthController {
         return HttpResponse.getResponseEntity(
                 true,
                 "Password has been reset. Please sign in with your new password.");
+    }
+
+    @Operation(summary = "Send a password-reset code by SMS. Always answers 200 so accounts cannot be enumerated.")
+    @ApiResponse(content = @Content(schema = @Schema(implementation = HttpResponse.class)), responseCode = "200")
+    @ApiResponse(responseCode = "429", description = "Too many requests for this number or network")
+    @PostMapping(value = "/forgot-password/phone")
+    public ResponseEntity<HttpResponse> forgotPasswordByPhone(@Valid @RequestBody PhoneRequest request,
+                                                              @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang,
+                                                              HttpServletRequest httpServletRequest) {
+        phonePasswordResetService.requestReset(request.getCountryCode(), request.getMobileNumber(),
+                httpServletRequest.getRemoteAddr(), lang);
+        return HttpResponse.getResponseEntity(true, "If an account exists for that number, a reset code has been sent.");
+    }
+
+    @Operation(summary = "Set a new password using the 6-digit code from the reset SMS")
+    @ApiResponse(content = @Content(schema = @Schema(implementation = HttpResponse.class)), responseCode = "200")
+    @ApiResponse(responseCode = "400", description = "Weak password, or the code is wrong or has expired (5 wrong tries kill it)")
+    @PostMapping(value = "/reset-password/phone")
+    public ResponseEntity<HttpResponse> resetPasswordByPhone(@Valid @RequestBody ResetPasswordWithCodeRequest request,
+                                                             @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang,
+                                                             HttpServletRequest httpServletRequest) {
+        phonePasswordResetService.reset(request.getCountryCode(), request.getMobileNumber(), request.getCode(),
+                request.getNewPassword(), httpServletRequest.getRemoteAddr(), lang);
+        return HttpResponse.getResponseEntity(true, "Password has been reset. Please sign in with your new password.");
     }
 
     @Operation(summary = "Confirm your e-mail address with the token from the confirmation e-mail")
