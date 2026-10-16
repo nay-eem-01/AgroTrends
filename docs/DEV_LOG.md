@@ -70,6 +70,10 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - 10.4 Forgot password by phone: `POST /api/auth/forgot-password/phone` `{countryCode, mobileNumber}` (always 200)
   and `POST /api/auth/reset-password/phone` `{countryCode, mobileNumber, code, newPassword}`; the policy is checked
   before the code is used, the code confirms the number, every session is signed out.
+- Checked live (second instance on :8081, logged codes): phone-only sign-up, neither → 400, sign-in with `0171…` and
+  `+880171…`, unconfirmed write → 403, wrong code → 400, right code → writes open, e-mail added later gets its link
+  and signs in, phone removed while e-mail stays, both removed → 400, reset by SMS signs out the old token, duplicate
+  phone → 400. The live run caught a wrong column name in the `user_email` NOT NULL patch (fixed, now tested).
 
 **Decisions**
 - Phone sign-up is confirmed by an SMS code (team choice 2026-10-17); a confirmed e-mail or phone opens writes.
