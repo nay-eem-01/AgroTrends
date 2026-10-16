@@ -101,7 +101,7 @@ Operability and regression safety. Runs after Phases 5–8 are complete; then de
 | 4.4 | Testcontainers (pgvector): `contextLoads` passes; `@WebMvcTest` slices for auth and ownership | ⬜ |
 | 4.5 | GitHub Actions: build + test + gitleaks | ⬜ |
 | 4.6 | README: prerequisites, env vars, run, endpoint table | ⬜ |
-| 4.7 | Housekeeping: rename `constatnt`, fix `AuditModel` date format, log 4xx below ERROR (dead code moved to 5.4) | ⬜ |
+| 4.7 | Housekeeping: rename `constatnt`, fix `AuditModel` date format (dead code moved to 5.4; 4xx logged at DEBUG since 2026-10-17) | ⬜ |
 | 4.8 | Rate-limit store: move `AttemptLimiter` to a shared store if running more than one instance | ⏸ |
 | 4.9 | Spring Boot Actuator: health + basic metrics, health endpoint public, the rest admin-only | ⬜ |
 | 4.10 | Backups: nightly `pg_dump` and `uploads/` copy, restore tested once | ⬜ |

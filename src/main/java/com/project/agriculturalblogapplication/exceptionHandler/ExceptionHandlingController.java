@@ -139,7 +139,12 @@ public class ExceptionHandlingController extends ResponseEntityExceptionHandler 
 	@ExceptionHandler(ApplicationException.class)
 	public ResponseEntity<Object> handleResponseException(ApplicationException ex) {
 		HttpStatus httpStatus = ex.getHttpStatus() != null ? ex.getHttpStatus() : HttpStatus.BAD_REQUEST;
-		log.error("ResponseException: {} : {}", httpStatus, ex.getMessage());
+		// A 4xx is the client's mistake or an expected "not there" (e.g. a question with no AI answer yet), not ours.
+		if (httpStatus.is5xxServerError()) {
+			log.error("ResponseException: {} : {}", httpStatus, ex.getMessage());
+		} else {
+			log.debug("ResponseException: {} : {}", httpStatus, ex.getMessage());
+		}
 		return buildResponseEntity(new HttpResponse(httpStatus, false, ex.getMessage(), ex.getPayload()));
 	}
 
