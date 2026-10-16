@@ -11,6 +11,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -40,6 +41,15 @@ class CustomUserDetailServiceTest {
 
         assertEquals("7", service.loadUserByUsername("01712345678").getUsername());
         assertEquals("7", service.loadUserByUsername("+8801712345678").getUsername());
+    }
+
+    @Test
+    void aConfirmedPhoneAloneCountsAsConfirmed() {
+        User user = user();
+        user.setPhoneVerifiedAt(java.time.LocalDateTime.now());
+        when(users.findById(7L)).thenReturn(Optional.of(user));
+
+        assertTrue(service.loadUserById(7L).isContactVerified());
     }
 
     @Test

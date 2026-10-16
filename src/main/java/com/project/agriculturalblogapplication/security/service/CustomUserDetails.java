@@ -27,7 +27,8 @@ public class CustomUserDetails implements UserDetails {
     private Set<Role> roles;
     private Collection<? extends GrantedAuthority> grantedAuthorities;
     private boolean mustChangePassword;
-    private boolean emailVerified;
+    /** A confirmed e-mail or phone; every write except account housekeeping needs it. */
+    private boolean contactVerified;
     /** Checked on every request, so a ban also stops a session created while it was being applied. */
     private boolean banned;
 
@@ -50,7 +51,7 @@ public class CustomUserDetails implements UserDetails {
                 user.getRoles(),
                 authorities,
                 Boolean.TRUE.equals(user.getMustChangePassword()),
-                user.getEmailVerifiedAt() != null,
+                user.isContactVerified(),
                 user.getBannedAt() != null);
     }
 

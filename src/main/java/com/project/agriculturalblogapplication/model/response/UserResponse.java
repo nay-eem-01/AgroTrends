@@ -23,7 +23,8 @@ public record UserResponse(
         Instant createdAt,
         Long authorId,
         boolean hasPassword,
-        boolean emailVerified
+        boolean emailVerified,
+        boolean phoneVerified
 ) {
 
     public static UserResponse from(User user, Long authorId) {
@@ -32,6 +33,6 @@ public record UserResponse(
         return new UserResponse(user.getId(), user.getName(), user.getEmail(), user.getMobileNumber(),
                 roles,
                 Boolean.TRUE.equals(user.getMustChangePassword()), CommonUtils.toInstant(user.getCreationDate()), authorId,
-                user.getPassword() != null, user.getEmailVerifiedAt() != null);
+                user.getPassword() != null, user.getEmailVerifiedAt() != null, user.getPhoneVerifiedAt() != null);
     }
 }

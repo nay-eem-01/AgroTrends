@@ -28,8 +28,8 @@ exist because the 2026-09-30 audit found the opposite in the code (see `docs/PLA
 
 - Access JWT: 15 minutes, type claim `access`, unique `jti`. Refresh token: opaque random, 10 days,
   **single use** (rotated on refresh), stored server-side.
-- A JWT is accepted only if its `UserSession` row is active. Sign-out, password change/reset and e-mail
-  change deactivate sessions and delete refresh tokens (`UserService.revokeAllCredentials`).
+- A JWT (subject: the user id) is accepted only if its `UserSession` row is active. Sign-out and password change/reset
+  deactivate sessions and delete refresh tokens (`UserService.revokeAllCredentials`).
 - The JWT secret is `JWT_SECRET`, >= 32 bytes, no default; `JwtUtil` refuses to start without it.
 - A malformed/expired/forged token never produces a 500: the filter leaves the request unauthenticated
   and the entry point answers 401.
