@@ -16,6 +16,7 @@ public record AdminUserResponse(
         String mobileNumber,
         Set<String> roles,
         boolean emailVerified,
+        boolean phoneVerified,
         boolean banned,
         Instant bannedAt,
         String banReason,
@@ -26,7 +27,7 @@ public record AdminUserResponse(
         Set<String> roles = user.getRoles() == null ? Set.of()
                 : user.getRoles().stream().map(Role::getRoleName).collect(Collectors.toSet());
         return new AdminUserResponse(user.getId(), user.getName(), user.getEmail(), user.getMobileNumber(), roles,
-                user.getEmailVerifiedAt() != null, user.getBannedAt() != null, CommonUtils.toInstant(user.getBannedAt()),
+                user.getEmailVerifiedAt() != null, user.getPhoneVerifiedAt() != null, user.getBannedAt() != null, CommonUtils.toInstant(user.getBannedAt()),
                 user.getBanReason(), CommonUtils.toInstant(user.getCreationDate()));
     }
 }

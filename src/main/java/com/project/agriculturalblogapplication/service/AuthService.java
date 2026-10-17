@@ -63,28 +63,36 @@ public class AuthService {
 		userService.validateEmail(request.getEmail(), lang);
 	}
 
+	/** E-mail, phone or both; each one given is checked for format and for an existing account. */
 	public UserResponse signUp(SignUpRequest request, String lang) {
-		String email = request.getEmail();
-		String password = request.getPassword();
-		String mobileNumber = request.getCountryCode() + request.getMobileNumber();
-		userService.validateEmail(email, lang);
-		userService.validateMobile(mobileNumber, lang);
+		String email = UserService.emailOrNull(request.getEmail());
+		String mobileNumber = userService.mobileOrNull(request.getCountryCode(), request.getMobileNumber(), lang);
+		if (email == null && mobileNumber == null) {
+			throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_EMAIL_OR_PHONE_IS_REQUIRED, lang);
+		}
+		if (email != null) {
+			userService.validateEmail(email, lang);
+		}
+		if (mobileNumber != null) {
+			userService.validateMobile(mobileNumber, lang);
+		}
 
-		String invalidPasswordMessage = CommonUtils.getInvalidPasswordMessage(password);
+		String invalidPasswordMessage = CommonUtils.getInvalidPasswordMessage(request.getPassword());
 		if (invalidPasswordMessage != null) {
 			throw new ApplicationException(HttpStatus.BAD_REQUEST, invalidPasswordMessage, lang);
 		}
 
 		CreateUserRequest createUserRequest = CreateUserRequest.builder()
-				.email(request.getEmail())
-                .name(request.getName())
-				.countryCode(request.getCountryCode())
-				.mobileNumber(request.getMobileNumber())
+				.email(email)
+				.name(request.getName())
+				.mobileNumber(mobileNumber)
 				.password(request.getPassword())
 				.build();
 
 		User user = userService.createUser(createUserRequest, lang);
-		emailVerificationService.sendLink(user);
+		if (email != null) {
+			emailVerificationService.sendLink(user);
+		}
 		return userService.toResponse(user);
 	}
 

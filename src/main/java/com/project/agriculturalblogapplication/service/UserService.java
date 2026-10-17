@@ -18,7 +18,9 @@ import com.project.agriculturalblogapplication.security.service.AuthorizationSer
 import com.project.agriculturalblogapplication.security.service.UserSessionService;
 import com.project.agriculturalblogapplication.util.AuthUtil;
 import com.project.agriculturalblogapplication.util.CommonUtils;
+import com.project.agriculturalblogapplication.util.PhoneNumbers;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -28,6 +30,7 @@ import org.springframework.util.StringUtils;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -51,6 +54,8 @@ public class UserService {
 
     private final AttemptLimiter attemptLimiter;
 
+    private final ApplicationEventPublisher eventPublisher;
+
     public void validateEmail(String email, String lang) {
         if (!CommonUtils.isValidMail(email)) {
             throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_INVALID_EMAIL, lang);
@@ -66,24 +71,42 @@ public class UserService {
         }
     }
 
+    /** {@code mobileNumber} is in E.164 ({@link #mobileOrNull}). */
     public void validateMobile(String mobileNumber, String lang) {
-        if (existsByMobileNumber(mobileNumber)) {
+        User existingUser = userRepository.findTopByMobileNumber(mobileNumber).orElse(null);
+        if (existingUser != null && existingUser.getBannedAt() != null) {
+            throw new ApplicationException(HttpStatus.FORBIDDEN, ErrorCode.ERROR_ACCOUNT_BANNED, lang);
+        }
+        if (existingUser != null) {
             throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_MOBILE_NUMBER_ALREADY_EXISTS, lang);
         }
     }
 
-    public User createUser(CreateUserRequest createUserRequest, String lang) {
-        String email = createUserRequest.getEmail();
-        String password = createUserRequest.getPassword();
-        String mobileNumber = createUserRequest.getCountryCode().concat(createUserRequest.getMobileNumber());
+    /** A trimmed e-mail, or null when none was given. */
+    public static String emailOrNull(String email) {
+        return StringUtils.hasText(email) ? email.strip() : null;
+    }
 
+    /** The number in E.164, or null when none was given; 400 when one was given but is not a phone number. */
+    public String mobileOrNull(String countryCode, String mobileNumber, String lang) {
+        if (!StringUtils.hasText(mobileNumber)) {
+            return null;
+        }
+        String normalised = PhoneNumbers.normalise(countryCode, mobileNumber);
+        if (normalised == null) {
+            throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_INVALID_MOBILE_NUMBER, lang);
+        }
+        return normalised;
+    }
+
+    public User createUser(CreateUserRequest createUserRequest, String lang) {
         Role role = roleService.findRoleByNameWithException(AppConstants.USER_ROLE, lang);
 
         User user = new User();
         user.setName(createUserRequest.getName());
-        user.setEmail(email);
-        user.setPassword(passwordEncoder.encode(password));
-        user.setMobileNumber(mobileNumber);
+        user.setEmail(createUserRequest.getEmail());
+        user.setPassword(passwordEncoder.encode(createUserRequest.getPassword()));
+        user.setMobileNumber(createUserRequest.getMobileNumber());
         user.setRoles(new HashSet<>(Set.of(role)));
         return userRepository.save(user);
     }
@@ -124,10 +147,6 @@ public class UserService {
 
     public User findByEmail(String email) {
         return userRepository.findTopByEmailEqualsIgnoreCase(email).orElse(null);
-    }
-
-    public Boolean existsByMobileNumber(String mobileNumber) {
-        return userRepository.existsByMobileNumber(mobileNumber);
     }
 
     public User findByEmailWithException(String email, String lang) {
@@ -176,30 +195,41 @@ public class UserService {
         userRepository.delete(user);
     }
 
-    /** Updates the signed-in user's own profile; the target is never taken from the request. */
+    /**
+     * Updates the signed-in user's own profile; the target is never taken from the request. E-mail and mobile number
+     * can each be added, changed or removed, as long as one remains; a new one starts unconfirmed.
+     */
     public User update(UpdateUserRequest request, String lang){
         User user = findByIdWithException(authorizationService.currentUserId(lang), lang);
-        String mobileNumber = request.getCountryCode() + request.getMobileNumber();
-
-        boolean emailChanged = !user.getEmail().equalsIgnoreCase(request.getEmail());
-        if (emailChanged) {
-            validateEmail(request.getEmail(), lang);
+        String email = emailOrNull(request.getEmail());
+        String mobileNumber = mobileOrNull(request.getCountryCode(), request.getMobileNumber(), lang);
+        if (email == null && mobileNumber == null) {
+            throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_EMAIL_OR_PHONE_IS_REQUIRED, lang);
         }
-        if (!mobileNumber.equals(user.getMobileNumber())) {
+
+        boolean emailChanged = email == null ? user.getEmail() != null : !email.equalsIgnoreCase(user.getEmail());
+        boolean phoneChanged = !Objects.equals(mobileNumber, user.getMobileNumber());
+        if (emailChanged && email != null) {
+            validateEmail(email, lang);
+        }
+        if (phoneChanged && mobileNumber != null) {
             validateMobile(mobileNumber, lang);
         }
 
         user.setName(request.getName());
-        user.setEmail(request.getEmail());
         if (emailChanged) {
+            user.setEmail(email);
             user.setEmailVerifiedAt(null);
         }
-        user.setMobileNumber(mobileNumber);
+        if (phoneChanged) {
+            user.setMobileNumber(mobileNumber);
+            user.setPhoneVerifiedAt(null);
+        }
         user = userRepository.save(user);
 
-        if (emailChanged) {
-            // The e-mail is the JWT subject, so existing tokens stop resolving; make that explicit.
-            revokeAllCredentials(user.getId());
+        if ((emailChanged && email != null) || (phoneChanged && mobileNumber != null)) {
+            eventPublisher.publishEvent(new ContactChangedEvent(user.getId(), emailChanged && email != null,
+                    phoneChanged && mobileNumber != null));
         }
         return user;
     }

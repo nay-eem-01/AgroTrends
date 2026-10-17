@@ -57,15 +57,23 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - 10.1 Access tokens name the user id, not the e-mail, so an account needs no e-mail. Sign-in takes `identifier`
   (e-mail, `+8801712345678` or `01712345678`); the old `email` field still works. Throttling is per identifier.
   `SignInRequest.toString` no longer prints the password.
+- 10.2 `POST /api/auth/sign-up`: `email`, `countryCode` + `mobileNumber`, or both (400 when neither, 400 for a bad
+  number; a banned account's phone gets the ban). `PUT /api/user/update` adds, changes or removes either while one
+  remains; a new one starts unconfirmed (a new e-mail gets its link). `phoneVerifiedAt`; `UserResponse` and
+  `AdminUserResponse` gain `phoneVerified`. Writes need a confirmed e-mail or phone.
 
 **Decisions**
 - Phone sign-up is confirmed by an SMS code (team choice 2026-10-17); a confirmed e-mail or phone opens writes.
 - Phones are stored in E.164; a number without `+` is Bangladeshi (+880, leading 0 dropped).
 - `createdBy` / `lastModifiedBy` and the moderator recorded on reports are now the user id, not the e-mail.
+- Changing the e-mail no longer signs the user out (that was only because the e-mail was the token subject).
 
 **Breaking API changes**
 - Tokens issued before 10.1 stop working: users sign in again (zero users, so no migration).
 - The 401 sign-in message is now "Invalid e-mail, phone number or password."
+- `UserResponse.email` can be null (phone accounts). `PUT /api/user/update` with no e-mail removes it.
+- The unconfirmed-write 403 message now reads "Confirm your e-mail address or phone number first: ..." (same
+  "Confirm your e-mail" start the web app matches on).
 
 ---
 
