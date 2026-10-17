@@ -9,6 +9,7 @@ import com.project.agriculturalblogapplication.model.response.WebTokenResponse;
 import com.project.agriculturalblogapplication.service.AuthService;
 import com.project.agriculturalblogapplication.service.EmailVerificationService;
 import com.project.agriculturalblogapplication.service.PasswordResetService;
+import com.project.agriculturalblogapplication.service.PhoneVerificationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -36,6 +37,8 @@ public class AuthController {
     private final PasswordResetService passwordResetService;
 
     private final EmailVerificationService emailVerificationService;
+
+    private final PhoneVerificationService phoneVerificationService;
 
     @Operation(summary = "Sign up")
     @ApiResponse(content = @Content(schema = @Schema(implementation = UserResponse.class)), responseCode = "200")
@@ -131,6 +134,32 @@ public class AuthController {
         emailVerificationService.resend(request.getEmail(), httpServletRequest.getRemoteAddr(), lang);
         return HttpResponse.getResponseEntity(true,
                 "If an unconfirmed account exists for that e-mail, a new confirmation link has been sent.");
+    }
+
+    @Operation(summary = "Confirm your mobile number with the 6-digit code from the SMS")
+    @ApiResponse(content = @Content(schema = @Schema(implementation = HttpResponse.class)), responseCode = "200")
+    @ApiResponse(responseCode = "400", description = "The code is wrong or has expired (5 wrong tries kill it); ask for a new one")
+    @ApiResponse(responseCode = "429", description = "Too many tries from this network")
+    @PostMapping(value = "/verify-phone")
+    public ResponseEntity<HttpResponse> verifyPhone(@Valid @RequestBody VerifyPhoneRequest request,
+                                                    @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang,
+                                                    HttpServletRequest httpServletRequest) {
+        phoneVerificationService.verify(request.getCountryCode(), request.getMobileNumber(), request.getCode(),
+                httpServletRequest.getRemoteAddr(), lang);
+        return HttpResponse.getResponseEntity(true, "Your mobile number is confirmed.");
+    }
+
+    @Operation(summary = "Send a new confirmation code by SMS. Always answers 200 so accounts cannot be enumerated.")
+    @ApiResponse(content = @Content(schema = @Schema(implementation = HttpResponse.class)), responseCode = "200")
+    @ApiResponse(responseCode = "429", description = "Too many requests for this number or network")
+    @PostMapping(value = "/resend-phone-code")
+    public ResponseEntity<HttpResponse> resendPhoneCode(@Valid @RequestBody PhoneRequest request,
+                                                        @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang,
+                                                        HttpServletRequest httpServletRequest) {
+        phoneVerificationService.resend(request.getCountryCode(), request.getMobileNumber(),
+                httpServletRequest.getRemoteAddr(), lang);
+        return HttpResponse.getResponseEntity(true,
+                "If an unconfirmed account exists for that number, a new code has been sent.");
     }
 
     @Operation(summary = "Sign-out.", security = @SecurityRequirement(name = "jwtToken"))

@@ -192,7 +192,7 @@ launch scope (most of the audience has a phone before an e-mail).
 |---|---|---|
 | 10.1 | JWT subject is the user id (not the e-mail); sign-in takes `identifier` (e-mail or phone; `email` still accepted); phones stored in E.164 | ✅ |
 | 10.2 | Sign-up with e-mail, phone or both; `phoneVerifiedAt`; a confirmed e-mail **or** phone opens writes; profile update adds or changes either | ✅ |
-| 10.3 | SMS codes: `SmsService` (logged in dev), 6-digit code at sign-up and on a phone change, `POST /api/auth/verify-phone`, `POST /api/auth/resend-phone-code` | ⬜ |
+| 10.3 | SMS codes: `SmsService` (logged in dev), 6-digit code at sign-up and on a phone change, `POST /api/auth/verify-phone`, `POST /api/auth/resend-phone-code` | ✅ |
 | 10.4 | Forgot password by phone: SMS code, then `POST /api/auth/reset-password-with-code` | ⬜ |
 | 10.5 | A real SMS provider (after the team picks one) | ⏸ |
 

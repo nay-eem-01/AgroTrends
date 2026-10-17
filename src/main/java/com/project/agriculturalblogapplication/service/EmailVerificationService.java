@@ -38,7 +38,7 @@ public class EmailVerificationService {
         }
     }
 
-    /** A new or changed e-mail on the profile gets its own confirmation link. */
+    /** A new account's e-mail, and a new or changed one on the profile, gets a confirmation link. */
     @EventListener
     public void onContactChanged(ContactChangedEvent event) {
         if (event.emailChanged()) {

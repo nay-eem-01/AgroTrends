@@ -27,10 +27,9 @@ import static org.mockito.Mockito.when;
 class SignUpTest {
 
     private final UserService userService = mock(UserService.class);
-    private final EmailVerificationService emailVerification = mock(EmailVerificationService.class);
     private final AuthService authService = new AuthService(mock(JwtUtil.class), mock(RefreshTokenService.class),
             mock(AuthenticationManager.class), userService, mock(UserSessionService.class), mock(AttemptLimiter.class),
-            mock(GoogleIdTokenVerifier.class), emailVerification);
+            mock(GoogleIdTokenVerifier.class));
 
     @BeforeEach
     void setUp() {
@@ -55,24 +54,22 @@ class SignUpTest {
     }
 
     @Test
-    void phoneOnlyCreatesAnAccountWithoutEmailAndSendsNoLink() {
+    void phoneOnlyCreatesAnAccountWithoutEmail() {
         authService.signUp(request(null, "+880", "01712345678"), "en");
 
         assertNull(created().getEmail());
         assertEquals("+8801712345678", created().getMobileNumber());
         verify(userService).validateMobile("+8801712345678", "en");
         verify(userService, never()).validateEmail(any(), any());
-        verify(emailVerification, never()).sendLink(any());
     }
 
     @Test
-    void emailOnlyCreatesAnAccountWithoutPhoneAndSendsTheLink() {
+    void emailOnlyCreatesAnAccountWithoutPhone() {
         authService.signUp(request("rahim@example.com", "+880", " "), "en");
 
         assertEquals("rahim@example.com", created().getEmail());
         assertNull(created().getMobileNumber());
         verify(userService, never()).validateMobile(any(), any());
-        verify(emailVerification).sendLink(any());
     }
 
     @Test

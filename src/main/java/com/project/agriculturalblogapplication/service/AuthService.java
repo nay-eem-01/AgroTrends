@@ -57,8 +57,6 @@ public class AuthService {
 
 	private final GoogleIdTokenVerifier googleIdTokenVerifier;
 
-	private final EmailVerificationService emailVerificationService;
-
 	public void validateEmail(ValidateEmailRequest request, String lang) {
 		userService.validateEmail(request.getEmail(), lang);
 	}
@@ -89,11 +87,8 @@ public class AuthService {
 				.password(request.getPassword())
 				.build();
 
-		User user = userService.createUser(createUserRequest, lang);
-		if (email != null) {
-			emailVerificationService.sendLink(user);
-		}
-		return userService.toResponse(user);
+		// createUser sends the e-mail link and the SMS code.
+		return userService.toResponse(userService.createUser(createUserRequest, lang));
 	}
 
 	public WebTokenResponse signIn(SignInRequest request, String lang, String clientIp) {
