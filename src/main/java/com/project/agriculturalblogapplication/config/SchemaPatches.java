@@ -37,10 +37,12 @@ public class SchemaPatches implements ApplicationRunner {
             new String[]{"comment", "blog_id", "blogs"},
             new String[]{"comment", "parent_comment_id", "comment"});
 
-    // Columns that became optional: Google accounts have no password or mobile number. Idempotent.
+    // Columns that became optional: Google accounts have no password or mobile number, phone accounts no e-mail.
+    // Idempotent.
     static final List<String> DROP_NOT_NULL = List.of(
             "ALTER TABLE users ALTER COLUMN user_password DROP NOT NULL",
-            "ALTER TABLE users ALTER COLUMN mobile_number DROP NOT NULL");
+            "ALTER TABLE users ALTER COLUMN mobile_number DROP NOT NULL",
+            "ALTER TABLE users ALTER COLUMN user_email DROP NOT NULL");
 
     static final String PUBLISHED_AT_BACKFILL =
             "UPDATE blogs SET published_at = creation_date WHERE status = 'PUBLISHED' AND published_at IS NULL";

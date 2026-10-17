@@ -42,6 +42,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | Frontend must stop sending `userId` / `authorUserId`, use `/api/auth/refresh-token`, and handle 401 vs 403 | frontend | frontend integration |
 | `contextLoads` fails without a local Postgres | roadmap 4.4 | CI |
 | No SMTP configured: reset links are written to the log (dev only) | an SMTP account | production password reset |
+| No SMS provider: phone codes are written to the log (dev only). Pick one (SSL Wireless, BulkSMSBD, Twilio…) | team | phone sign-up in production (10.5) |
 | Hotfix path is not defined yet (proposal: branch off `production`, PR into `production`, then back-merge into `development`) | Nayeem to confirm | — |
 | Gemini chat calls fail with "API key not valid" since 2026-10-06 evening (embeddings still work); `.env` key is 53 chars (a key is 39) — check the line for quotes/comments | Nayeem | live checks of 3.6–3.8, 7.3a generation, 7.6b answer citations, 7.7 farm details |
 | After deploying 2.3a: start once with `AI_REINDEX_ON_STARTUP=true` (old chunks have no `status`, so retrieval ignores them) | whoever deploys | AI answers on existing posts |
@@ -50,6 +51,41 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-17 (Phase 10: phone sign-up)
+
+**Done**
+- 10.1 Access tokens name the user id, not the e-mail, so an account needs no e-mail. Sign-in takes `identifier`
+  (e-mail, `+8801712345678` or `01712345678`); the old `email` field still works. Throttling is per identifier.
+  `SignInRequest.toString` no longer prints the password.
+- 10.2 `POST /api/auth/sign-up`: `email`, `countryCode` + `mobileNumber`, or both (400 when neither, 400 for a bad
+  number; a banned account's phone gets the ban). `PUT /api/user/update` adds, changes or removes either while one
+  remains; a new one starts unconfirmed (a new e-mail gets its link). `phoneVerifiedAt`; `UserResponse` and
+  `AdminUserResponse` gain `phoneVerified`. Writes need a confirmed e-mail or phone.
+- 10.3 SMS codes: 6 digits, SHA-256 (salted with the user id) stored, 10 minutes, single use, dead after 5 wrong
+  tries; 3 sends per number and 10 per IP an hour, 20 checks per IP per 15 minutes. Sent at sign-up and on a new or
+  changed number (`ContactChangedEvent`, which now also sends the e-mail link). `POST /api/auth/verify-phone`
+  `{countryCode, mobileNumber, code}`; `POST /api/auth/resend-phone-code` `{countryCode, mobileNumber}` (always 200).
+  `SmsService` with a logging fallback while `SMS_PROVIDER` is unset (codes appear in the log as `[DEV SMS]`).
+- 10.4 Forgot password by phone: `POST /api/auth/forgot-password/phone` `{countryCode, mobileNumber}` (always 200)
+  and `POST /api/auth/reset-password/phone` `{countryCode, mobileNumber, code, newPassword}`; the policy is checked
+  before the code is used, the code confirms the number, every session is signed out.
+- Checked live (second instance on :8081, logged codes): phone-only sign-up, neither → 400, sign-in with `0171…` and
+  `+880171…`, unconfirmed write → 403, wrong code → 400, right code → writes open, e-mail added later gets its link
+  and signs in, phone removed while e-mail stays, both removed → 400, reset by SMS signs out the old token, duplicate
+  phone → 400. The live run caught a wrong column name in the `user_email` NOT NULL patch (fixed, now tested).
+
+**Decisions**
+- Phone sign-up is confirmed by an SMS code (team choice 2026-10-17); a confirmed e-mail or phone opens writes.
+- Phones are stored in E.164; a number without `+` is Bangladeshi (+880, leading 0 dropped).
+- `createdBy` / `lastModifiedBy` and the moderator recorded on reports are now the user id, not the e-mail.
+- Changing the e-mail no longer signs the user out (that was only because the e-mail was the token subject).
+
+**Breaking API changes**
+- Tokens issued before 10.1 stop working: users sign in again (zero users, so no migration).
+- The 401 sign-in message is now "Invalid e-mail, phone number or password."
+- `UserResponse.email` can be null (phone accounts). `PUT /api/user/update` with no e-mail removes it.
+- The unconfirmed-write 403 message now reads "Confirm your e-mail address or phone number first: ..." (same
+  "Confirm your e-mail" start the web app matches on).
 ## 2026-10-17 (quiet client errors)
 
 **Done**

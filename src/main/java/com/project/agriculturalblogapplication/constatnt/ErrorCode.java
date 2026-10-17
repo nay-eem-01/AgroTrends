@@ -62,7 +62,11 @@ public final class ErrorCode {
     public static final String ERROR_ANSWER_NOT_FOUND = "Answer not found";
     public static final String ERROR_ANSWER_QUESTION_MISMATCH  = "Answer And Question mismatch";
 
-    public static final String ERROR_INVALID_CREDENTIALS = "Invalid email or password.";
+    public static final String ERROR_INVALID_CREDENTIALS = "Invalid e-mail, phone number or password.";
+    public static final String ERROR_EMAIL_OR_PHONE_IS_REQUIRED = "E-mail or phone number is required.";
+    public static final String ERROR_INVALID_MOBILE_NUMBER = "Invalid mobile number.";
+    public static final String ERROR_CODE_IS_REQUIRED = "Code is required.";
+    public static final String ERROR_INVALID_OR_EXPIRED_CODE = "This code is wrong or has expired. Ask for a new one.";
     public static final String ERROR_TOO_MANY_ATTEMPTS = "Too many attempts. Please try again later.";
     public static final String ERROR_FORBIDDEN = "You do not have permission to perform this action.";
     public static final String ERROR_INVALID_GOOGLE_TOKEN = "Google sign-in failed. Please try again.";
@@ -70,7 +74,7 @@ public final class ErrorCode {
     public static final String ERROR_NO_PASSWORD_SET = "This account signs in with Google and has no password yet. Use 'Forgot password' to set one.";
     public static final String ERROR_GOOGLE_SIGN_IN_DISABLED = "Google sign-in is not available.";
     public static final String ERROR_TOO_MANY_REQUESTS_FROM_NETWORK = "Too many requests from your network today. Please try again later.";
-    public static final String ERROR_EMAIL_NOT_VERIFIED = "Confirm your e-mail address first: open the link we sent you, or ask for a new one.";
+    public static final String ERROR_EMAIL_NOT_VERIFIED = "Confirm your e-mail address or phone number first: use the link or code we sent you, or ask for a new one.";
     public static final String ERROR_INVALID_OR_EXPIRED_LINK = "This link is invalid or has expired.";
     public static final String ERROR_REFRESH_TOKEN_EXPIRED = "Refresh token has expired. Please sign in again.";
     public static final String ERROR_NEW_PASSWORD_SAME_AS_CURRENT = "New password must be different from the current password.";

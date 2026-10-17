@@ -18,6 +18,7 @@ import com.project.agriculturalblogapplication.security.service.UserSessionServi
 import com.project.agriculturalblogapplication.model.request.SignUpRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -50,7 +51,7 @@ class GoogleSignInTest {
     private final RefreshTokenService refreshTokenService = mock(RefreshTokenService.class);
     private final JwtUtil jwtUtil = mock(JwtUtil.class);
     private final AuthService authService = new AuthService(jwtUtil, refreshTokenService, mock(AuthenticationManager.class),
-            userService, mock(UserSessionService.class), mock(AttemptLimiter.class), verifier, mock(EmailVerificationService.class));
+            userService, mock(UserSessionService.class), mock(AttemptLimiter.class), verifier);
 
     @BeforeEach
     void setUp() {
@@ -183,7 +184,7 @@ class GoogleSignInTest {
         AuthorizationService authorization = mock(AuthorizationService.class);
         UserService service = new UserService(repository, mock(PasswordEncoder.class), mock(RoleService.class),
                 mock(AuthorService.class), authorization, mock(RefreshTokenService.class), mock(UserSessionService.class),
-                mock(AttemptLimiter.class));
+                mock(AttemptLimiter.class), mock(ApplicationEventPublisher.class));
         User googleOnly = user(RoleType.USER, SUBJECT);
         googleOnly.setPassword(null);
         UserService spy = spy(service);
@@ -199,7 +200,7 @@ class GoogleSignInTest {
 
     private static UserService userService(UserRepository repository, UserSessionService sessions, RefreshTokenService refreshTokens) {
         return new UserService(repository, mock(PasswordEncoder.class), mock(RoleService.class), mock(AuthorService.class),
-                mock(AuthorizationService.class), refreshTokens, sessions, mock(AttemptLimiter.class));
+                mock(AuthorizationService.class), refreshTokens, sessions, mock(AttemptLimiter.class), mock(ApplicationEventPublisher.class));
     }
 
     private static GoogleSignInRequest request() {

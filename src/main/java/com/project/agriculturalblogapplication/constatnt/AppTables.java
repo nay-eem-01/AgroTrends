@@ -65,6 +65,7 @@ public final class AppTables {
         public static final String GOOGLE_SUBJECT = "google_subject";
 
         public static final String EMAIL_VERIFIED_AT = "email_verified_at";
+        public static final String PHONE_VERIFIED_AT = "phone_verified_at";
 
         public static final String BANNED_AT = "banned_at";
 

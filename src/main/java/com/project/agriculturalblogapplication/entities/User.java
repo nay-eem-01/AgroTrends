@@ -30,12 +30,12 @@ public class User extends AuditModel<String> {
     @Column(name = UserTable.PASSWORD)
     private String password;
 
-    @NotBlank
+    /** Null for an account that signed up with a phone number only. */
     @Email(message = "Invalid email format")
     @Column(name = UserTable.EMAIL)
     private String email;
 
-    /** Required at e-mail sign-up; null for accounts created through Google, which gives no phone number. */
+    /** E.164 ({@code +8801712345678}). Null when the account signed up with an e-mail or Google only. */
     @Column(name = UserTable.MOBILE_NUMBER)
     private String mobileNumber;
 
@@ -46,6 +46,15 @@ public class User extends AuditModel<String> {
     /** When the user proved they own the e-mail (Google sign-in or a reset link); null until then. */
     @Column(name = UserTable.EMAIL_VERIFIED_AT)
     private LocalDateTime emailVerifiedAt;
+
+    /** When the user proved they own the mobile number (an SMS code); null until then. */
+    @Column(name = UserTable.PHONE_VERIFIED_AT)
+    private LocalDateTime phoneVerifiedAt;
+
+    /** A confirmed e-mail or phone: what writes need. */
+    public boolean isContactVerified() {
+        return emailVerifiedAt != null || phoneVerifiedAt != null;
+    }
 
     /** Set for seeded accounts; blocks every endpoint except change-password until cleared. Null counts as false. */
     @Column(name = "must_change_password")

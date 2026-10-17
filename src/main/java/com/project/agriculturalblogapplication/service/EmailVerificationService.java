@@ -6,6 +6,7 @@ import com.project.agriculturalblogapplication.mail.MailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -34,6 +35,14 @@ public class EmailVerificationService {
             mailService.sendEmailVerification(user.getEmail(), frontendUrl + "/verify-email?token=" + token);
         } catch (RuntimeException e) {
             log.warn("Could not send the confirmation e-mail to user {}", user.getId(), e);
+        }
+    }
+
+    /** A new account's e-mail, and a new or changed one on the profile, gets a confirmation link. */
+    @EventListener
+    public void onContactChanged(ContactChangedEvent event) {
+        if (event.emailChanged()) {
+            sendLink(userService.findByIdWithException(event.userId(), null));
         }
     }
 

@@ -34,7 +34,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/api/auth/sign-out");
 
     /** Account housekeeping an unconfirmed user may still do (besides /api/auth/**); every other write needs it. */
-    private static final Set<String> WRITES_ALLOWED_BEFORE_EMAIL_CONFIRMED = Set.of(
+    private static final Set<String> WRITES_ALLOWED_BEFORE_CONFIRMED = Set.of(
             "/api/user/update",
             "/api/user/change-password",
             "/api/user/delete");
@@ -81,8 +81,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (user.isMustChangePassword() && !ALLOWED_WHILE_PASSWORD_CHANGE_PENDING.contains(uri)) {
             return "Password change required before using this API.";
         }
-        if (!user.isEmailVerified() && !READ_METHODS.contains(request.getMethod())
-                && !uri.startsWith("/api/auth/") && !WRITES_ALLOWED_BEFORE_EMAIL_CONFIRMED.contains(uri)) {
+        if (!user.isContactVerified() && !READ_METHODS.contains(request.getMethod())
+                && !uri.startsWith("/api/auth/") && !WRITES_ALLOWED_BEFORE_CONFIRMED.contains(uri)) {
             return ErrorCode.ERROR_EMAIL_NOT_VERIFIED;
         }
         return null;
@@ -95,12 +95,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      */
     private CustomUserDetails authenticate(String jwt) {
         try {
-            String username = jwtUtil.extractUsername(jwt);
-            if (username == null) {
+            String subject = jwtUtil.extractUsername(jwt);
+            if (subject == null) {
                 return null;
             }
 
-            CustomUserDetails userDetails = (CustomUserDetails) userDetailsService.loadUserByUsername(username);
+            // Tokens from before the subject became the user id do not parse and count as no token.
+            CustomUserDetails userDetails = userDetailsService.loadUserById(Long.valueOf(subject));
             if (!jwtUtil.isAccessTokenValid(jwt, userDetails)) {
                 return null;
             }

@@ -28,8 +28,8 @@ exist because the 2026-09-30 audit found the opposite in the code (see `docs/PLA
 
 - Access JWT: 15 minutes, type claim `access`, unique `jti`. Refresh token: opaque random, 10 days,
   **single use** (rotated on refresh), stored server-side.
-- A JWT is accepted only if its `UserSession` row is active. Sign-out, password change/reset and e-mail
-  change deactivate sessions and delete refresh tokens (`UserService.revokeAllCredentials`).
+- A JWT (subject: the user id) is accepted only if its `UserSession` row is active. Sign-out and password change/reset
+  deactivate sessions and delete refresh tokens (`UserService.revokeAllCredentials`).
 - The JWT secret is `JWT_SECRET`, >= 32 bytes, no default; `JwtUtil` refuses to start without it.
 - A malformed/expired/forged token never produces a 500: the filter leaves the request unauthenticated
   and the entry point answers 401.
@@ -39,8 +39,8 @@ exist because the 2026-09-30 audit found the opposite in the code (see `docs/PLA
 ## Sign-in and password flows
 
 - Verify credentials **first**, then check role/portal. Every failure returns the same 401
-  `Invalid email or password.` - no 404 for unknown e-mail, no distinct "wrong portal".
-- Throttle with `AttemptLimiter`: sign-in 5/15 min per e-mail and 20/15 min per IP; forgot-password
+  `Invalid e-mail, phone number or password.` - no 404 for unknown e-mail, no distinct "wrong portal".
+- Throttle with `AttemptLimiter`: sign-in 5/15 min per e-mail or phone and 20/15 min per IP; forgot-password
   3/h per e-mail and 10/h per IP; change-password 5/15 min per user. Count attempts for unknown
   accounts too. (In-memory = single instance; move to a shared store before scaling out.)
 - Forgot-password always answers 200. Reset tokens: 256-bit random, only the SHA-256 hash stored,
