@@ -51,6 +51,24 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-17 (Phase 10: phone sign-up)
+
+**Done**
+- 10.1 Access tokens name the user id, not the e-mail, so an account needs no e-mail. Sign-in takes `identifier`
+  (e-mail, `+8801712345678` or `01712345678`); the old `email` field still works. Throttling is per identifier.
+  `SignInRequest.toString` no longer prints the password.
+
+**Decisions**
+- Phone sign-up is confirmed by an SMS code (team choice 2026-10-17); a confirmed e-mail or phone opens writes.
+- Phones are stored in E.164; a number without `+` is Bangladeshi (+880, leading 0 dropped).
+- `createdBy` / `lastModifiedBy` and the moderator recorded on reports are now the user id, not the e-mail.
+
+**Breaking API changes**
+- Tokens issued before 10.1 stop working: users sign in again (zero users, so no migration).
+- The 401 sign-in message is now "Invalid e-mail, phone number or password."
+
+---
+
 ## 2026-10-15 (Phase 9: admin dashboard endpoints)
 
 **Done**

@@ -95,12 +95,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      */
     private CustomUserDetails authenticate(String jwt) {
         try {
-            String username = jwtUtil.extractUsername(jwt);
-            if (username == null) {
+            String subject = jwtUtil.extractUsername(jwt);
+            if (subject == null) {
                 return null;
             }
 
-            CustomUserDetails userDetails = (CustomUserDetails) userDetailsService.loadUserByUsername(username);
+            // Tokens from before the subject became the user id do not parse and count as no token.
+            CustomUserDetails userDetails = userDetailsService.loadUserById(Long.valueOf(subject));
             if (!jwtUtil.isAccessTokenValid(jwt, userDetails)) {
                 return null;
             }

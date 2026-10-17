@@ -33,6 +33,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Boolean existsByMobileNumber(String mobileNumber);
 
+    Optional<User> findTopByMobileNumber(String mobileNumber);
+
     Optional<User> findByGoogleSubject(String googleSubject);
 
     /**

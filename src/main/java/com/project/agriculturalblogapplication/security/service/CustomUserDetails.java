@@ -54,9 +54,10 @@ public class CustomUserDetails implements UserDetails {
                 user.getBannedAt() != null);
     }
 
+    /** The JWT subject: the user id, since an account may have no e-mail (phone sign-up). */
     @Override
     public String getUsername() {
-        return email;
+        return String.valueOf(id);
     }
 
     @Override
