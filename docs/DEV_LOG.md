@@ -36,7 +36,6 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | `feature/kafka-impl`: no longer needed (Phase 8 uses in-process events); delete it | Nayeem | — |
 | Create a local `.env` from `.env.example` (DB_PASSWORD, GEMINI_API_KEY, JWT_SECRET) — the app no longer starts without them | Nayeem | running the app locally |
 | Any database that still holds `text-embedding-004` vectors: start once with `AI_REINDEX_ON_STARTUP=true` | whoever owns that DB | retrieval on old data |
-| Client errors (400/401) are logged at ERROR by `ExceptionHandlingController` — noisy | roadmap 4.7 | — |
 | Launch topics (categories), reputation numbers | team decision (partner doc) | 6.1 |
 | Who reviews expert applications and reports: now a setting (9.3). Super-admin creates an ADMIN role with `EXPERT_REVIEW` / `CONTENT_MODERATE` / `USER_READ` and grants it | Nayeem | moderators other than the super-admin |
 | Frontend: `sources[].type` is `blog` (link `/api/blogs/id/{blogId}`) or `answer` (link the question `questionId`); `ai-draft` is gone — poll `GET /api/questions/id/{id}/ai-answer` and show its `disclaimer` and `status` | frontend | — |
@@ -48,6 +47,15 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | After deploying 2.3a: start once with `AI_REINDEX_ON_STARTUP=true` (old chunks have no `status`, so retrieval ignores them) | whoever deploys | AI answers on existing posts |
 | Deleting a user with comments/questions/answers fails on foreign keys: decide delete vs anonymise | Nayeem | account deletion |
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
+
+---
+
+## 2026-10-17 (quiet client errors)
+
+**Done**
+- `ExceptionHandlingController` logs an `ApplicationException` at ERROR only for 5xx; 4xx goes to DEBUG. The log was
+  full of 404s that are normal answers: "This question has no AI answer" on every question view while AI answers
+  are missing, and "Blog not found" twice per missing story (blog + comments requests).
 
 ---
 
