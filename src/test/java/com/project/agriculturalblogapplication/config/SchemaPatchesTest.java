@@ -1,11 +1,13 @@
 package com.project.agriculturalblogapplication.config;
 
+import com.project.agriculturalblogapplication.constatnt.AppTables;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
@@ -21,6 +23,15 @@ class SchemaPatchesTest {
 
     private final JdbcTemplate jdbc = mock(JdbcTemplate.class);
     private final SchemaPatches patches = new SchemaPatches(jdbc);
+
+    @Test
+    void theOptionalColumnsAreTheMappedOnes() {
+        assertEquals(List.of(
+                "ALTER TABLE users ALTER COLUMN " + AppTables.UserTable.PASSWORD + " DROP NOT NULL",
+                "ALTER TABLE users ALTER COLUMN " + AppTables.UserTable.MOBILE_NUMBER + " DROP NOT NULL",
+                "ALTER TABLE users ALTER COLUMN " + AppTables.UserTable.EMAIL + " DROP NOT NULL"),
+                SchemaPatches.DROP_NOT_NULL);
+    }
 
     @Test
     void largeObjectColumnsAreCopiedAsTextAndTheObjectsFreed() {
