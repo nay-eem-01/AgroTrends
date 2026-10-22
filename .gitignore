@@ -41,3 +41,7 @@ application-local.properties
 
 # Uploaded images (local storage)
 /uploads/
+
+
+#Audit pdf
+AgroTrends-Code-Audit.pdf
