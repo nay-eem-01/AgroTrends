@@ -21,6 +21,10 @@ public enum ImageType {
         return extension;
     }
 
+    public String contentType() {
+        return this == JPEG ? "image/jpeg" : "image/" + extension;
+    }
+
     public static Optional<ImageType> detect(byte[] bytes) {
         if (bytes == null) {
             return Optional.empty();
