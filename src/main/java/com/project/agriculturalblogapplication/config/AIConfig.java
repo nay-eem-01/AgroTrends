@@ -3,7 +3,6 @@ package com.project.agriculturalblogapplication.config;
 import com.google.genai.Client;
 import com.google.genai.types.HttpOptions;
 import com.project.agriculturalblogapplication.service.DocumentService;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
@@ -14,7 +13,6 @@ import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
 import org.springframework.ai.transformer.splitter.TextSplitter;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -23,12 +21,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Configuration
-@Slf4j
 public class AIConfig {
-
-    public AIConfig() {
-        new Exception("AIConfig instantiated here").printStackTrace();
-    }
 
     static final String SYSTEM_PROMPT = "You are an expert agricultural advisor. "
             + "Answer in the language of the question: Bangla for a question in Bangla, English for a question in English.";
