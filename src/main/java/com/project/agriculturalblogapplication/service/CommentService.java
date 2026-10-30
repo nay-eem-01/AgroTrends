@@ -119,10 +119,8 @@ public class CommentService {
     }
 
     public List<CommentResponse> viewReplies(Long parentCommentId) {
-        Comment parentComment = findByIdWithException(parentCommentId);
-
-        return parentComment.getReplies().stream()
-                .filter(reply -> !reply.isHidden())
+        findByIdWithException(parentCommentId); // 404 unless the parent comment and its post are visible
+        return commentRepository.findByParentCommentIdAndHiddenFalseOrderByIdAsc(parentCommentId).stream()
                 .map(this::mapToCommentResponse)
                 .toList();
     }

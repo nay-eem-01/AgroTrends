@@ -35,7 +35,9 @@ public class SchemaPatches implements ApplicationRunner {
     // Foreign keys created without ON DELETE: {table, column, referenced table}. @OnDelete covers new databases.
     static final List<String[]> CASCADE_ON_DELETE = List.of(
             new String[]{"comment", "blog_id", "blogs"},
-            new String[]{"comment", "parent_comment_id", "comment"});
+            new String[]{"comment", "parent_comment_id", "comment"},
+            new String[]{"answers", "question_id", "questions"},
+            new String[]{"answers", "answer_id", "answers"});
 
     // Columns that became optional: Google accounts have no password or mobile number, phone accounts no e-mail.
     // Idempotent.

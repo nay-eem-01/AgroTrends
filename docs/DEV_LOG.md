@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 84 of 95 steps done): launch blockers and one account type with
+- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 85 of 96 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8), admin dashboard endpoints (9). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -49,6 +49,34 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | After deploying 2.3a: start once with `AI_REINDEX_ON_STARTUP=true` (old chunks have no `status`, so retrieval ignores them) | whoever deploys | AI answers on existing posts |
 | Deleting a user with comments/questions/answers fails on foreign keys: decide delete vs anonymise | Nayeem | account deletion |
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
+
+---
+
+## 2026-10-30 (answers and comments: relations and loading)
+
+**Done**
+- 4.12 Removed `Question.answers`, `Answer.replies` and `Comment.replies`: nothing read them except the two
+  `viewReplies`, and their only other job was JPA cascade delete, which loads every child before deleting it.
+  The `ManyToOne` side stays; `Answer.question` and `Answer.parentAnswer` get `@OnDelete(CASCADE)` (like
+  `Comment` already had), and `SchemaPatches.CASCADE_ON_DELETE` rewrites the two existing foreign keys.
+  Replies come from `findByParentAnswerIdAndHiddenFalseOrderByIdAsc` / `findByParentCommentIdAndHiddenFalseOrderByIdAsc`
+  (oldest first; the old collections had no order at all).
+- Indexes on `answers(question_id)`, `answers(answer_id)`, `comment(blog_id)`, `comment(parent_comment_id)`: Postgres does not index foreign keys, so the answer
+  list, `Question.answerCount` (a subquery per question on every feed row) and replies scanned the whole table.
+- `AnswerService.getAllByQuestionId` is `@Transactional(readOnly = true)`: the answers reuse the question loaded
+  for the 404 check instead of loading it (and its user, roles, tags) a second time.
+
+**Decisions**
+- `answerCount` stays a `@Formula`: with the index it is one indexed count, and a stored counter would have to be
+  kept in step by create, delete, hide, unhide, moderation and the cascade.
+
+**Known limitations**
+- Not measured: no local Postgres in this session. Answer's `ManyToOne`s are still eager (each answer pulls its
+  user with roles and privileges, and its question); making them `LAZY` is the next lever, after counting queries
+  with `spring.jpa.show-sql=true` on a real database.
+- The FK patches run as an `ApplicationRunner`, after the web server starts: on an existing database a question
+  delete in the first second after startup could still hit the old FK. Flyway (4.2) removes the window.
+- The cascade itself has no database test yet; it needs Testcontainers (4.4).
 
 ---
 

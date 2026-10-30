@@ -113,6 +113,8 @@ public class AnswerService {
     }
 
     /** Direct answers (replies come from viewReplies): the accepted one first, then highest score, then oldest. */
+    // One persistence context, so the answers reuse the question loaded for the 404 check instead of loading it again.
+    @Transactional(readOnly = true)
     public List<AnswerResponse> getAllByQuestionId(Long questionId) {
         questionService.findByIdWithException(questionId);
         return mapToAnswerResponses(answerRepository.findByQuestionIdAndParentAnswerIsNullAndHiddenFalse(questionId).stream()
@@ -190,12 +192,10 @@ public class AnswerService {
         return mapToAnswerResponse(reply);
     }
 
-    // Replies are a lazy collection: read them inside a transaction (open-in-view is off).
     @Transactional(readOnly = true)
     public List<AnswerResponse> viewReplies(Long parentAnswerId) {
-        Answer parentAnswer = findByIdWithException(parentAnswerId);
-
-        return mapToAnswerResponses(parentAnswer.getReplies().stream().filter(reply -> !reply.isHidden()).toList());
+        findByIdWithException(parentAnswerId); // 404 unless the parent answer is visible
+        return mapToAnswerResponses(answerRepository.findByParentAnswerIdAndHiddenFalseOrderByIdAsc(parentAnswerId));
     }
 
     /** Hidden, or on a hidden question or under a hidden answer: a 404, so it cannot be read, edited, accepted or voted on meanwhile. */

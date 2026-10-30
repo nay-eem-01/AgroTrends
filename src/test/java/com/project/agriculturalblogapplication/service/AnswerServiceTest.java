@@ -166,6 +166,17 @@ class AnswerServiceTest {
         assertEquals(List.of(), answers.get(0).getAuthorBadges());
     }
 
+    @Test
+    void repliesAreReadByQueryNotThroughACollectionOnTheParent() {
+        answer(3L, 0);
+        Answer reply = answer(5L, 0);
+        when(answerRepository.findByParentAnswerIdAndHiddenFalseOrderByIdAsc(3L)).thenReturn(List.of(reply));
+
+        List<AnswerResponse> replies = answerService.viewReplies(3L);
+
+        assertEquals(List.of(5L), replies.stream().map(AnswerResponse::getAnswerId).toList());
+    }
+
     private Answer answer(long id, long score) {
         Answer answer = new Answer();
         answer.setId(id);

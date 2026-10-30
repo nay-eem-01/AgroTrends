@@ -18,6 +18,8 @@ public interface AnswerRepository extends JpaRepository<Answer, Long> {
 
     List<Answer> findByQuestionIdAndParentAnswerIsNullAndHiddenFalse(Long questionId);
 
+    List<Answer> findByParentAnswerIdAndHiddenFalseOrderByIdAsc(Long parentAnswerId);
+
     List<Answer> findAllByUserIdAndQuestionCategoryIdAndParentAnswerIsNull(Long userId, Long categoryId);
 
     /** Atomic, so two votes at once cannot overwrite each other. */

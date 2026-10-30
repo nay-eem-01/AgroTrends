@@ -1,7 +1,6 @@
 package com.project.agriculturalblogapplication.entities;
 
 import com.project.agriculturalblogapplication.util.SafeHtml;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.project.agriculturalblogapplication.constatnt.AppTables.CategoryTable;
 import com.project.agriculturalblogapplication.constatnt.AppTables.QuestionTable;
 import com.project.agriculturalblogapplication.constatnt.AppTables.TagTable;
@@ -78,10 +77,6 @@ public class Question extends AuditModel<String> {
     @ColumnDefault("0")
     @Column(name = VoteTable.SCORE, nullable = false, updatable = false)
     private long score;
-
-    @JsonIgnore
-    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Answer> answers = new ArrayList<>();
 
     @Embedded
     private AgriMetadata agri = new AgriMetadata();
