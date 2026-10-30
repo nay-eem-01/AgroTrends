@@ -20,6 +20,7 @@ import org.springframework.http.HttpStatus;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -61,6 +62,17 @@ class CommentServiceTest {
         c.setParentComment(parent);
         c.setCommentContent("text");
         return c;
+    }
+
+    @Test
+    void repliesAreReadByQueryNotThroughACollectionOnTheParent() {
+        Comment parent = comment(10L, null);
+        when(commentRepository.findById(10L)).thenReturn(Optional.of(parent));
+        when(commentRepository.findByParentCommentIdAndHiddenFalseOrderByIdAsc(10L)).thenReturn(List.of(comment(11L, parent)));
+
+        List<CommentResponse> replies = commentService.viewReplies(10L);
+
+        assertEquals(List.of(11L), replies.stream().map(CommentResponse::getCommentId).toList());
     }
 
     @Test

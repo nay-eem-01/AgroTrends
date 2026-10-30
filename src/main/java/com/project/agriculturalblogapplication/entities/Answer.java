@@ -1,7 +1,6 @@
 package com.project.agriculturalblogapplication.entities;
 
 import com.project.agriculturalblogapplication.util.SafeHtml;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.project.agriculturalblogapplication.constatnt.AppTables.UserTable;
 import com.project.agriculturalblogapplication.constatnt.AppTables.AnswerTable;
 import com.project.agriculturalblogapplication.constatnt.AppTables.QuestionTable;
@@ -10,31 +9,37 @@ import com.project.agriculturalblogapplication.model.AuditModel;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
-
-import java.util.ArrayList;
-import java.util.List;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
 @Setter
-@Table(name = AnswerTable.NAME)
+// Postgres does not index foreign keys: these serve the answer list, answerCount and the replies query.
+@Table(name = AnswerTable.NAME, indexes = {
+        @Index(columnList = QuestionTable.QUESTION_ID),
+        @Index(columnList = AnswerTable.ANSWER_ID)})
 public class Answer extends AuditModel<String> {
 
     @Column(name = AnswerTable.CONTENT, length = 5000)
     private String content;
 
-    @ManyToOne
+    // Lazy, like every other ManyToOne here: read inside a transaction (open-in-view is off).
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = UserTable.USER_ID)
     private User user;
 
-    @ManyToOne
+    // ON DELETE CASCADE: deleting a question takes its answers, and an answer its replies, in one statement.
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = QuestionTable.QUESTION_ID)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Question question;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = AnswerTable.ANSWER_ID)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Answer parentAnswer;
 
     /** Upvotes minus downvotes, kept in step by VoteService so lists need no count query. */
@@ -42,10 +47,6 @@ public class Answer extends AuditModel<String> {
     @ColumnDefault("0")
     @Column(name = VoteTable.SCORE, nullable = false, updatable = false)
     private long score;
-
-    @JsonIgnore
-    @OneToMany(mappedBy = "parentAnswer", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Answer> replies = new ArrayList<>();
 
     /** Set while enough reports about it await a moderator (roadmap 8.5): invisible to everyone, frozen. */
     @ColumnDefault("false")

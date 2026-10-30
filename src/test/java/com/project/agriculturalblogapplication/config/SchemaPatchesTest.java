@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
@@ -65,6 +66,15 @@ class SchemaPatchesTest {
         patches.convertColumns();
 
         verify(jdbc).execute("ALTER TABLE ai_answers ALTER COLUMN question TYPE text");
+    }
+
+    @Test
+    void answerForeignKeysCascadeOnExistingDatabases() {
+        // Question.answers and Answer.replies were removed; deleting a question or answer now relies on these.
+        List<String> keys = SchemaPatches.CASCADE_ON_DELETE.stream().map(fk -> String.join(".", fk)).toList();
+
+        assertTrue(keys.contains("answers.question_id.questions"));
+        assertTrue(keys.contains("answers.answer_id.answers"));
     }
 
     @Test

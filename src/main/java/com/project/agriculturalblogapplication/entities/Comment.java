@@ -9,12 +9,11 @@ import org.hibernate.annotations.ColumnDefault;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Getter
 @Setter
 @Entity
+// Postgres does not index foreign keys: these serve the comment list, the replies query and the cascades.
+@Table(indexes = {@Index(columnList = "blog_id"), @Index(columnList = "parent_comment_id")})
 @AllArgsConstructor
 @NoArgsConstructor
 public class Comment extends AuditModel<String> {
@@ -37,15 +36,6 @@ public class Comment extends AuditModel<String> {
     @JoinColumn(name = "parent_comment_id")
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Comment parentComment;
-
-    @OneToMany(
-            mappedBy = "parentComment",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true,
-            fetch = FetchType.LAZY
-    )
-    @JsonIgnore
-    private List<Comment> replies = new ArrayList<>();
 
     /** Set while enough reports about it await a moderator (roadmap 8.5): invisible to everyone, frozen. */
     @ColumnDefault("false")
