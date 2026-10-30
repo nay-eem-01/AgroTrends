@@ -2,6 +2,10 @@ package com.project.agriculturalblogapplication.storage;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentCaptor;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -11,6 +15,9 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 class ImageStorageTest {
 
@@ -38,6 +45,26 @@ class ImageStorageTest {
         assertTrue(url.matches("https://api\\.example\\.com/uploads/[0-9a-f-]{36}\\.png"), url);
         Path stored = dir.resolve(url.substring(url.lastIndexOf('/') + 1));
         assertArrayEquals(PNG, Files.readAllBytes(stored));
+    }
+
+    @Test
+    void r2StorageUploadsUnderARandomNameWithItsTypeAndReturnsThePublicUrl() {
+        StorageProperties properties = new StorageProperties();
+        properties.setPublicBaseUrl("https://images.example.com");
+        properties.getR2().setBucket("agrotrends-images");
+        S3Client s3 = mock(S3Client.class);
+
+        R2ImageStorage storage = new R2ImageStorage(properties, s3);
+        String url = storage.store(WEBP, ImageType.WEBP);
+
+        assertTrue(url.matches("https://images\\.example\\.com/[0-9a-f-]{36}\\.webp"), url);
+        ArgumentCaptor<PutObjectRequest> put = ArgumentCaptor.forClass(PutObjectRequest.class);
+        verify(s3).putObject(put.capture(), any(RequestBody.class));
+        assertEquals("agrotrends-images", put.getValue().bucket());
+        assertEquals(url.substring(url.lastIndexOf('/') + 1), put.getValue().key());
+        assertEquals("image/webp", put.getValue().contentType());
+        assertTrue(storage.isStored(url));
+        assertFalse(storage.isStored("https://images.example.com.evil.net/a.webp"));
     }
 
     @Test

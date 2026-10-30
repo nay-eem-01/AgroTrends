@@ -41,8 +41,9 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | Frontend: `sources[].type` is `blog` (link `/api/blogs/id/{blogId}`) or `answer` (link the question `questionId`); `ai-draft` is gone — poll `GET /api/questions/id/{id}/ai-answer` and show its `disclaimer` and `status` | frontend | — |
 | Frontend must stop sending `userId` / `authorUserId`, use `/api/auth/refresh-token`, and handle 401 vs 403 | frontend | frontend integration |
 | `contextLoads` fails without a local Postgres | roadmap 4.4 | CI |
-| No SMTP configured: reset links are written to the log (dev only) | an SMTP account | production password reset |
-| No SMS provider: phone codes are written to the log (dev only). Pick one (SSL Wireless, BulkSMSBD, Twilio…) | team | phone sign-up in production (10.5) |
+| Brevo account: verify the sender domain, create an SMTP key, set `MAIL_*` (see `.env.example`) | Nayeem | production e-mail |
+| Cloudflare R2: create the bucket, a bucket-scoped "Object Read & Write" token, public access (r2.dev or a custom domain); set `R2_*` and `UPLOADS_PUBLIC_BASE_URL` | Nayeem | images in production |
+| SMS on hold (decision 2026-10-30): phone codes stay in the log. When resumed, use a local gateway (about ৳0.24–0.70 per SMS) | team | phone sign-up in production (10.5) |
 | Hotfix path is not defined yet (proposal: branch off `production`, PR into `production`, then back-merge into `development`) | Nayeem to confirm | — |
 | Gemini chat: `gemini-3.8-flash` failed, `gemini-3.5-flash` works (2026-10-30). Re-run the live checks that were blocked: 3.6–3.8, 7.3a generation, 7.6b answer citations, 7.7 farm details | Nayeem | — |
 | `3aaabb4` (Google client id default, `APP_ENV_FILE`) was committed straight to `development`, not through a PR | — (note only) | — |
@@ -86,6 +87,34 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - The FK patches run as an `ApplicationRunner`, after the web server starts: on an existing database a question
   delete in the first second after startup could still hit the old FK. Flyway (4.2) removes the window.
 - The cascade itself has no database test yet; it needs Testcontainers (4.4).
+
+---
+
+## 2026-10-30 (images on Cloudflare R2, e-mail through Brevo)
+
+**Done**
+- 4.13 `R2ImageStorage`: uploads go to a Cloudflare R2 bucket over the S3 API (`software.amazon.awssdk:s3`
+  2.55.16) when `R2_BUCKET` is set; otherwise `LocalDiskImageStorage` as before (the same switch as the mail
+  services). Names stay random UUIDs, the content type comes from the detected format, objects are cached for a
+  year (`immutable`: names are never reused). The URL rules (`newFileName`, `publicUrl`, `isPublicUrl`) moved to
+  `StorageProperties` so both storages share the "only our own images" check.
+- Brevo needs no code: its SMTP relay (`smtp-relay.brevo.com:587`) plugs into `SmtpMailService`; `.env.example`
+  says which values go where.
+- Checked live: local mode uploads and serves `image/png`; R2 mode starts and an unreachable bucket answers a
+  clean 500 with an error id. The live run caught Spring not choosing between `R2ImageStorage`'s two constructors
+  (fixed with `@Autowired`, covered by `ImageStorageSelectionTest`, which fails without it).
+
+**Decisions**
+- Cloudflare R2 for images: 10 GB a month free and free egress; S3-compatible, so the `taskatask-backend`
+  approach carries over. Brevo for e-mail (300 a day free). SMS on hold.
+- Uploads still pass through the backend (format sniffing, size limit); the R2 keys never reach the browser.
+- AI stays single question and answer (2026-10-30): every ask is already saved and listed (`GET /api/ai/history`);
+  no conversation threads, so no growing token cost. A follow-up goes to the experts as a public question.
+
+**Known limitations**
+- Not tested against a real bucket (no R2 account yet). Images already on the local disk are not copied to R2,
+  and after the switch their URLs no longer count as ours, so editing a post that embeds one fails validation
+  (zero users, so nothing to migrate).
 
 ---
 
