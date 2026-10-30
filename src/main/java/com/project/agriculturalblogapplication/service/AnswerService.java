@@ -171,6 +171,7 @@ public class AnswerService {
         return accepted != null && accepted.getId().equals(answer.getId());
     }
 
+    @Transactional
     public AnswerResponse replyToAnswer(ReplyToAnswerRequest request, String lang) {
         Question question = questionService.findByIdWithException(request.getQuestionId());
 
@@ -206,6 +207,7 @@ public class AnswerService {
                 .orElseThrow(() -> new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_ANSWER_NOT_FOUND));
     }
 
+    @Transactional(readOnly = true)
     public AnswerResponse findById(Long answerId) {
         return mapToAnswerResponse(findByIdWithException(answerId));
     }

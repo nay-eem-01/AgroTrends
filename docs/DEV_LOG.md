@@ -65,15 +65,23 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
   list, `Question.answerCount` (a subquery per question on every feed row) and replies scanned the whole table.
 - `AnswerService.getAllByQuestionId` is `@Transactional(readOnly = true)`: the answers reuse the question loaded
   for the 404 check instead of loading it (and its user, roles, tags) a second time.
+- `Answer.user`, `Answer.question` and `Answer.parentAnswer` are `LAZY`, like every other `ManyToOne` in the code;
+  `findById` and `replyToAnswer` gained the `@Transactional` the others already had.
+- Measured on local Postgres (second instance on :8081, Hibernate statistics): every endpoint 10–70 ms; the answer
+  list runs 6 statements before and after the lazy change (batch fetching already capped the loads). Live run
+  17/17: create, reply, replies, by id, list, vote, accept, unaccept, update, report, answer delete takes its
+  replies, question delete takes its answers; no lazy-loading errors, the indexer thread clean.
 
 **Decisions**
 - `answerCount` stays a `@Formula`: with the index it is one indexed count, and a stored counter would have to be
   kept in step by create, delete, hide, unhide, moderation and the cascade.
 
 **Known limitations**
-- Not measured: no local Postgres in this session. Answer's `ManyToOne`s are still eager (each answer pulls its
-  user with roles and privileges, and its question); making them `LAZY` is the next lever, after counting queries
-  with `spring.jpa.show-sql=true` on a real database.
+- The slow answer loading was not the backend at today's data size. The question page loads in sequence (token
+  refresh, then the question, then the answers, which render only after the question): look at the frontend
+  waterfall next.
+- Dev e-mail links are unusable from the log: `LogbackMaskingPatternLayout` masks `?token=`, so
+  `[DEV MAIL]` confirmation and reset links print `token=******`. Phone codes are not masked.
 - The FK patches run as an `ApplicationRunner`, after the web server starts: on an existing database a question
   delete in the first second after startup could still hit the old FK. Flyway (4.2) removes the window.
 - The cascade itself has no database test yet; it needs Testcontainers (4.4).

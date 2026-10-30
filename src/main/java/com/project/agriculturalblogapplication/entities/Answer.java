@@ -26,17 +26,18 @@ public class Answer extends AuditModel<String> {
     @Column(name = AnswerTable.CONTENT, length = 5000)
     private String content;
 
-    @ManyToOne
+    // Lazy, like every other ManyToOne here: read inside a transaction (open-in-view is off).
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = UserTable.USER_ID)
     private User user;
 
     // ON DELETE CASCADE: deleting a question takes its answers, and an answer its replies, in one statement.
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = QuestionTable.QUESTION_ID)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Question question;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = AnswerTable.ANSWER_ID)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Answer parentAnswer;
