@@ -106,7 +106,7 @@ Operability and regression safety. Runs after Phases 5–8 are complete; then de
 | 4.9 | Spring Boot Actuator: health + basic metrics, health endpoint public, the rest admin-only | ⬜ |
 | 4.10 | Backups: nightly `pg_dump` and `uploads/` copy, restore tested once | ⬜ |
 | 4.11 | Logging: correlation id per request (`X-Correlation-Id`), secret masking in every appender, async appenders, rolling file outside the repo (not in `prod`) | ✅ |
-| 4.12 | Answers and comments: drop the `OneToMany` collections (`Question.answers`, `Answer.replies`, `Comment.replies`) for `ON DELETE CASCADE` + reply queries; index the `answers` and `comment` foreign keys; `Answer` relations `LAZY` | ✅ |
+| 4.12 | Answers and comments: drop the `OneToMany` collections (`Question.answers`, `Answer.replies`, `Comment.replies`, `Blog.comments`) for `ON DELETE CASCADE` + reply queries; index the `answers` and `comment` foreign keys; `Answer` relations `LAZY` | ✅ |
 
 ## Phase 5 — Launch blockers
 

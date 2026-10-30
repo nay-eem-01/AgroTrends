@@ -1,7 +1,6 @@
 package com.project.agriculturalblogapplication.entities;
 
 import com.project.agriculturalblogapplication.util.SafeHtml;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.project.agriculturalblogapplication.constatnt.AppTables.CategoryTable;
 import com.project.agriculturalblogapplication.constatnt.AppTables.BlogTable;
 import com.project.agriculturalblogapplication.constatnt.AppTables.AuthorTable;
@@ -15,7 +14,6 @@ import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -79,10 +77,6 @@ public class Blog extends AuditModel<String> {
             joinColumns = @JoinColumn(name = TagTable.BLOG_ID),
             inverseJoinColumns = @JoinColumn(name = TagTable.TAG_ID))
     private Set<Tag> tags = new LinkedHashSet<>();
-
-    @JsonIgnore
-    @OneToMany(mappedBy = "blog", cascade = CascadeType.PERSIST,fetch = FetchType.LAZY)
-    private List<Comment> comments;
 
     /** Stored HTML is always safe, whichever endpoint wrote it. */
     @PrePersist
