@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 83 of 94 steps done): launch blockers and one account type with
+- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 84 of 95 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8), admin dashboard endpoints (9). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -25,7 +25,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
    Testcontainers, CI), then deploy and live-test.
 3. Then Phases 6, 7, 8; deploy (Phase 4) and live-test only after all of them.
 4. **Team:** 30–50 seeded Bangla articles; 5–10 experts invited; pick the 6–8 launch topics (categories).
-5. **Nayeem:** fix the Gemini key; roadmap 0.4 (rotate keys, purge history); set `GOOGLE_CLIENT_ID`; make
+5. **Nayeem:** roadmap 0.4 (rotate keys, purge history); set `GOOGLE_CLIENT_ID`; make
    `development` the default branch; delete `feature/kafka-impl` (superseded by Phase 8).
 
 ## Open items
@@ -44,10 +44,39 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | No SMTP configured: reset links are written to the log (dev only) | an SMTP account | production password reset |
 | No SMS provider: phone codes are written to the log (dev only). Pick one (SSL Wireless, BulkSMSBD, Twilio…) | team | phone sign-up in production (10.5) |
 | Hotfix path is not defined yet (proposal: branch off `production`, PR into `production`, then back-merge into `development`) | Nayeem to confirm | — |
-| Gemini chat calls fail with "API key not valid" since 2026-10-06 evening (embeddings still work); `.env` key is 53 chars (a key is 39) — check the line for quotes/comments | Nayeem | live checks of 3.6–3.8, 7.3a generation, 7.6b answer citations, 7.7 farm details |
+| Gemini chat: `gemini-3.8-flash` failed, `gemini-3.5-flash` works (2026-10-30). Re-run the live checks that were blocked: 3.6–3.8, 7.3a generation, 7.6b answer citations, 7.7 farm details | Nayeem | — |
+| `3aaabb4` (Google client id default, `APP_ENV_FILE`) was committed straight to `development`, not through a PR | — (note only) | — |
 | After deploying 2.3a: start once with `AI_REINDEX_ON_STARTUP=true` (old chunks have no `status`, so retrieval ignores them) | whoever deploys | AI answers on existing posts |
 | Deleting a user with comments/questions/answers fails on foreign keys: decide delete vs anonymise | Nayeem | account deletion |
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
+
+---
+
+## 2026-10-23 → 2026-10-30 (logging, Gemini model, config)
+
+**Done**
+- 4.11 `logback-spring.xml` replaces `logback.xml`. `CorrelationIdFilter` tags every request with
+  `X-Correlation-Id`: it keeps a safe incoming id (`[A-Za-z0-9-]{8,64}`), otherwise makes a new UUID, returns it
+  in the response header and logs it as `[cid=…]`. `LogbackMaskingPatternLayout` masks password/token/secret/
+  credential JSON fields and `key=value` pairs, `Bearer` values, and JWT-shaped or `ya29.` tokens in every
+  appender. Console and file appenders are async (queue 8192; it blocks rather than drops). Outside `prod` a
+  rolling file goes to `${LOG_PATH:-~/logfiles/agrotrends}` (100 MB per file, 30 days, 5 GB cap).
+- Removed `logging.file.path=@project.artifactId@`: it set `LOG_PATH`, so logs went into
+  `./AgriculturalBlogApplication/` inside the repo. `*.log` and `logfiles/` are in `.gitignore` too.
+- `AIConfig.googleGenAiClient` is a `static` bean that reads the key from `Environment`, so the
+  "AIConfig created too early" warning is gone. Removed a leftover debug constructor that printed a stack trace.
+- Chat model `gemini-3.8-flash` → `gemini-3.5-flash`: chat calls failed on 3.8.
+- `app.google.client-id` falls back to the web client id (not a secret); `APP_ENV_FILE` points to another
+  `.env` file.
+- Tests: masking layout, correlation-id filter (safe/unsafe id, MDC cleared), no `logging.file.path`, chat model.
+
+**Decisions**
+- In `prod` (a container) logs go to stdout only; the file appender lives in `!prod` so a container with no
+  writable home still starts.
+- Masking is a safety net: sensitive DTOs still mask their own `toString`.
+
+**Known limitations**
+- The masking regexes match keys by name; a secret under an unrelated key (e.g. `"code"`) is not masked.
 
 ---
 
