@@ -56,7 +56,8 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 ## 2026-10-30 (answers and comments: relations and loading)
 
 **Done**
-- 4.12 Removed `Question.answers`, `Answer.replies` and `Comment.replies`: nothing read them except the two
+- 4.12 Removed `Question.answers`, `Answer.replies`, `Comment.replies` and `Blog.comments` (the last `OneToMany` in
+  the code; it only cascaded PERSIST, and blog deletes already take comments through `ON DELETE CASCADE`): nothing read them except the two
   `viewReplies`, and their only other job was JPA cascade delete, which loads every child before deleting it.
   The `ManyToOne` side stays; `Answer.question` and `Answer.parentAnswer` get `@OnDelete(CASCADE)` (like
   `Comment` already had), and `SchemaPatches.CASCADE_ON_DELETE` rewrites the two existing foreign keys.
