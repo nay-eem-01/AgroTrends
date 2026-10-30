@@ -107,6 +107,8 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - Cloudflare R2 for images: 10 GB a month free and free egress; S3-compatible, so the `taskatask-backend`
   approach carries over. Brevo for e-mail (300 a day free). SMS on hold.
 - Uploads still pass through the backend (format sniffing, size limit); the R2 keys never reach the browser.
+- AI stays single question and answer (2026-10-30): every ask is already saved and listed (`GET /api/ai/history`);
+  no conversation threads, so no growing token cost. A follow-up goes to the experts as a public question.
 
 **Known limitations**
 - Not tested against a real bucket (no R2 account yet). Images already on the local disk are not copied to R2,
