@@ -49,7 +49,23 @@ class QuestionServiceTest {
     private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
     private final QuestionService questionService =
             new QuestionService(questionRepository, userService, authorization, categoryService, tagService, imageService,
-                    mock(ReputationService.class), events);
+                    mock(ReputationService.class), events, new com.project.agriculturalblogapplication.security.service.AttemptLimiter());
+
+    @Test
+    void aViewerCountsOncePerDayAndAnotherViewerCountsAgain() {
+        Question question = new Question();
+        question.setId(4L);
+        com.project.agriculturalblogapplication.entities.User asker = new com.project.agriculturalblogapplication.entities.User();
+        asker.setId(7L);
+        question.setUser(asker);
+        when(questionRepository.findById(4L)).thenReturn(java.util.Optional.of(question));
+
+        assertEquals(1L, questionService.findById(4L, "10.0.0.1").getViewCount());
+        questionService.findById(4L, "10.0.0.1");
+        questionService.findById(4L, "10.0.0.2");
+
+        verify(questionRepository, org.mockito.Mockito.times(2)).addView(4L);
+    }
 
     @Test
     void trendingQuestionsAreTheLastTwoWeeksHighestScoreThenMostAnswered() {
@@ -78,7 +94,7 @@ class QuestionServiceTest {
         question.setCreationDate(LocalDateTime.of(2026, 10, 7, 21, 15));
         when(questionRepository.findById(4L)).thenReturn(Optional.of(question));
 
-        QuestionResponse response = questionService.findById(4L);
+        QuestionResponse response = questionService.findById(4L, "10.0.0.1");
 
         assertEquals("Karim", response.getAuthorName());
         // Regression: dates were "dd-MM-yyyy hh:mm:ss" (12-hour, no AM/PM): 9:15 pm read as 09:15.
@@ -142,7 +158,7 @@ class QuestionServiceTest {
         when(questionRepository.findById(4L)).thenReturn(Optional.of(hidden));
 
         assertEquals(HttpStatus.NOT_FOUND,
-                assertThrows(ApplicationException.class, () -> questionService.findById(4L)).getHttpStatus());
+                assertThrows(ApplicationException.class, () -> questionService.findById(4L, "10.0.0.1")).getHttpStatus());
 
         questionService.delete(4L, "en");
         verify(questionRepository).delete(hidden);
@@ -163,7 +179,7 @@ class QuestionServiceTest {
         legacy.setUser(user);
         when(questionRepository.findById(4L)).thenReturn(Optional.of(legacy));
 
-        assertNull(questionService.findById(4L).getCategory());
+        assertNull(questionService.findById(4L, "10.0.0.1").getCategory());
     }
 
     @Test
