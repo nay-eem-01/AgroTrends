@@ -145,18 +145,23 @@ class GoogleSignInTest {
     }
 
     @Test
-    void linkingAnUnverifiedAccountDropsItsPasswordAndSessions() {
+    void linkingAnUnverifiedAccountDropsItsPasswordPhoneAndSessions() {
         // Whoever registered an e-mail they never verified may not own it: only the Google owner keeps access.
         UserRepository repository = mock(UserRepository.class);
         UserSessionService sessions = mock(UserSessionService.class);
         RefreshTokenService refreshTokens = mock(RefreshTokenService.class);
         UserService service = userService(repository, sessions, refreshTokens);
         User existing = user(RoleType.USER, null);
+        existing.setMobileNumber("+8801712345678");
+        existing.setPhoneVerifiedAt(LocalDateTime.now());
         when(repository.save(existing)).thenReturn(existing);
 
         service.linkGoogle(existing, SUBJECT);
 
         assertNull(existing.getPassword());
+        // The registrant's phone would otherwise reset the password through the phone flow.
+        assertNull(existing.getMobileNumber());
+        assertNull(existing.getPhoneVerifiedAt());
         assertEquals(SUBJECT, existing.getGoogleSubject());
         assertNotNull(existing.getEmailVerifiedAt());
         verify(sessions).deactivatePreviousSession(10L);
@@ -170,11 +175,13 @@ class GoogleSignInTest {
         UserService service = userService(repository, sessions, mock(RefreshTokenService.class));
         User existing = user(RoleType.USER, null);
         existing.setEmailVerifiedAt(LocalDateTime.now().minusDays(3));
+        existing.setMobileNumber("+8801712345678");
         when(repository.save(existing)).thenReturn(existing);
 
         service.linkGoogle(existing, SUBJECT);
 
         assertEquals("$2a$10$hash", existing.getPassword());
+        assertEquals("+8801712345678", existing.getMobileNumber());
         verify(sessions, never()).deactivatePreviousSession(any());
     }
 
@@ -184,7 +191,8 @@ class GoogleSignInTest {
         AuthorizationService authorization = mock(AuthorizationService.class);
         UserService service = new UserService(repository, mock(PasswordEncoder.class), mock(RoleService.class),
                 mock(AuthorService.class), authorization, mock(RefreshTokenService.class), mock(UserSessionService.class),
-                mock(AttemptLimiter.class), mock(ApplicationEventPublisher.class));
+                mock(AttemptLimiter.class), mock(ApplicationEventPublisher.class), mock(EmailTokenService.class),
+                mock(PhoneCodeService.class));
         User googleOnly = user(RoleType.USER, SUBJECT);
         googleOnly.setPassword(null);
         UserService spy = spy(service);
@@ -200,7 +208,8 @@ class GoogleSignInTest {
 
     private static UserService userService(UserRepository repository, UserSessionService sessions, RefreshTokenService refreshTokens) {
         return new UserService(repository, mock(PasswordEncoder.class), mock(RoleService.class), mock(AuthorService.class),
-                mock(AuthorizationService.class), refreshTokens, sessions, mock(AttemptLimiter.class), mock(ApplicationEventPublisher.class));
+                mock(AuthorizationService.class), refreshTokens, sessions, mock(AttemptLimiter.class), mock(ApplicationEventPublisher.class),
+                mock(EmailTokenService.class), mock(PhoneCodeService.class));
     }
 
     private static GoogleSignInRequest request() {
