@@ -7,6 +7,7 @@ import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.enums.RoleType;
 import com.project.agriculturalblogapplication.service.PrivilegeService;
 import com.project.agriculturalblogapplication.service.RoleService;
+import com.project.agriculturalblogapplication.service.AuthorService;
 import com.project.agriculturalblogapplication.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +37,7 @@ public class InitialDataLoader implements ApplicationListener<ApplicationReadyEv
     private final RoleService roleService;
     private final PasswordEncoder passwordEncoder;
     private final PrivilegeService privilegeService;
+    private final AuthorService authorService;
 
     @Value("${app.admin.initial-email}")
     private String initialAdminEmail;
@@ -98,7 +100,7 @@ public class InitialDataLoader implements ApplicationListener<ApplicationReadyEv
         // The address comes from the operator's own configuration, not from a sign-up form.
         superAdminUser.setEmailVerifiedAt(LocalDateTime.now());
         superAdminUser.setRoles(roles);
-        userService.saveUser(superAdminUser);
+        authorService.profileOf(userService.saveUser(superAdminUser).getId());
 
         if (generated) {
             log.warn("Super-admin account '{}' created with a generated one-time password: {} " +

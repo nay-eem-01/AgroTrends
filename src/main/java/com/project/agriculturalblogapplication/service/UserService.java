@@ -115,6 +115,8 @@ public class UserService {
         user.setMobileNumber(createUserRequest.getMobileNumber());
         user.setRoles(new HashSet<>(Set.of(role)));
         user = userRepository.save(user);
+        // Every user has a profile from the start, so anyone can be followed before they post.
+        authorService.profileOf(user.getId());
         // Sends the e-mail link and/or the SMS code.
         eventPublisher.publishEvent(new ContactChangedEvent(user.getId(), user.getEmail() != null,
                 user.getMobileNumber() != null));
@@ -133,7 +135,9 @@ public class UserService {
         user.setGoogleSubject(google.subject());
         user.setEmailVerifiedAt(LocalDateTime.now());
         user.setRoles(new HashSet<>(Set.of(role)));
-        return userRepository.save(user);
+        user = userRepository.save(user);
+        authorService.profileOf(user.getId());
+        return user;
     }
 
     /**

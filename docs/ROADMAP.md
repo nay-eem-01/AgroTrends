@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 89 of 100 steps done
+**Progress:** 90 of 101 steps done
 
 **Launch scope (decided 2026-10-13):** Phases 4–8 must all be done before the public launch. Order of work:
 5 → 6 → 7 → 8 → 4 (deploy) → live test → launch. Nothing is deployed until Phases 5–8 are done. After launch, the
@@ -111,6 +111,7 @@ Operability and regression safety. Runs after Phases 5–8 are complete; then de
 | 4.14 | Account takeover fixes: changing an e-mail or phone revokes the links and codes sent to the old one; Google linking an unverified account also drops its mobile number | ✅ |
 | 4.15 | Profile as a portfolio: `userId`, expert topics, answer and accepted-answer counts, up to 5 http(s) `links` on the author profile; `GET /api/answers/all/user/{userId}` (public answers with the question title, newest first) | ✅ |
 | 4.16 | Public user summary `GET /api/users/{userId}/profile` (authorId, location, cover, joined, answer/accepted/question/story counts, checked credentials) and `PUT /api/user/profile` (location ≤ 80, cover from `/api/images`) — frontend request §1 | ✅ |
+| 4.17 | An author is a user: `authors.id` = `users.id` (`@MapsId`), existing rows and their foreign keys remapped at startup in one statement; every user has a profile from sign-up (and a startup backfill), so anyone can be followed — frontend request §2 | ✅ |
 
 ## Phase 5 — Launch blockers
 

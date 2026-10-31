@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 89 of 100 steps done): launch blockers and one account type with
+- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 90 of 101 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8), admin dashboard endpoints (9). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -50,6 +50,33 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | After deploying 2.3a: start once with `AI_REINDEX_ON_STARTUP=true` (old chunks have no `status`, so retrieval ignores them) | whoever deploys | AI answers on existing posts |
 | Deleting a user with comments/questions/answers fails on foreign keys: decide delete vs anonymise | Nayeem | account deletion |
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
+
+---
+
+## 2026-11-01 (frontend requests, second batch)
+
+Decided with Nayeem on the frontend list (`agrotrends-web/docs/BACKEND_REQUESTS.md`): §5 follow categories — not
+built, tags cover it; §6 — trending questions and trending posts as two separate lists, not one mixed feed; §8 —
+keep the AI as it is; §11 — not wanted; §12 — experts hear about new questions even when the AI fails.
+
+**Done**
+- 4.17 (§2) An author is just a user, so one id serves both:
+  - `Author` shares its user's primary key (`@MapsId`; audit columns moved to `AuditFields` so its id is not
+    generated). `authorId` is now the `userId` everywhere: follow, `/api/authors/{id}`, posts by author.
+  - `SchemaPatches` remaps existing authors and every foreign key to them (blogs, author_follows) before Hibernate
+    starts, in one `DO` block: all or nothing, negative ids first so shuffled ids cannot collide. Checked on a
+    throwaway pgvector container: authors with shuffled ids, their blogs and follows all kept pointing at the same
+    people; the original `ON DELETE CASCADE` came back; a second start changed nothing.
+  - Every user gets a profile at sign-up (password, phone and Google, and the seeded super-admin); a startup backfill
+    covers older users.
+
+**Breaking API changes**
+- Existing `authorId` values change to the user's id (local data only; nothing is deployed). Bookmarked author URLs
+  from before point at someone else.
+
+**Known limitations**
+- `authors.user_id` stays (unused) so an instance still on the old code keeps working; drop it with Flyway (4.2).
+- The AI index stores the old `authorId` in post metadata; nothing reads it, `AI_REINDEX_ON_STARTUP=true` refreshes it.
 
 ---
 
