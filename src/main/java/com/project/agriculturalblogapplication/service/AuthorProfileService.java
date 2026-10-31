@@ -1,13 +1,18 @@
 package com.project.agriculturalblogapplication.service;
 
 import com.project.agriculturalblogapplication.entities.Author;
+import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.model.request.UpdateAuthorProfileRequest;
+import com.project.agriculturalblogapplication.model.request.UpdateUserProfileRequest;
+import com.project.agriculturalblogapplication.model.response.UserProfileResponse;
+import com.project.agriculturalblogapplication.util.CommonUtils;
 import com.project.agriculturalblogapplication.model.response.AuthorProfileResponse;
 import com.project.agriculturalblogapplication.model.response.AuthorProfileResponse.ExpertTopic;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 
@@ -27,6 +32,12 @@ public class AuthorProfileService {
     private final AnswerService answerService;
 
     private final ExpertService expertService;
+
+    private final QuestionService questionService;
+
+    private final UserService userService;
+
+    private final ImageService imageService;
 
     /** Public; {@code followedByMe} is false for anonymous visitors. */
     @Transactional(readOnly = true)
@@ -53,6 +64,35 @@ public class AuthorProfileService {
         author.setProfileImageUrl(request.getProfileImageUrl());
         author.setLinks(request.getLinks());
         return toResponse(authorService.save(author), callerId);
+    }
+
+    /** Public: the way from a {@code userId} on a question or answer to the person and their author page. */
+    @Transactional(readOnly = true)
+    public UserProfileResponse summary(Long userId, String lang) {
+        return toSummary(userService.findByIdWithException(userId, lang));
+    }
+
+    /** Edits the caller's own location and cover; the cover must be an image uploaded here. */
+    public UserProfileResponse updateSummary(UpdateUserProfileRequest request, String lang) {
+        User user = userService.findByIdWithException(authorizationService.currentUserId(lang), lang);
+        String coverUrl = StringUtils.hasText(request.getCoverUrl())
+                ? imageService.requireUploaded(List.of(request.getCoverUrl()), lang).get(0) : null;
+        user.setLocation(StringUtils.hasText(request.getLocation()) ? request.getLocation().strip() : null);
+        user.setCoverUrl(coverUrl);
+        return toSummary(userService.saveUser(user));
+    }
+
+    private UserProfileResponse toSummary(User user) {
+        Long authorId = authorService.findAuthorIdByUserId(user.getId()).orElse(null);
+        return new UserProfileResponse(user.getId(), user.getName(), authorId, user.getLocation(), user.getCoverUrl(),
+                CommonUtils.toInstant(user.getCreationDate()),
+                answerService.countPublicByUser(user.getId()), answerService.countAcceptedByUser(user.getId()),
+                questionService.countPublicByUser(user.getId()),
+                authorId == null ? 0 : blogService.countPublishedByAuthor(authorId),
+                expertService.checkedCredentials(user.getId()).stream()
+                        .map(application -> new UserProfileResponse.Credential(application.getFieldTitle(),
+                                application.getInstitution()))
+                        .toList());
     }
 
     private AuthorProfileResponse toResponse(Author author, Long callerId) {

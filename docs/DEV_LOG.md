@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 88 of 99 steps done): launch blockers and one account type with
+- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 89 of 100 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8), admin dashboard endpoints (9). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -53,6 +53,30 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-10-31 (frontend requests: public user summary and a user's answers)
+
+**Done**
+- The frontend's `docs/BACKEND_REQUESTS.md` (agrotrends-web, 12 requests) is the source. P1 items done:
+  - §1 4.16 `GET /api/users/{userId}/profile` (public): `userId`, `name`, `authorId` (null until the user has an
+    author profile), `location`, `coverUrl`, `joinedAt`, `answerCount`, `acceptedAnswerCount`, `questionCount`,
+    `storyCount`, `credentials` (field + institution from approved expert applications, shown only while the user
+    holds a badge). `PUT /api/user/profile` (signed in) sets `location` (≤ 80) and `coverUrl` (must come from
+    `POST /api/images`).
+  - §3 the answers list moved to the path the web asked for: `GET /api/answers/all/user/{userId}`.
+- Checked live on a second instance: foreign cover and long location are 400s, summary served without signing in.
+
+**Decisions**
+- §3 returns `UserAnswerResponse` (answer + `questionTitle`, `score`, `accepted`), not the full `AnswerResponse`:
+  author name and badges are the profile owner's and already on the page. Hidden answers are never listed, also not
+  to their author.
+- Credentials have no `year` (the expert application never asked for one) and no user-added entries yet.
+
+**Next up from the frontend list**
+- P2: §4 experts to follow, §5 follow topics (categories), §6 one home feed, §8 AI follow-ups and `[n]` citations.
+- P3: §7 question views, §9 subtitle + AI opt-out, §10 public numbers, §11 weekly tips, §12 notify topic experts.
+
+---
+
 ## 2026-10-31 (profile as a portfolio)
 
 **Done**
@@ -62,7 +86,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
   - `GET /api/authors/{authorId}` adds `userId` (for the user-keyed calls), `expertTopics` (topic + field title of
     each active badge), `answerCount`, `acceptedAnswerCount` and `links`.
   - `PUT /api/authors/me` takes `links`: at most 5, each `http(s)://` only, so no `javascript:` href reaches the page.
-  - New public `GET /api/answers/user/{userId}`: the user's answers (not replies, nothing hidden), newest first,
+  - New public `GET /api/answers/all/user/{userId}`: the user's answers (not replies, nothing hidden), newest first,
     each with its question title, score and whether it was accepted.
 - Checked live on a second instance: links saved and validated, profile and answers served without signing in.
 

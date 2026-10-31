@@ -10,11 +10,15 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+
 public interface ExpertApplicationRepository extends JpaRepository<ExpertApplication, Long> {
 
     boolean existsByUserIdAndStatus(Long userId, ApplicationStatus status);
 
     Page<ExpertApplication> findAllByUserId(Long userId, Pageable pageable);
+
+    List<ExpertApplication> findAllByUserIdAndStatusOrderByIdDesc(Long userId, ApplicationStatus status);
 
     /** Decides a pending application; 0 when another admin decided it first. */
     @Modifying(flushAutomatically = true)

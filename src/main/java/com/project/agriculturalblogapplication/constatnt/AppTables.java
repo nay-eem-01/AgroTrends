@@ -70,6 +70,8 @@ public final class AppTables {
         public static final String BANNED_AT = "banned_at";
 
         public static final String BAN_REASON = "ban_reason";
+        public static final String LOCATION = "location";
+        public static final String COVER_URL = "cover_url";
     }
 
     public static final class FollowTable {

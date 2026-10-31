@@ -156,6 +156,12 @@ public class ExpertService {
         }
     }
 
+    /** Approved applications, while the user still holds a badge: the credentials an admin checked. */
+    public List<ExpertApplication> checkedCredentials(Long userId) {
+        return activeBadges(userId).isEmpty() ? List.of()
+                : applicationRepository.findAllByUserIdAndStatusOrderByIdDesc(userId, ApplicationStatus.APPROVED);
+    }
+
     /** The user's active badges, with their topics loaded. */
     public List<ExpertBadge> activeBadges(Long userId) {
         return badgeRepository.findAllByUserIdAndRevokedAtIsNull(userId);

@@ -66,7 +66,7 @@ public class AnswerController {
 
     @Operation(summary = "A user's public answers for their profile, newest first, with the question title and whether it was accepted")
     @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = UserAnswerResponse.class))), responseCode = "200")
-    @GetMapping(value = "/user/{userId}")
+    @GetMapping(value = "/all/user/{userId}")
     public ResponseEntity<HttpResponse> getAllByUser(@PathVariable Long userId,
                                                      @RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
                                                      @RequestParam(name = PAGE_SIZE, defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
