@@ -24,7 +24,7 @@ class PublicReadMatchersTest {
     @ValueSource(strings = {
             "/api/blogs/all", "/api/blogs/all/category/3", "/api/blogs/all/tag/rice", "/api/blogs/all/author/20",
             "/api/blogs/search", "/api/blogs/id/9", "/api/blogs/slug/boro-rice-abc123",
-            "/api/feed/latest", "/api/feed/trending", "/api/categories/all", "/api/tags", "/api/authors/20",
+            "/api/feed/latest", "/api/feed/trending", "/api/feed/trending/questions", "/api/categories/all", "/api/tags", "/api/authors/20",
             "/api/comments/blog/9", "/api/comments/replies/4", "/api/comments/id/4",
             "/api/questions/all", "/api/questions/all/user/7", "/api/questions/id/5", "/api/questions/search", "/api/users/7/reputation",
             "/api/answers/question/5", "/api/answers/replies/6", "/api/answers/id/6", "/api/answers/all/user/7", "/api/users/7/profile", "/api/experts", "/api/questions/id/5/ai-answer",

@@ -24,7 +24,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import org.mockito.ArgumentCaptor;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -44,6 +50,19 @@ class QuestionServiceTest {
     private final QuestionService questionService =
             new QuestionService(questionRepository, userService, authorization, categoryService, tagService, imageService,
                     mock(ReputationService.class), events);
+
+    @Test
+    void trendingQuestionsAreTheLastTwoWeeksHighestScoreThenMostAnswered() {
+        ArgumentCaptor<java.time.LocalDateTime> since = ArgumentCaptor.forClass(java.time.LocalDateTime.class);
+        ArgumentCaptor<Pageable> page = ArgumentCaptor.forClass(Pageable.class);
+        when(questionRepository.findAllByHiddenFalseAndCreationDateAfter(since.capture(), page.capture()))
+                .thenReturn(new PageImpl<>(java.util.List.of()));
+
+        questionService.trending(0, 10);
+
+        assertTrue(since.getValue().isBefore(java.time.LocalDateTime.now().minusDays(13)));
+        assertEquals(Sort.by(Sort.Direction.DESC, "score", "answerCount", "creationDate", "id"), page.getValue().getSort());
+    }
 
     @Test
     void questionShowsItsAuthorsNameAndIsoTimestamps() {

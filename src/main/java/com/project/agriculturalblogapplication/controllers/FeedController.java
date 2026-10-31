@@ -2,8 +2,10 @@ package com.project.agriculturalblogapplication.controllers;
 
 import com.project.agriculturalblogapplication.config.CommonApiResponses;
 import com.project.agriculturalblogapplication.model.response.BlogSummaryResponse;
+import com.project.agriculturalblogapplication.model.response.QuestionResponse;
 import com.project.agriculturalblogapplication.model.response.HttpResponse;
 import com.project.agriculturalblogapplication.service.BlogService;
+import com.project.agriculturalblogapplication.service.QuestionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -29,6 +31,8 @@ public class FeedController {
 
     private final BlogService blogService;
 
+    private final QuestionService questionService;
+
     @Operation(summary = "Newest published posts")
     @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = BlogSummaryResponse.class))), responseCode = "200")
     @GetMapping("/latest")
@@ -53,5 +57,13 @@ public class FeedController {
     public ResponseEntity<HttpResponse> trending(@RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
                                                  @RequestParam(name = PAGE_SIZE, defaultValue = DEFAULT_PAGE_SIZE) int pageSize) {
         return HttpResponse.getResponseEntity(true, "Data loaded successfully.", blogService.trendingFeed(pageNo, pageSize));
+    }
+
+    @Operation(summary = "Questions from the last 14 days, highest score first, then most answered (the home page's other list)")
+    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = QuestionResponse.class))), responseCode = "200")
+    @GetMapping("/trending/questions")
+    public ResponseEntity<HttpResponse> trendingQuestions(@RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
+                                                          @RequestParam(name = PAGE_SIZE, defaultValue = DEFAULT_PAGE_SIZE) int pageSize) {
+        return HttpResponse.getResponseEntity(true, "Data loaded successfully.", questionService.trending(pageNo, pageSize));
     }
 }
