@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 95 of 106 steps done): launch blockers and one account type with
+- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 96 of 107 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8), admin dashboard endpoints (9). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -88,6 +88,15 @@ keep the AI as it is; §11 — not wanted; §12 — experts hear about new quest
 - 4.22 (§10) Public `GET /api/stats/public` → `{ members, verifiedExperts, questions, answeredQuestions }`:
   banned members and hidden questions left out; "answered" means at least one visible direct answer. Counted at most
   once an hour per instance. Checked live against seeded data.
+- 4.23 (§12) Experts hear of every new question in their topics: `NEW_REVIEW_ITEM` when the AI answered (as
+  before), new `NEW_QUESTION_IN_TOPIC` when it failed or the asker hit the daily limit. No daily cap per expert yet.
+
+**Frontend**
+- Regenerate the API types. New: `/api/experts`, `/api/feed/trending/questions`, `/api/stats/public`; new fields
+  `viewCount` (questions), `subtitle` + `aiCitable` (blogs); notification type `NEW_QUESTION_IN_TOPIC`.
+- `authorId` equals `userId` now: follow and author pages work for every user, so Follow no longer needs hiding.
+- §5: show followed **tags** as "Your topics" (`/api/me/following/tags`, `PUT /api/tags/{name}/follow`).
+- §6: the home page shows the two trending lists separately.
 **Breaking API changes**
 - Existing `authorId` values change to the user's id (local data only; nothing is deployed). Bookmarked author URLs
   from before point at someone else.
