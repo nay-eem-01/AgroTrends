@@ -53,6 +53,37 @@ public class SchemaPatches implements ApplicationRunner {
             CREATE INDEX IF NOT EXISTS blogs_search_idx ON blogs
             USING gin (to_tsvector('simple', coalesce(title, '') || ' ' || coalesce(content, '')))""";
 
+    // Authors had their own ids; now an author's id is its user's id (@MapsId). Remaps authors and every foreign key
+    // pointing at them in one statement, so it either all happens or none of it. Negative ids first: a direct update
+    // could collide with an id not yet moved. The old user_id column stays (an old instance may still read it).
+    static final String AUTHOR_IDS_TO_USER_IDS = """
+            DO $$
+            DECLARE fk record;
+            BEGIN
+              CREATE TEMP TABLE author_remap ON COMMIT DROP AS
+                SELECT id AS old_id, user_id AS new_id FROM authors WHERE user_id IS NOT NULL AND id <> user_id;
+              CREATE TEMP TABLE author_fks ON COMMIT DROP AS
+                SELECT c.conrelid::regclass::text AS tbl, c.conname, pg_get_constraintdef(c.oid) AS def, a.attname AS col
+                FROM pg_constraint c JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]
+                WHERE c.contype = 'f' AND c.confrelid = 'authors'::regclass;
+              FOR fk IN SELECT * FROM author_fks LOOP
+                EXECUTE format('ALTER TABLE %s DROP CONSTRAINT %I', fk.tbl, fk.conname);
+                EXECUTE format('UPDATE %s t SET %I = -r.new_id FROM author_remap r WHERE t.%I = r.old_id', fk.tbl, fk.col, fk.col);
+                EXECUTE format('UPDATE %s SET %I = -%I WHERE %I < 0', fk.tbl, fk.col, fk.col, fk.col);
+              END LOOP;
+              UPDATE authors a SET id = -r.new_id FROM author_remap r WHERE a.id = r.old_id;
+              UPDATE authors SET id = -id WHERE id < 0;
+              FOR fk IN SELECT * FROM author_fks LOOP
+                EXECUTE format('ALTER TABLE %s ADD CONSTRAINT %I %s', fk.tbl, fk.conname, fk.def);
+              END LOOP;
+            END $$""";
+
+    static final String AUTHORS_TO_REMAP = "SELECT count(*) FROM authors WHERE user_id IS NOT NULL AND id <> user_id";
+
+    // Users from before every account got a profile at sign-up.
+    static final String AUTHOR_BACKFILL =
+            "INSERT INTO authors (id) SELECT u.id FROM users u WHERE NOT EXISTS (SELECT 1 FROM authors a WHERE a.id = u.id)";
+
     private final JdbcTemplate jdbcTemplate;
 
     /** Runs before Hibernate; does nothing on a new database (no tables yet) or once the columns are text. */
@@ -69,6 +100,13 @@ public class SchemaPatches implements ApplicationRunner {
                 log.warn("Schema patch: {}.{} varchar -> text", column[0], column[1]);
             }
         }
+        if (columnType("authors", "user_id") != null) {
+            Long moved = jdbcTemplate.queryForObject(AUTHORS_TO_REMAP, Long.class);
+            if (moved != null && moved > 0) {
+                jdbcTemplate.execute(AUTHOR_IDS_TO_USER_IDS);
+                log.warn("Schema patch: {} authors now use their user's id", moved);
+            }
+        }
     }
 
     @Override
@@ -76,6 +114,10 @@ public class SchemaPatches implements ApplicationRunner {
         jdbcTemplate.execute(BLOG_SEARCH_INDEX);
         CASCADE_ON_DELETE.forEach(fk -> cascadeOnDelete(fk[0], fk[1], fk[2]));
         DROP_NOT_NULL.forEach(jdbcTemplate::execute);
+        int profiles = jdbcTemplate.update(AUTHOR_BACKFILL);
+        if (profiles > 0) {
+            log.warn("Schema patch: {} users got an author profile", profiles);
+        }
         // Posts published before drafts existed have no published_at; feeds sort by it.
         int stamped = jdbcTemplate.update(PUBLISHED_AT_BACKFILL);
         if (stamped > 0) {
