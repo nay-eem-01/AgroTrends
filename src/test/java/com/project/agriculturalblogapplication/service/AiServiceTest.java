@@ -247,6 +247,7 @@ class AiServiceTest {
 
         verify(chatClient, never()).prompt();
         verify(questionAiAnswers, never()).save(any());
+        verify(notifications, never()).publish(any()); // askExperts already told the reviewers
     }
 
     private AiAnswer privateAsk() {
@@ -304,13 +305,33 @@ class AiServiceTest {
     }
 
     @Test
-    void aFailedGenerationIsLoggedNotThrown() {
+    void aFailedGenerationIsLoggedNotThrownAndTheTopicsExpertsStillHearOfTheQuestion() {
+        when(expertService.expertsIn(2L)).thenReturn(List.of(30L));
         when(questionService.findByIdWithException(4L)).thenReturn(question("Yellow leaves", "Why?"));
         when(chatClient.prompt().user(any(String.class)).call().chatClientResponse()).thenThrow(new RuntimeException("503"));
 
         aiService.answerQuestion(new QuestionCreated(4L));
 
         verify(questionAiAnswers, never()).save(any());
+        verify(notifications).publish(new NotificationMessage(30L, 9L, NotificationType.NEW_QUESTION_IN_TOPIC,
+                NotificationTarget.QUESTION, 4L));
+    }
+
+    @Test
+    void aQuestionOverTheAskersLimitStillReachesTheTopicsExperts() {
+        aiProperties.setDailyQuestionLimit(1);
+        when(expertService.expertsIn(2L)).thenReturn(List.of(30L));
+        when(questionService.findByIdWithException(4L)).thenReturn(question("Yellow leaves", "Why?"));
+        when(chatClient.prompt().user(any(String.class)).call().chatClientResponse())
+                .thenReturn(response("Check nitrogen.", List.of()));
+
+        aiService.answerQuestion(new QuestionCreated(4L));
+        aiService.answerQuestion(new QuestionCreated(4L));
+
+        verify(notifications).publish(new NotificationMessage(30L, 9L, NotificationType.NEW_REVIEW_ITEM,
+                NotificationTarget.QUESTION, 4L));
+        verify(notifications).publish(new NotificationMessage(30L, 9L, NotificationType.NEW_QUESTION_IN_TOPIC,
+                NotificationTarget.QUESTION, 4L));
     }
 
     @Test

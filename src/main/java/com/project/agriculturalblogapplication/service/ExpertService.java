@@ -156,6 +156,11 @@ public class ExpertService {
         }
     }
 
+    /** Verified experts, in one topic or all, most accepted answers first. */
+    public Page<Long> expertIds(Long topicId, int pageNo, int pageSize) {
+        return badgeRepository.expertIds(topicId, CommonUtils.clampedPageable(pageNo, pageSize, Sort.unsorted()));
+    }
+
     /** Approved applications, while the user still holds a badge: the credentials an admin checked. */
     public List<ExpertApplication> checkedCredentials(Long userId) {
         return activeBadges(userId).isEmpty() ? List.of()

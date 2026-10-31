@@ -133,11 +133,15 @@ public class AiService {
     /** Tells every Verified Expert in the topic that the AI answer waits; the asker is the actor, so never themselves. */
     // shortcut: one row per expert per question; switch to a digest if topics grow past a few dozen experts.
     private void notifyReviewers(Question question) {
+        notifyExperts(question, NotificationType.NEW_REVIEW_ITEM);
+    }
+
+    private void notifyExperts(Question question, NotificationType type) {
         if (question.getCategory() == null) {
             return;
         }
         for (Long expertId : expertService.expertsIn(question.getCategory().getId())) {
-            notificationPublisher.publish(new NotificationMessage(expertId, question.getUser().getId(), NotificationType.NEW_REVIEW_ITEM,
+            notificationPublisher.publish(new NotificationMessage(expertId, question.getUser().getId(), type,
                     NotificationTarget.QUESTION, question.getId()));
         }
     }
@@ -150,22 +154,24 @@ public class AiService {
 
     /**
      * Answers a new community question once it is committed, off the request thread. Never throws: a failure or
-     * the asker's daily limit just leaves the question without an AI answer.
+     * the asker's daily limit just leaves the question without an AI answer, and the topic's experts still hear of it.
      */
     // shortcut: a failed generation is not retried; add a retry sweep if Gemini outages leave many questions bare.
     @Async
     @TransactionalEventListener
     public void answerQuestion(QuestionCreated event) {
+        Question question = null;
         try {
             if (questionAiAnswerRepository.existsByQuestionId(event.questionId())) {
                 return; // sent from a private ask (askExperts): it already has its answer
             }
-            Question question = questionService.findByIdWithException(event.questionId());
+            question = questionService.findByIdWithException(event.questionId());
             // Counted in memory, not from stored answers: deleting questions must not give the allowance back, and
             // recording before the slow model call stops parallel questions from all slipping under the limit.
             String allowance = QUESTION_ANSWERS_KEY + question.getUser().getId();
             if (attemptLimiter.isBlocked(allowance)) {
                 log.info("No AI answer for question {}: the asker reached today's limit", question.getId());
+                notifyExperts(question, NotificationType.NEW_QUESTION_IN_TOPIC);
                 return;
             }
             attemptLimiter.record(allowance, aiProperties.getDailyQuestionLimit(), Duration.ofDays(1));
@@ -183,6 +189,9 @@ public class AiService {
             notifyReviewers(question);
         } catch (RuntimeException e) {
             log.error("AI answer for question {} failed", event.questionId(), e);
+            if (question != null) {
+                notifyExperts(question, NotificationType.NEW_QUESTION_IN_TOPIC);
+            }
         }
     }
 

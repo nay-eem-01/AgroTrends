@@ -38,6 +38,7 @@ public class SecurityConstants {
             "/api/blogs/slug/*",
             "/api/feed/latest",
             "/api/feed/trending",
+            "/api/feed/trending/questions",
             "/api/categories/all",
             "/api/tags",
             "/api/authors/*",
@@ -55,6 +56,8 @@ public class SecurityConstants {
             "/api/answers/id/*",
             "/api/answers/all/user/*",
             "/api/users/*/profile",
+            "/api/experts",
+            "/api/stats/public",
     };
 
     private SecurityConstants() {

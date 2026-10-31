@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 89 of 100 steps done): launch blockers and one account type with
+- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 96 of 107 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8), admin dashboard endpoints (9). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -50,6 +50,60 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | After deploying 2.3a: start once with `AI_REINDEX_ON_STARTUP=true` (old chunks have no `status`, so retrieval ignores them) | whoever deploys | AI answers on existing posts |
 | Deleting a user with comments/questions/answers fails on foreign keys: decide delete vs anonymise | Nayeem | account deletion |
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
+
+---
+
+## 2026-11-01 (frontend requests, second batch)
+
+Decided with Nayeem on the frontend list (`agrotrends-web/docs/BACKEND_REQUESTS.md`): §5 follow categories — not
+built, tags cover it; §6 — trending questions and trending posts as two separate lists, not one mixed feed; §8 —
+keep the AI as it is; §11 — not wanted; §12 — experts hear about new questions even when the AI fails.
+
+**Done**
+- 4.17 (§2) An author is just a user, so one id serves both:
+  - `Author` shares its user's primary key (`@MapsId`; audit columns moved to `AuditFields` so its id is not
+    generated). `authorId` is now the `userId` everywhere: follow, `/api/authors/{id}`, posts by author.
+  - `SchemaPatches` remaps existing authors and every foreign key to them (blogs, author_follows) before Hibernate
+    starts, in one `DO` block: all or nothing, negative ids first so shuffled ids cannot collide. Checked on a
+    throwaway pgvector container: authors with shuffled ids, their blogs and follows all kept pointing at the same
+    people; the original `ON DELETE CASCADE` came back; a second start changed nothing.
+  - Every user gets a profile at sign-up (password, phone and Google, and the seeded super-admin); a startup backfill
+    covers older users.
+
+- 4.18 (§4) `GET /api/experts?categoryId=&pageNo&pageSize` (public): verified experts (active badge, not banned) in a
+  topic or all, most accepted answers first; each with `authorId` (= `userId`), avatar, field, institution, badge
+  topics and `followedByMe`. "Prefer the caller's followed topics" is left out: they follow tags, not categories.
+  Checked live: ordering by accepted answers and the topic filter.
+- 4.19 (§6) The home page shows two lists, not one mixed feed: trending posts (`/api/feed/trending`, as before)
+  and new public `GET /api/feed/trending/questions` (last 14 days, hidden left out, highest score, then most
+  answered, then newest). Checked live: a 30-day-old and a hidden question were left out.
+- 4.20 (§7) `viewCount` on `QuestionResponse`: `GET /api/questions/id/{id}` adds one per signed-in user, or per
+  client address for visitors (no server session exists), per day; an atomic update like the score. Who viewed today
+  is kept in memory (`AttemptLimiter`), so it resets on restart and is per instance. Checked live: three reads from
+  one visitor counted once; the new column defaulted existing questions to 0.
+- 4.21 (§9) Blogs get `subtitle` (≤ 200) and `aiCitable` (default true) on create/update, `BlogResponse` and
+  `BlogSummaryResponse`. An update that leaves either out keeps it (a blank subtitle clears it). `aiCitable=false`
+  drops the post from the vector index, so the AI never cites it; related posts use the same index, so an opted-out
+  post is also never shown as related. Checked live: existing posts came up `aiCitable: true`.
+- 4.22 (§10) Public `GET /api/stats/public` → `{ members, verifiedExperts, questions, answeredQuestions }`:
+  banned members and hidden questions left out; "answered" means at least one visible direct answer. Counted at most
+  once an hour per instance. Checked live against seeded data.
+- 4.23 (§12) Experts hear of every new question in their topics: `NEW_REVIEW_ITEM` when the AI answered (as
+  before), new `NEW_QUESTION_IN_TOPIC` when it failed or the asker hit the daily limit. No daily cap per expert yet.
+
+**Frontend**
+- Regenerate the API types. New: `/api/experts`, `/api/feed/trending/questions`, `/api/stats/public`; new fields
+  `viewCount` (questions), `subtitle` + `aiCitable` (blogs); notification type `NEW_QUESTION_IN_TOPIC`.
+- `authorId` equals `userId` now: follow and author pages work for every user, so Follow no longer needs hiding.
+- §5: show followed **tags** as "Your topics" (`/api/me/following/tags`, `PUT /api/tags/{name}/follow`).
+- §6: the home page shows the two trending lists separately.
+**Breaking API changes**
+- Existing `authorId` values change to the user's id (local data only; nothing is deployed). Bookmarked author URLs
+  from before point at someone else.
+
+**Known limitations**
+- `authors.user_id` stays (unused) so an instance still on the old code keeps working; drop it with Flyway (4.2).
+- The AI index stores the old `authorId` in post metadata; nothing reads it, `AI_REINDEX_ON_STARTUP=true` refreshes it.
 
 ---
 

@@ -18,6 +18,7 @@ import com.project.agriculturalblogapplication.model.response.CategoryResponse;
 import com.project.agriculturalblogapplication.repositories.AgriSpecifications;
 import com.project.agriculturalblogapplication.repositories.QuestionRepository;
 import com.project.agriculturalblogapplication.util.CommonUtils;
+import com.project.agriculturalblogapplication.security.service.AttemptLimiter;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -29,6 +30,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -54,6 +57,8 @@ public class QuestionService {
     private final ReputationService reputationService;
 
     private final ApplicationEventPublisher eventPublisher;
+
+    private final AttemptLimiter attemptLimiter;
 
     /** Saves the question; the AI answers it after the commit (AiService.answerQuestion). */
     @Transactional
@@ -102,6 +107,13 @@ public class QuestionService {
         }
         return mapToQuestionResponses(
                 questionRepository.search(query.trim(), CommonUtils.clampedPageable(pageNo, pageSize, Sort.unsorted())));
+    }
+
+    /** Questions asked in the last {@value BlogService#TRENDING_DAYS} days, highest score first, then most answered. */
+    public Page<QuestionResponse> trending(int pageNo, int pageSize) {
+        Sort hottest = Sort.by(Sort.Direction.DESC, "score", "answerCount", "creationDate", "id");
+        return mapToQuestionResponses(questionRepository.findAllByHiddenFalseAndCreationDateAfter(
+                LocalDateTime.now().minusDays(BlogService.TRENDING_DAYS), CommonUtils.clampedPageable(pageNo, pageSize, hottest)));
     }
 
     public long countPublicByUser(Long userId) {
@@ -172,8 +184,19 @@ public class QuestionService {
                 new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_QUESTION_NOT_FOUND));
     }
 
-    public QuestionResponse findById(Long questionId) {
-        return mapToQuestionResponse(findByIdWithException(questionId));
+    /** The question page; counts one view per signed-in user, or per address for visitors, per day. */
+    // shortcut: who already viewed today is kept in this instance's memory and resets on restart; move it to Redis
+    // when a second instance runs.
+    public QuestionResponse findById(Long questionId, String clientIp) {
+        Question question = findByIdWithException(questionId);
+        String viewer = authorizationService.signedInUserId().map(id -> "user:" + id).orElse("ip:" + clientIp);
+        String key = "question-view:" + questionId + ":" + viewer;
+        if (!attemptLimiter.isBlocked(key)) {
+            attemptLimiter.record(key, 1, Duration.ofDays(1));
+            questionRepository.addView(questionId);
+            question.setViewCount(question.getViewCount() + 1);
+        }
+        return mapToQuestionResponse(question);
     }
 
     private QuestionResponse mapToQuestionResponse(Question question) {
@@ -201,6 +224,7 @@ public class QuestionService {
         response.setTags(question.getTags().stream().map(Tag::getName).toList());
         response.setImageUrls(List.copyOf(question.getImageUrls()));
         response.setAnswerCount(question.getAnswerCount());
+        response.setViewCount(question.getViewCount());
         response.setScore(question.getScore());
         // Regression: reading acceptedAnswer.hidden here hit a lazy proxy outside a session (500 on every read).
         response.setAcceptedAnswerId(question.getVisibleAcceptedAnswerId());

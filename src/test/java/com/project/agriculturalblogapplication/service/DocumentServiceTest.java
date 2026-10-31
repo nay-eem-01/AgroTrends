@@ -58,6 +58,17 @@ class DocumentServiceTest {
     }
 
     @Test
+    void aPostWhoseAuthorOptedOutIsDroppedFromTheIndexAndNeverAdded() {
+        Blog optedOut = blog(4L, "Keep this out of AI answers.");
+        optedOut.setAiCitable(false);
+
+        documentService.reindexBlog(optedOut);
+
+        verify(vectorStore).delete(blogFilter(4L));
+        verify(vectorStore, never()).add(anyList());
+    }
+
+    @Test
     void reindexDeletesTheBlogsOldChunksBeforeAddingNewOnes() {
         documentService.reindexBlog(blog(3L, "Updated advice."));
 

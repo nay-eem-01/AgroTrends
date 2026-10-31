@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -32,6 +33,11 @@ public interface QuestionRepository extends JpaRepository<Question, Long>, JpaSp
             """)
     Page<Question> search(@Param("query") String query, Pageable pageable);
 
+    @Modifying
+    @Transactional
+    @Query("UPDATE Question x SET x.viewCount = x.viewCount + 1 WHERE x.id = :id")
+    void addView(@Param("id") Long id);
+
     /** Atomic, so two votes at once cannot overwrite each other. */
     @Modifying
     @Query("UPDATE Question x SET x.score = x.score + :delta WHERE x.id = :id")
@@ -40,6 +46,15 @@ public interface QuestionRepository extends JpaRepository<Question, Long>, JpaSp
     long countByUserId(Long userId);
 
     long countByUserIdAndHiddenFalse(Long userId);
+
+    long countByHiddenFalse();
+
+    /** Visible questions with at least one visible direct answer. */
+    @Query("select count(q) from Question q where q.hidden = false and exists (select 1 from Answer a"
+            + " where a.question = q and a.parentAnswer is null and a.hidden = false)")
+    long countAnswered();
+
+    Page<Question> findAllByHiddenFalseAndCreationDateAfter(LocalDateTime since, Pageable pageable);
 
     long countByCreationDateAfter(LocalDateTime since);
 }

@@ -50,6 +50,25 @@ class SchemaPatchesTest {
     }
 
     @Test
+    void authorsWithTheirOwnIdsMoveToTheirUsersIdsOnce() {
+        // Checked live against a pgvector container with shuffled ids: blogs and follows keep pointing at the same people.
+        when(jdbc.queryForList(eq(TYPE_QUERY), eq(String.class), anyString(), anyString())).thenReturn(List.of("text"));
+        when(jdbc.queryForObject(SchemaPatches.AUTHORS_TO_REMAP, Long.class)).thenReturn(3L, 0L);
+
+        patches.convertColumns();
+        patches.convertColumns();
+
+        verify(jdbc, org.mockito.Mockito.times(1)).execute(SchemaPatches.AUTHOR_IDS_TO_USER_IDS);
+    }
+
+    @Test
+    void everyUserGetsAnAuthorProfileAtStartup() {
+        patches.run(null);
+
+        verify(jdbc).update(SchemaPatches.AUTHOR_BACKFILL);
+    }
+
+    @Test
     void aNewDatabaseOrAnAlreadyPatchedOneIsLeftAlone() {
         when(jdbc.queryForList(eq(TYPE_QUERY), eq(String.class), anyString(), anyString())).thenReturn(List.of());
 

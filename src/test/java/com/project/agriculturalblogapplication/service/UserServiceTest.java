@@ -38,8 +38,9 @@ class UserServiceTest {
     private final UserSessionService sessions = mock(UserSessionService.class);
     private final EmailTokenService emailTokens = mock(EmailTokenService.class);
     private final PhoneCodeService phoneCodes = mock(PhoneCodeService.class);
+    private final AuthorService authorService = mock(AuthorService.class);
     private final UserService userService = new UserService(userRepository, mock(PasswordEncoder.class),
-            roleService, mock(AuthorService.class), authorization,
+            roleService, authorService, authorization,
             mock(RefreshTokenService.class), sessions, mock(AttemptLimiter.class), events, emailTokens, phoneCodes);
 
     private User signedIn(String email, String mobileNumber) {
@@ -140,6 +141,8 @@ class UserServiceTest {
                 .password("Passw0rd!").build(), "en");
 
         verify(events).publishEvent(new ContactChangedEvent(9L, false, true));
+        // A profile from the start, so the new user can be followed before posting anything.
+        verify(authorService).profileOf(9L);
     }
 
     @Test
