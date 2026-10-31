@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 85 of 96 steps done
+**Progress:** 87 of 98 steps done
 
 **Launch scope (decided 2026-10-13):** Phases 4–8 must all be done before the public launch. Order of work:
 5 → 6 → 7 → 8 → 4 (deploy) → live test → launch. Nothing is deployed until Phases 5–8 are done. After launch, the
@@ -106,8 +106,9 @@ Operability and regression safety. Runs after Phases 5–8 are complete; then de
 | 4.9 | Spring Boot Actuator: health + basic metrics, health endpoint public, the rest admin-only | ⬜ |
 | 4.10 | Backups: nightly `pg_dump` and `uploads/` copy, restore tested once | ⬜ |
 | 4.11 | Logging: correlation id per request (`X-Correlation-Id`), secret masking in every appender, async appenders, rolling file outside the repo (not in `prod`) | ✅ |
-| 4.13 | Images on Cloudflare R2 (S3 API) when `R2_BUCKET` is set, local disk otherwise; e-mail through Brevo SMTP (config only) | ✅ |
 | 4.12 | Answers and comments: drop the `OneToMany` collections (`Question.answers`, `Answer.replies`, `Comment.replies`, `Blog.comments`) for `ON DELETE CASCADE` + reply queries; index the `answers` and `comment` foreign keys; `Answer` relations `LAZY` | ✅ |
+| 4.13 | Images on Cloudflare R2 (S3 API) when `R2_BUCKET` is set, local disk otherwise; e-mail through Brevo SMTP (config only) | ✅ |
+| 4.14 | Account takeover fixes: changing an e-mail or phone revokes the links and codes sent to the old one; Google linking an unverified account also drops its mobile number | ✅ |
 
 ## Phase 5 — Launch blockers
 

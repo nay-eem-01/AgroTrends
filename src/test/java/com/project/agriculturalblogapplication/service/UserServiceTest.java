@@ -1,5 +1,7 @@
 package com.project.agriculturalblogapplication.service;
 
+import com.project.agriculturalblogapplication.entities.EmailToken;
+import com.project.agriculturalblogapplication.entities.PhoneCode;
 import com.project.agriculturalblogapplication.entities.Role;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.model.request.CreateUserRequest;
@@ -34,9 +36,11 @@ class UserServiceTest {
     private final RoleService roleService = mock(RoleService.class);
     private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
     private final UserSessionService sessions = mock(UserSessionService.class);
+    private final EmailTokenService emailTokens = mock(EmailTokenService.class);
+    private final PhoneCodeService phoneCodes = mock(PhoneCodeService.class);
     private final UserService userService = new UserService(userRepository, mock(PasswordEncoder.class),
             roleService, mock(AuthorService.class), authorization,
-            mock(RefreshTokenService.class), sessions, mock(AttemptLimiter.class), events);
+            mock(RefreshTokenService.class), sessions, mock(AttemptLimiter.class), events, emailTokens, phoneCodes);
 
     private User signedIn(String email, String mobileNumber) {
         User user = new User();
@@ -89,6 +93,29 @@ class UserServiceTest {
         assertNull(user.getEmailVerifiedAt());
         assertNotNull(user.getPhoneVerifiedAt());
         verify(events, never()).publishEvent(any());
+    }
+
+    @Test
+    void changingTheEmailRevokesLinksSentToTheOldOne() {
+        // Otherwise a reset link from the old address marks an address the caller never owned as verified.
+        signedIn("rahim@gmail.com", "+8801712345678");
+
+        userService.update(update("victim@gmail.com", "+8801712345678"), "en");
+
+        verify(emailTokens).revoke(3L, EmailToken.Purpose.RESET_PASSWORD);
+        verify(emailTokens).revoke(3L, EmailToken.Purpose.VERIFY_EMAIL);
+        verify(phoneCodes, never()).revoke(any(), any());
+    }
+
+    @Test
+    void changingThePhoneRevokesCodesSentToTheOldOne() {
+        signedIn("rahim@gmail.com", "+8801712345678");
+
+        userService.update(update("rahim@gmail.com", "01812345678"), "en");
+
+        verify(phoneCodes).revoke(3L, PhoneCode.Purpose.RESET_PASSWORD);
+        verify(phoneCodes).revoke(3L, PhoneCode.Purpose.VERIFY_PHONE);
+        verify(emailTokens, never()).revoke(any(), any());
     }
 
     @Test

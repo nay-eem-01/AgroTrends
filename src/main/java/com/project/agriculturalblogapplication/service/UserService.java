@@ -6,6 +6,8 @@ import com.project.agriculturalblogapplication.exceptionHandler.ApplicationExcep
 import com.project.agriculturalblogapplication.constatnt.AppConstants;
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import com.project.agriculturalblogapplication.enums.RoleType;
+import com.project.agriculturalblogapplication.entities.EmailToken;
+import com.project.agriculturalblogapplication.entities.PhoneCode;
 import com.project.agriculturalblogapplication.entities.Role;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.model.request.ChangePasswordRequest;
@@ -55,6 +57,10 @@ public class UserService {
     private final AttemptLimiter attemptLimiter;
 
     private final ApplicationEventPublisher eventPublisher;
+
+    private final EmailTokenService emailTokenService;
+
+    private final PhoneCodeService phoneCodeService;
 
     public void validateEmail(String email, String lang) {
         if (!CommonUtils.isValidMail(email)) {
@@ -132,12 +138,17 @@ public class UserService {
 
     /**
      * Links a Google account to an existing account with the same e-mail. If that e-mail was never verified, whoever
-     * registered it may not own it, so its password and every session are dropped: only the Google owner gets in.
+     * registered it may not own it, so its password, mobile number and every session are dropped: only the Google
+     * owner gets in.
      */
     public User linkGoogle(User user, String googleSubject) {
         if (user.getEmailVerifiedAt() == null) {
             user.setPassword(null);
+            user.setMobileNumber(null);
+            user.setPhoneVerifiedAt(null);
             revokeAllCredentials(user.getId());
+            revokeEmailTokens(user.getId());
+            revokePhoneCodes(user.getId());
         }
         user.setGoogleSubject(googleSubject);
         user.setEmailVerifiedAt(LocalDateTime.now());
@@ -226,13 +237,16 @@ public class UserService {
         }
 
         user.setName(request.getName());
+        // A link or code sent to the old contact must not reset the password or verify the new one.
         if (emailChanged) {
             user.setEmail(email);
             user.setEmailVerifiedAt(null);
+            revokeEmailTokens(user.getId());
         }
         if (phoneChanged) {
             user.setMobileNumber(mobileNumber);
             user.setPhoneVerifiedAt(null);
+            revokePhoneCodes(user.getId());
         }
         user = userRepository.save(user);
 
@@ -241,6 +255,18 @@ public class UserService {
                     phoneChanged && mobileNumber != null));
         }
         return user;
+    }
+
+    private void revokeEmailTokens(Long userId) {
+        for (EmailToken.Purpose purpose : EmailToken.Purpose.values()) {
+            emailTokenService.revoke(userId, purpose);
+        }
+    }
+
+    private void revokePhoneCodes(Long userId) {
+        for (PhoneCode.Purpose purpose : PhoneCode.Purpose.values()) {
+            phoneCodeService.revoke(userId, purpose);
+        }
     }
 
     public void changePassword(ChangePasswordRequest request, String lang) {

@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 85 of 96 steps done): launch blockers and one account type with
+- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 87 of 98 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8), admin dashboard endpoints (9). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -50,6 +50,28 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | After deploying 2.3a: start once with `AI_REINDEX_ON_STARTUP=true` (old chunks have no `status`, so retrieval ignores them) | whoever deploys | AI answers on existing posts |
 | Deleting a user with comments/questions/answers fails on foreign keys: decide delete vs anonymise | Nayeem | account deletion |
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
+
+---
+
+## 2026-10-31 (security review: two account takeovers closed)
+
+**Done**
+- 4.14 A whole-codebase security review found two ways to hand a victim an account the attacker can still sign
+  into, both through Google sign-in matching an existing account by e-mail:
+  - A reset link was tied to the user only, so it survived an e-mail change and then marked the *new* address
+    verified. `UserService.update` now revokes every e-mail token when the e-mail changes and every phone code
+    when the phone changes.
+  - `linkGoogle` on an unverified account dropped the password but kept the registrant's phone, which could reset
+    it through the phone flow. It now also drops the mobile number and every outstanding token and code.
+- Regression tests in `UserServiceTest` and `GoogleSignInTest`.
+
+**Decisions**
+- A legitimate owner whose e-mail was never verified loses the phone on the account when they first sign in with
+  Google; they add it again from the profile. Safer than guessing who owns it.
+
+**Known limitations**
+- Tokens are still not bound to the address they were sent to; revocation on change covers it today.
+- Changing the e-mail or phone does not ask for the current password.
 
 ---
 
