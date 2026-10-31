@@ -104,6 +104,10 @@ public class QuestionService {
                 questionRepository.search(query.trim(), CommonUtils.clampedPageable(pageNo, pageSize, Sort.unsorted())));
     }
 
+    public long countPublicByUser(Long userId) {
+        return questionRepository.countByUserIdAndHiddenFalse(userId);
+    }
+
     public Page<QuestionResponse> getAllByUser(PaginationArgs paginationArgs, Long userId, String lang) {
         Pageable pageable = CommonUtils.getPageable(paginationArgs, SORTABLE_FIELDS, lang);
         User user = userService.findByIdWithException(userId, lang);

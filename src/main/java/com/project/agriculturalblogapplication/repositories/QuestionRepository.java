@@ -39,5 +39,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long>, JpaSp
 
     long countByUserId(Long userId);
 
+    long countByUserIdAndHiddenFalse(Long userId);
+
     long countByCreationDateAfter(LocalDateTime since);
 }

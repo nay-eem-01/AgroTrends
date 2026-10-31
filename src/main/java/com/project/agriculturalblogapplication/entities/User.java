@@ -74,5 +74,12 @@ public class User extends AuditModel<String> {
 
     @Column(name = UserTable.BAN_REASON, length = 500)
     private String banReason;
+
+    /** Public, as the user typed it (a district or town). */
+    @Column(name = UserTable.LOCATION, length = 80)
+    private String location;
+
+    @Column(name = UserTable.COVER_URL, length = 500)
+    private String coverUrl;
 }
 

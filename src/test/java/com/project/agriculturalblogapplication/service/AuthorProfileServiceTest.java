@@ -2,7 +2,11 @@ package com.project.agriculturalblogapplication.service;
 
 import com.project.agriculturalblogapplication.entities.Author;
 import com.project.agriculturalblogapplication.entities.Category;
+import com.project.agriculturalblogapplication.entities.ExpertApplication;
 import com.project.agriculturalblogapplication.entities.ExpertBadge;
+import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
+import com.project.agriculturalblogapplication.model.request.UpdateUserProfileRequest;
+import com.project.agriculturalblogapplication.model.response.UserProfileResponse;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.model.request.UpdateAuthorProfileRequest;
 import com.project.agriculturalblogapplication.model.response.AuthorProfileResponse;
@@ -18,6 +22,8 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -33,8 +39,11 @@ class AuthorProfileServiceTest {
     private final AuthorizationService authorization = mock(AuthorizationService.class);
     private final AnswerService answerService = mock(AnswerService.class);
     private final ExpertService expertService = mock(ExpertService.class);
+    private final QuestionService questionService = mock(QuestionService.class);
+    private final UserService userService = mock(UserService.class);
+    private final ImageService imageService = mock(ImageService.class);
     private final AuthorProfileService service = new AuthorProfileService(authorService, blogService, followService,
-            authorization, answerService, expertService);
+            authorization, answerService, expertService, questionService, userService, imageService);
 
     @BeforeEach
     void setUp() {
@@ -111,6 +120,57 @@ class AuthorProfileServiceTest {
         assertFalse(validator.validate(request).isEmpty());
         request.setLinks(List.of("https://a.com", "https://b.com", "https://c.com", "https://d.com", "https://e.com", "https://f.com"));
         assertFalse(validator.validate(request).isEmpty());
+    }
+
+    @Test
+    void theUserSummaryLeadsToTheAuthorPageWithCountsAndCheckedCredentials() {
+        User user = author().getUser();
+        when(userService.findByIdWithException(10L, "en")).thenReturn(user);
+        when(authorService.findAuthorIdByUserId(10L)).thenReturn(Optional.of(20L));
+        when(blogService.countPublishedByAuthor(20L)).thenReturn(12L);
+        when(answerService.countPublicByUser(10L)).thenReturn(184L);
+        when(answerService.countAcceptedByUser(10L)).thenReturn(92L);
+        when(questionService.countPublicByUser(10L)).thenReturn(5L);
+        ExpertApplication application = new ExpertApplication();
+        application.setFieldTitle("PhD, Aquaculture");
+        application.setInstitution("Bangladesh Agricultural University");
+        when(expertService.checkedCredentials(10L)).thenReturn(List.of(application));
+
+        UserProfileResponse summary = service.summary(10L, "en");
+
+        assertEquals(20L, summary.authorId());
+        assertEquals(List.of(184L, 92L, 5L, 12L),
+                List.of(summary.answerCount(), summary.acceptedAnswerCount(), summary.questionCount(), summary.storyCount()));
+        assertEquals(List.of(new UserProfileResponse.Credential("PhD, Aquaculture", "Bangladesh Agricultural University")),
+                summary.credentials());
+        assertTrue(Arrays.stream(UserProfileResponse.class.getRecordComponents())
+                .noneMatch(c -> c.getName().matches("(?i).*(email|mobile|role|password).*")));
+    }
+
+    @Test
+    void aUserWithoutAnAuthorProfileHasNoAuthorIdAndNoStories() {
+        when(userService.findByIdWithException(10L, "en")).thenReturn(author().getUser());
+        when(authorService.findAuthorIdByUserId(10L)).thenReturn(Optional.empty());
+
+        UserProfileResponse summary = service.summary(10L, "en");
+
+        assertNull(summary.authorId());
+        assertEquals(0L, summary.storyCount());
+        verify(blogService, never()).countPublishedByAuthor(any());
+    }
+
+    @Test
+    void aCoverMustBeAnImageUploadedHere() {
+        User me = author().getUser();
+        when(userService.findByIdWithException(7L, "en")).thenReturn(me);
+        when(imageService.requireUploaded(List.of("https://evil.example/x.png"), "en"))
+                .thenThrow(new ApplicationException(org.springframework.http.HttpStatus.BAD_REQUEST, "bad"));
+        UpdateUserProfileRequest request = new UpdateUserProfileRequest();
+        request.setLocation("Mymensingh");
+        request.setCoverUrl("https://evil.example/x.png");
+
+        assertThrows(ApplicationException.class, () -> service.updateSummary(request, "en"));
+        verify(userService, never()).saveUser(any());
     }
 
     @Test
