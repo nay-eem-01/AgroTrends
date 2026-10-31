@@ -5,6 +5,10 @@ import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.model.request.UpdateAuthorProfileRequest;
 import com.project.agriculturalblogapplication.model.request.UpdateUserProfileRequest;
 import com.project.agriculturalblogapplication.model.response.UserProfileResponse;
+import com.project.agriculturalblogapplication.model.response.ExpertSummaryResponse;
+import com.project.agriculturalblogapplication.entities.ExpertApplication;
+import com.project.agriculturalblogapplication.entities.ExpertBadge;
+import org.springframework.data.domain.Page;
 import com.project.agriculturalblogapplication.util.CommonUtils;
 import com.project.agriculturalblogapplication.model.response.AuthorProfileResponse;
 import com.project.agriculturalblogapplication.model.response.AuthorProfileResponse.ExpertTopic;
@@ -64,6 +68,24 @@ public class AuthorProfileService {
         author.setProfileImageUrl(request.getProfileImageUrl());
         author.setLinks(request.getLinks());
         return toResponse(authorService.save(author), callerId);
+    }
+
+    /** Public: verified experts to follow, most accepted answers first; {@code followedByMe} is false when signed out. */
+    // shortcut: a few queries per expert; fine for the right rail's handful, batch them if pages grow.
+    @Transactional
+    public Page<ExpertSummaryResponse> experts(Long topicId, int pageNo, int pageSize) {
+        Long callerId = authorizationService.signedInUserId().orElse(null);
+        return expertService.expertIds(topicId, pageNo, pageSize).map(userId -> {
+            Author author = authorService.profileOf(userId);
+            List<ExpertBadge> badges = expertService.activeBadges(userId);
+            ExpertApplication latest = expertService.checkedCredentials(userId).stream().findFirst().orElse(null);
+            return new ExpertSummaryResponse(userId, author.getUser().getName(), author.getId(), author.getProfileImageUrl(),
+                    badges.isEmpty() ? null : badges.get(0).getFieldTitle(),
+                    latest == null ? null : latest.getInstitution(),
+                    badges.stream().map(badge -> new ExpertSummaryResponse.Topic(badge.getTopic().getId(),
+                            badge.getTopic().getCategoryName())).toList(),
+                    callerId != null && followService.isFollowingAuthor(callerId, author.getId()));
+        });
     }
 
     /** Public: the way from a {@code userId} on a question or answer to the person and their author page. */

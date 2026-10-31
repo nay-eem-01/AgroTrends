@@ -6,7 +6,10 @@ import com.project.agriculturalblogapplication.model.request.ExpertApplicationRe
 import com.project.agriculturalblogapplication.model.request.ExpertDecisionRequest;
 import com.project.agriculturalblogapplication.model.response.ExpertApplicationResponse;
 import com.project.agriculturalblogapplication.model.response.HttpResponse;
+import com.project.agriculturalblogapplication.model.response.ExpertSummaryResponse;
+import com.project.agriculturalblogapplication.service.AuthorProfileService;
 import com.project.agriculturalblogapplication.service.ExpertService;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -29,6 +32,8 @@ public class ExpertController {
 
     private final ExpertService expertService;
 
+    private final AuthorProfileService authorProfileService;
+
     @Operation(summary = "Apply to be a Verified Expert: topics, your field, proof images or links (one pending at a time)",
             security = @SecurityRequirement(name = "jwtToken"))
     @ApiResponse(content = @Content(schema = @Schema(implementation = ExpertApplicationResponse.class)), responseCode = "200")
@@ -36,6 +41,16 @@ public class ExpertController {
     public ResponseEntity<HttpResponse> apply(@Valid @RequestBody ExpertApplicationRequest request,
                                               @RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
         return HttpResponse.getResponseEntity(true, "Application sent.", expertService.apply(request, lang));
+    }
+
+    @Operation(summary = "Verified experts to follow, in one topic or all, most accepted answers first (public)")
+    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = ExpertSummaryResponse.class))), responseCode = "200")
+    @GetMapping("/api/experts")
+    public ResponseEntity<HttpResponse> experts(@RequestParam(name = "categoryId", required = false) Long categoryId,
+                                                @RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
+                                                @RequestParam(name = PAGE_SIZE, defaultValue = DEFAULT_PAGE_SIZE) int pageSize) {
+        return HttpResponse.getResponseEntity(true, "Data loaded successfully.",
+                authorProfileService.experts(categoryId, pageNo, pageSize));
     }
 
     @Operation(summary = "Your own expert applications and their decisions, newest first",

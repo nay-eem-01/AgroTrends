@@ -7,6 +7,8 @@ import com.project.agriculturalblogapplication.entities.ExpertBadge;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.request.UpdateUserProfileRequest;
 import com.project.agriculturalblogapplication.model.response.UserProfileResponse;
+import com.project.agriculturalblogapplication.model.response.ExpertSummaryResponse;
+import org.springframework.data.domain.PageImpl;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.model.request.UpdateAuthorProfileRequest;
 import com.project.agriculturalblogapplication.model.response.AuthorProfileResponse;
@@ -145,6 +147,31 @@ class AuthorProfileServiceTest {
                 summary.credentials());
         assertTrue(Arrays.stream(UserProfileResponse.class.getRecordComponents())
                 .noneMatch(c -> c.getName().matches("(?i).*(email|mobile|role|password).*")));
+    }
+
+    @Test
+    void expertsToFollowCarryTheirFieldTopicsAndWhetherYouFollow() {
+        Author author = author();
+        author.setId(10L);
+        author.setProfileImageUrl("https://cdn.example/rahim.png");
+        when(expertService.expertIds(null, 0, 5)).thenReturn(new PageImpl<>(List.of(10L)));
+        when(authorService.profileOf(10L)).thenReturn(author);
+        Category rice = new Category();
+        rice.setId(3L);
+        rice.setCategoryName("Rice");
+        ExpertBadge badge = new ExpertBadge();
+        badge.setTopic(rice);
+        badge.setFieldTitle("Agronomist");
+        when(expertService.activeBadges(10L)).thenReturn(List.of(badge));
+        ExpertApplication application = new ExpertApplication();
+        application.setInstitution("BRRI");
+        when(expertService.checkedCredentials(10L)).thenReturn(List.of(application));
+        when(followService.isFollowingAuthor(7L, 10L)).thenReturn(true);
+
+        ExpertSummaryResponse expert = service.experts(null, 0, 5).getContent().get(0);
+
+        assertEquals(new ExpertSummaryResponse(10L, "Rahim", 10L, "https://cdn.example/rahim.png", "Agronomist", "BRRI",
+                List.of(new ExpertSummaryResponse.Topic(3L, "Rice")), true), expert);
     }
 
     @Test
