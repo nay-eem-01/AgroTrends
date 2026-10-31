@@ -10,6 +10,8 @@ public enum NotificationType {
     AI_ANSWER_REVIEWED,
     /** A new AI answer is waiting for review in one of your expert topics. */
     NEW_REVIEW_ITEM,
+    /** A new question in one of your expert topics has no AI answer (the AI failed or the asker hit the limit). */
+    NEW_QUESTION_IN_TOPIC,
     /** Your expert application was approved or rejected. */
     APPLICATION_DECIDED,
     /** Someone replied to your comment. */
