@@ -48,4 +48,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     long countByCreationDateAfter(LocalDateTime since);
 
     long countByBannedAtIsNotNull();
+
+    long countByBannedAtIsNull();
 }

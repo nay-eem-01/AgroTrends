@@ -62,6 +62,19 @@ class AdminServiceTest {
             aiAnswerRepository);
 
     @Test
+    void publicNumbersAreCountedOnceAnHour() {
+        when(userRepository.countByBannedAtIsNull()).thenReturn(1200L);
+        when(questionRepository.countByHiddenFalse()).thenReturn(300L);
+        when(questionRepository.countAnswered()).thenReturn(250L);
+
+        assertEquals(new com.project.agriculturalblogapplication.model.response.PublicStatsResponse(1200L, 0L, 300L, 250L),
+                admin.publicStats());
+        admin.publicStats();
+
+        verify(userRepository, org.mockito.Mockito.times(1)).countByBannedAtIsNull();
+    }
+
+    @Test
     void statsCountOnlyWhatIsWaitingAndTheLastSevenDays() {
         when(userRepository.count()).thenReturn(50L);
         when(userRepository.countByCreationDateAfter(any())).thenReturn(6L);

@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 94 of 105 steps done
+**Progress:** 95 of 106 steps done
 
 **Launch scope (decided 2026-10-13):** Phases 4–8 must all be done before the public launch. Order of work:
 5 → 6 → 7 → 8 → 4 (deploy) → live test → launch. Nothing is deployed until Phases 5–8 are done. After launch, the
@@ -116,6 +116,7 @@ Operability and regression safety. Runs after Phases 5–8 are complete; then de
 | 4.19 | Trending questions: public `GET /api/feed/trending/questions` (last 14 days, highest score, then most answered), shown beside `/api/feed/trending` posts — frontend request §6 | ✅ |
 | 4.20 | Question views: `viewCount` on `QuestionResponse`, counted once per signed-in user (or per address for visitors) per day on `GET /api/questions/id/{id}` — frontend request §7 | ✅ |
 | 4.21 | Story `subtitle` (≤ 200) and `aiCitable` (default true) on blog create/update and both blog responses; an opted-out post is dropped from the AI index — frontend request §9 | ✅ |
+| 4.22 | Public numbers: `GET /api/stats/public` (members, verified experts, questions, answered questions), counted at most hourly — frontend request §10 | ✅ |
 
 ## Phase 5 — Launch blockers
 
