@@ -3,6 +3,7 @@ package com.project.agriculturalblogapplication.model.request;
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -22,4 +23,7 @@ public class UpdateAuthorProfileRequest {
     @Size(max = 2000, message = ErrorCode.ERROR_BIO_TOO_LONG)
     private String bio;
     private String profileImageUrl;
+    // Only http(s), so a javascript: link can never reach an href on the profile page.
+    @Size(max = 5, message = ErrorCode.ERROR_TOO_MANY_LINKS)
+    private List<@Pattern(regexp = "https?://[^\\s]{1,300}", message = ErrorCode.ERROR_INVALID_LINK) String> links;
 }

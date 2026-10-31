@@ -53,6 +53,7 @@ public class SecurityConstants {
             "/api/answers/question/*",
             "/api/answers/replies/*",
             "/api/answers/id/*",
+            "/api/answers/user/*",
     };
 
     private SecurityConstants() {

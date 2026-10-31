@@ -1,6 +1,8 @@
 package com.project.agriculturalblogapplication.repositories;
 
 import com.project.agriculturalblogapplication.entities.Answer;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -28,4 +30,13 @@ public interface AnswerRepository extends JpaRepository<Answer, Long> {
     void addToScore(@Param("id") Long id, @Param("delta") long delta);
 
     long countByUserId(Long userId);
+
+    /** A user's public answers: not replies, not hidden, not on a hidden question. */
+    Page<Answer> findAllByUserIdAndParentAnswerIsNullAndHiddenFalseAndQuestionHiddenFalse(Long userId, Pageable pageable);
+
+    long countByUserIdAndParentAnswerIsNullAndHiddenFalseAndQuestionHiddenFalse(Long userId);
+
+    @Query("select count(q) from Question q where q.acceptedAnswer.user.id = :userId"
+            + " and q.hidden = false and q.acceptedAnswer.hidden = false")
+    long countAcceptedByUserId(@Param("userId") Long userId);
 }

@@ -40,4 +40,7 @@ public class Author extends AuditModel<String> {
 
     @Column(name = AuthorTable.PROFILE_IMAGE_URL)
     private String profileImageUrl;
+
+    /** Up to 5 http(s) links: LinkedIn, a website, research. */
+    private List<String> links;
 }
