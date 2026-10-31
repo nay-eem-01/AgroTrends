@@ -16,6 +16,7 @@ public record BlogSummaryResponse(
         Long id,
         String slug,
         String title,
+        String subtitle,
         String excerpt,
         String imageUrl,
         int readingTimeMinutes,
@@ -27,20 +28,22 @@ public record BlogSummaryResponse(
         BlogStatus status,
         Instant publishedAt,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        boolean aiCitable
 ) {
 
     static final int EXCERPT_CHARS = 200;
 
     public static BlogSummaryResponse from(Blog blog) {
-        return new BlogSummaryResponse(blog.getId(), blog.getSlug(), blog.getTitle(), excerpt(blog.getContent()),
+        return new BlogSummaryResponse(blog.getId(), blog.getSlug(), blog.getTitle(), blog.getSubtitle(), excerpt(blog.getContent()),
                 blog.getImageUrl(), Slugs.readingTimeMinutes(blog.getContent()),
                 blog.getTags() == null ? List.of() : blog.getTags().stream().map(Tag::getName).sorted().toList(),
                 blog.getClapCount(),
                 AgriInfo.from(blog.getAgri()),
                 CategoryResponse.from(blog.getCategory()), AuthorSummaryResponse.from(blog.getAuthor()),
                 blog.getStatus(), CommonUtils.toInstant(blog.getPublishedAt()),
-                CommonUtils.toInstant(blog.getCreationDate()), CommonUtils.toInstant(blog.getLastModifiedDate()));
+                CommonUtils.toInstant(blog.getCreationDate()), CommonUtils.toInstant(blog.getLastModifiedDate()),
+                blog.isAiCitable());
     }
 
     static String excerpt(String content) {

@@ -56,6 +56,9 @@ public class DocumentService {
      * (AI_REINDEX_ON_STARTUP); add a scheduled retry if these warnings show up in the logs.
      */
     public void indexBlog(Blog blog) {
+        if (!blog.isAiCitable()) {
+            return; // the author opted out; reindexBlog has already dropped any old chunks
+        }
         // The splitter copies the blog's metadata onto every chunk, so any chunk can be traced back to its post.
         List<Document> chunks = blogTextSplitter.apply(List.of(toDocument(blog)));
         try {

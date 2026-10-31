@@ -321,6 +321,27 @@ class BlogServiceTest {
     }
 
     @Test
+    void subtitleAndAiOptOutAreKeptWhenAnUpdateLeavesThemOut() {
+        Blog blog = blog(5L);
+        blog.setSubtitle("Three signs to watch");
+        blog.setAiCitable(false);
+        when(blogRepositories.findById(5L)).thenReturn(Optional.of(blog));
+        when(categoryService.findByIdWithException(30L)).thenReturn(blog.getCategory());
+        when(blogRepositories.save(blog)).thenReturn(blog);
+
+        BlogResponse kept = blogService.update(updateRequest(5L), LANG);
+        assertEquals("Three signs to watch", kept.subtitle());
+        assertEquals(false, kept.aiCitable());
+
+        UpdateBlogRequest change = updateRequest(5L);
+        change.setSubtitle(" ");
+        change.setAiCitable(true);
+        BlogResponse changed = blogService.update(change, LANG);
+        assertEquals(null, changed.subtitle());
+        assertEquals(true, changed.aiCitable());
+    }
+
+    @Test
     void agriInfoIsKeptWhenAnUpdateLeavesItOut() {
         Blog blog = blog(5L);
         blog.setAgri(new AgriInfo("rice", CropSeason.RABI, "rangpur", null).toMetadata());

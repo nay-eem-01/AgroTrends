@@ -29,6 +29,11 @@ public class CreateBlogRequest {
     private String content;
 
     private String imageUrl;
+
+    @Size(max = 200, message = ErrorCode.ERROR_SUBTITLE_TOO_LONG)
+    private String subtitle;
+    /** False keeps the post out of the AI's sources; omitted means true. */
+    private Boolean aiCitable;
     /** DRAFT keeps the post private; omitted means PUBLISHED, as before drafts existed. */
     private BlogStatus status;
     /** Up to five topic tags, e.g. "rice blast"; new names are created. */

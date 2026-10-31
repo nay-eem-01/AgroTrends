@@ -30,6 +30,11 @@ public class UpdateBlogRequest {
 
     private String imageUrl;
 
+    @Size(max = 200, message = ErrorCode.ERROR_SUBTITLE_TOO_LONG)
+    private String subtitle;
+    /** False keeps the post out of the AI's sources; omitted means unchanged. */
+    private Boolean aiCitable;
+
     @NotNull(message = ErrorCode.ERROR_CATEGORY_IS_REQUIRED)
     private Long categoryId;
     /** Up to five topic tags, e.g. "rice blast"; new names are created. */
