@@ -25,6 +25,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.project.agriculturalblogapplication.model.response.PublicStatsResponse;
+
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Locale;
 
@@ -53,7 +56,24 @@ public class AdminService {
 
     private final QuestionAiAnswerRepository questionAiAnswerRepository;
 
+    // shortcut: one cached value per instance; fine for four counts shown on the sign-in panel.
+    private volatile PublicStatsResponse publicStats;
+
+    private volatile long publicStatsAt;
+
     @Transactional(readOnly = true)
+    /** Public headline numbers, counted at most once an hour. */
+    public PublicStatsResponse publicStats() {
+        long now = System.currentTimeMillis();
+        if (publicStats == null || now - publicStatsAt >= Duration.ofHours(1).toMillis()) {
+            publicStats = new PublicStatsResponse(userRepository.countByBannedAtIsNull(),
+                    expertBadgeRepository.countActiveExperts(), questionRepository.countByHiddenFalse(),
+                    questionRepository.countAnswered());
+            publicStatsAt = now;
+        }
+        return publicStats;
+    }
+
     public AdminStatsResponse stats() {
         LocalDateTime weekAgo = LocalDateTime.now().minusDays(7);
         return new AdminStatsResponse(

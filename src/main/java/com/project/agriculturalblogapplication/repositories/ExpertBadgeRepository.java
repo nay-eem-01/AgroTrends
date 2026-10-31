@@ -35,6 +35,9 @@ public interface ExpertBadgeRepository extends JpaRepository<ExpertBadge, Long> 
             nativeQuery = true)
     Page<Long> expertIds(@Param("topicId") Long topicId, Pageable pageable);
 
+    @Query("select count(distinct b.user.id) from ExpertBadge b where b.revokedAt is null and b.user.bannedAt is null")
+    long countActiveExperts();
+
     /** Pairs of (userId, topicId) for the active badges of these users. */
     @Query("select b.user.id, b.topic.id from ExpertBadge b where b.user.id in :userIds and b.revokedAt is null")
     List<Object[]> activeTopics(@Param("userIds") Collection<Long> userIds);

@@ -47,6 +47,13 @@ public interface QuestionRepository extends JpaRepository<Question, Long>, JpaSp
 
     long countByUserIdAndHiddenFalse(Long userId);
 
+    long countByHiddenFalse();
+
+    /** Visible questions with at least one visible direct answer. */
+    @Query("select count(q) from Question q where q.hidden = false and exists (select 1 from Answer a"
+            + " where a.question = q and a.parentAnswer is null and a.hidden = false)")
+    long countAnswered();
+
     Page<Question> findAllByHiddenFalseAndCreationDateAfter(LocalDateTime since, Pageable pageable);
 
     long countByCreationDateAfter(LocalDateTime since);
