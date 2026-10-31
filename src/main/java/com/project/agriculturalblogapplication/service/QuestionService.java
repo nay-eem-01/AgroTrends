@@ -29,6 +29,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -102,6 +103,13 @@ public class QuestionService {
         }
         return mapToQuestionResponses(
                 questionRepository.search(query.trim(), CommonUtils.clampedPageable(pageNo, pageSize, Sort.unsorted())));
+    }
+
+    /** Questions asked in the last {@value BlogService#TRENDING_DAYS} days, highest score first, then most answered. */
+    public Page<QuestionResponse> trending(int pageNo, int pageSize) {
+        Sort hottest = Sort.by(Sort.Direction.DESC, "score", "answerCount", "creationDate", "id");
+        return mapToQuestionResponses(questionRepository.findAllByHiddenFalseAndCreationDateAfter(
+                LocalDateTime.now().minusDays(BlogService.TRENDING_DAYS), CommonUtils.clampedPageable(pageNo, pageSize, hottest)));
     }
 
     public long countPublicByUser(Long userId) {

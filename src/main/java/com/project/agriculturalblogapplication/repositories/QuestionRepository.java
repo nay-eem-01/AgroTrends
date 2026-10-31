@@ -41,5 +41,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long>, JpaSp
 
     long countByUserIdAndHiddenFalse(Long userId);
 
+    Page<Question> findAllByHiddenFalseAndCreationDateAfter(LocalDateTime since, Pageable pageable);
+
     long countByCreationDateAfter(LocalDateTime since);
 }
