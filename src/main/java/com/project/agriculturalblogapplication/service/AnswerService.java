@@ -17,11 +17,14 @@ import com.project.agriculturalblogapplication.model.request.ReplyToAnswerReques
 import com.project.agriculturalblogapplication.model.request.UpdateAnswerRequest;
 import com.project.agriculturalblogapplication.model.AuthorStanding;
 import com.project.agriculturalblogapplication.model.response.AnswerResponse;
+import com.project.agriculturalblogapplication.model.response.UserAnswerResponse;
 import com.project.agriculturalblogapplication.repositories.AnswerRepository;
 import com.project.agriculturalblogapplication.repositories.QuestionAiAnswerRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -164,6 +167,25 @@ public class AnswerService {
         if (!question.getUser().getId().equals(authorizationService.currentUserId(lang))) {
             throw new ApplicationException(HttpStatus.FORBIDDEN, ErrorCode.ERROR_ONLY_ASKER_CAN_ACCEPT, lang);
         }
+    }
+
+    /** A user's public answers for their profile, newest first. */
+    @Transactional(readOnly = true)
+    public Page<UserAnswerResponse> getAllByUser(Long userId, int pageNo, int pageSize, String lang) {
+        userService.findByIdWithException(userId, lang);
+        return answerRepository.findAllByUserIdAndParentAnswerIsNullAndHiddenFalseAndQuestionHiddenFalse(userId,
+                        CommonUtils.clampedPageable(pageNo, pageSize, Sort.by(Sort.Direction.DESC, "creationDate")))
+                .map(answer -> new UserAnswerResponse(answer.getId(), answer.getQuestion().getId(),
+                        answer.getQuestion().getTitle(), answer.getContent(), answer.getScore(), isAccepted(answer),
+                        CommonUtils.toInstant(answer.getCreationDate())));
+    }
+
+    public long countPublicByUser(Long userId) {
+        return answerRepository.countByUserIdAndParentAnswerIsNullAndHiddenFalseAndQuestionHiddenFalse(userId);
+    }
+
+    public long countAcceptedByUser(Long userId) {
+        return answerRepository.countAcceptedByUserId(userId);
     }
 
     private static boolean isAccepted(Answer answer) {

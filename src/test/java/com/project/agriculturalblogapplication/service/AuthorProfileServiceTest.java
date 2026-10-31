@@ -1,11 +1,15 @@
 package com.project.agriculturalblogapplication.service;
 
 import com.project.agriculturalblogapplication.entities.Author;
+import com.project.agriculturalblogapplication.entities.Category;
+import com.project.agriculturalblogapplication.entities.ExpertBadge;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.model.request.UpdateAuthorProfileRequest;
 import com.project.agriculturalblogapplication.model.response.AuthorProfileResponse;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import org.junit.jupiter.api.BeforeEach;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -27,7 +31,10 @@ class AuthorProfileServiceTest {
     private final BlogService blogService = mock(BlogService.class);
     private final FollowService followService = mock(FollowService.class);
     private final AuthorizationService authorization = mock(AuthorizationService.class);
-    private final AuthorProfileService service = new AuthorProfileService(authorService, blogService, followService, authorization);
+    private final AnswerService answerService = mock(AnswerService.class);
+    private final ExpertService expertService = mock(ExpertService.class);
+    private final AuthorProfileService service = new AuthorProfileService(authorService, blogService, followService,
+            authorization, answerService, expertService);
 
     @BeforeEach
     void setUp() {
@@ -67,6 +74,46 @@ class AuthorProfileServiceTest {
     }
 
     @Test
+    void theProfileIsAPortfolioOfExpertTopicsAnswersAndLinks() {
+        Author author = author();
+        author.setLinks(List.of("https://www.linkedin.com/in/rahim"));
+        when(authorService.findByIdWithException(20L)).thenReturn(author);
+        Category rice = new Category();
+        rice.setId(3L);
+        rice.setCategoryName("Rice");
+        ExpertBadge badge = new ExpertBadge();
+        badge.setTopic(rice);
+        badge.setFieldTitle("Agronomist, BRRI");
+        when(expertService.activeBadges(10L)).thenReturn(List.of(badge));
+        when(answerService.countPublicByUser(10L)).thenReturn(40L);
+        when(answerService.countAcceptedByUser(10L)).thenReturn(9L);
+
+        AuthorProfileResponse profile = service.get(20L, "en");
+
+        assertEquals(10L, profile.userId());
+        assertEquals(List.of(new AuthorProfileResponse.ExpertTopic(3L, "Rice", "Agronomist, BRRI")), profile.expertTopics());
+        assertEquals(40L, profile.answerCount());
+        assertEquals(9L, profile.acceptedAnswerCount());
+        assertEquals(List.of("https://www.linkedin.com/in/rahim"), profile.links());
+    }
+
+    @Test
+    void profileLinksMustBeHttpAndAtMostFive() {
+        Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
+        UpdateAuthorProfileRequest request = new UpdateAuthorProfileRequest();
+        request.setDesignation("Agronomist");
+        request.setSpecialities(List.of("rice"));
+
+        request.setLinks(List.of("https://rahim.example.com"));
+        assertTrue(validator.validate(request).isEmpty());
+        // A javascript: link would run in the visitor's browser from the profile page.
+        request.setLinks(List.of("javascript:alert(1)"));
+        assertFalse(validator.validate(request).isEmpty());
+        request.setLinks(List.of("https://a.com", "https://b.com", "https://c.com", "https://d.com", "https://e.com", "https://f.com"));
+        assertFalse(validator.validate(request).isEmpty());
+    }
+
+    @Test
     void myProfileIsTheCallersOwnForPrefillingTheEditor() {
         Author mine = author();
         when(authorService.profileOf(7L)).thenReturn(mine);
@@ -84,8 +131,12 @@ class AuthorProfileServiceTest {
         request.setDesignation("Agronomist");
         request.setSpecialities(List.of("rice"));
         request.setBio("Twenty years in paddy research.");
+        request.setLinks(List.of("https://rahim.example.com"));
 
-        assertEquals("Twenty years in paddy research.", service.updateMine(request, "en").bio());
+        AuthorProfileResponse profile = service.updateMine(request, "en");
+
+        assertEquals("Twenty years in paddy research.", profile.bio());
+        assertEquals(List.of("https://rahim.example.com"), profile.links());
     }
 
     private static Author author() {

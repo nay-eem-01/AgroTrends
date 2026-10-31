@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 87 of 98 steps done): launch blockers and one account type with
+- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 88 of 99 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8), admin dashboard endpoints (9). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -50,6 +50,31 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | After deploying 2.3a: start once with `AI_REINDEX_ON_STARTUP=true` (old chunks have no `status`, so retrieval ignores them) | whoever deploys | AI answers on existing posts |
 | Deleting a user with comments/questions/answers fails on foreign keys: decide delete vs anonymise | Nayeem | account deletion |
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
+
+---
+
+## 2026-10-31 (profile as a portfolio)
+
+**Done**
+- 4.15 The product direction maps each area to a reference (Reddit feed, Stack Overflow Q&A, LinkedIn expert
+  profiles, Medium articles, Perplexity AI, Khamari Bengali guidance). The backend already covered all but the
+  LinkedIn-style profile, so the profile is now a portfolio:
+  - `GET /api/authors/{authorId}` adds `userId` (for the user-keyed calls), `expertTopics` (topic + field title of
+    each active badge), `answerCount`, `acceptedAnswerCount` and `links`.
+  - `PUT /api/authors/me` takes `links`: at most 5, each `http(s)://` only, so no `javascript:` href reaches the page.
+  - New public `GET /api/answers/user/{userId}`: the user's answers (not replies, nothing hidden), newest first,
+    each with its question title, score and whether it was accepted.
+- Checked live on a second instance: links saved and validated, profile and answers served without signing in.
+
+**Decisions**
+- No combined "portfolio" endpoint: the page is the profile + `/api/users/{id}/reputation` + answers + questions
+  + posts. Work history and endorsements wait until someone needs them.
+
+**Breaking API changes**
+- None; `AuthorProfileResponse` only gains fields.
+
+**Frontend**
+- Build the profile page from those calls; render `links` as `rel="noopener nofollow"` anchors.
 
 ---
 

@@ -13,12 +13,14 @@ import com.project.agriculturalblogapplication.enums.Badge;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.AuthorStanding;
 import com.project.agriculturalblogapplication.model.response.AnswerResponse;
+import com.project.agriculturalblogapplication.model.response.UserAnswerResponse;
 import com.project.agriculturalblogapplication.repositories.AnswerRepository;
 import com.project.agriculturalblogapplication.repositories.QuestionAiAnswerRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 
 import java.util.List;
@@ -175,6 +177,23 @@ class AnswerServiceTest {
         List<AnswerResponse> replies = answerService.viewReplies(3L);
 
         assertEquals(List.of(5L), replies.stream().map(AnswerResponse::getAnswerId).toList());
+    }
+
+    @Test
+    void aUsersProfileListsTheirAnswersWithTheQuestionAndWhichWasAccepted() {
+        question.setTitle("Why are my rice leaves yellow?");
+        Answer accepted = answer(3L, 5);
+        Answer other = answer(4L, 1);
+        question.setAcceptedAnswer(accepted);
+        when(answerRepository.findAllByUserIdAndParentAnswerIsNullAndHiddenFalseAndQuestionHiddenFalse(any(), any()))
+                .thenReturn(new PageImpl<>(List.of(accepted, other)));
+
+        List<UserAnswerResponse> answers = answerService.getAllByUser(23L, 0, 10, LANG).getContent();
+
+        assertEquals("Why are my rice leaves yellow?", answers.get(0).questionTitle());
+        assertEquals(5L, answers.get(0).score());
+        assertTrue(answers.get(0).accepted());
+        assertFalse(answers.get(1).accepted());
     }
 
     private Answer answer(long id, long score) {

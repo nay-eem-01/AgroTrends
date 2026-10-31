@@ -127,6 +127,8 @@ public final class ErrorCode {
     public static final String ERROR_CANNOT_FOLLOW_YOURSELF = "You cannot follow yourself.";
     public static final String ERROR_TAG_NOT_FOUND = "Tag not found.";
     public static final String ERROR_BIO_TOO_LONG = "A bio can be at most 2000 characters.";
+    public static final String ERROR_TOO_MANY_LINKS = "A profile can have at most 5 links.";
+    public static final String ERROR_INVALID_LINK = "A link must start with http:// or https://.";
     public static final String ERROR_AGRI_FIELD_TOO_LONG = "Crop and region can be at most 60 characters.";
     public static final String ERROR_EXPERT_TOPICS_REQUIRED = "Choose the topics (1 to 3) you are an expert in.";
     public static final String ERROR_EXPERT_FIELD_TITLE_REQUIRED = "Tell us your field, e.g. Veterinarian or Agronomist.";
