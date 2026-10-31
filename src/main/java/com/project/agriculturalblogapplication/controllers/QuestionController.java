@@ -20,6 +20,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -92,9 +93,9 @@ public class QuestionController {
     @Operation(summary = "Get question info by id")
     @ApiResponse(content = @Content(schema = @Schema(implementation = QuestionResponse.class)), responseCode = "200")
     @GetMapping(value = "/id/{questionId}")
-    public ResponseEntity<HttpResponse> findById(@PathVariable Long questionId) {
+    public ResponseEntity<HttpResponse> findById(@PathVariable Long questionId, HttpServletRequest httpServletRequest) {
         return HttpResponse.getResponseEntity(
-                true, "Data loaded successfully.", questionService.findById(questionId));
+                true, "Data loaded successfully.", questionService.findById(questionId, httpServletRequest.getRemoteAddr()));
     }
 
     @Operation(summary = "The AI's answer to a question (public): generated a few seconds after the question is posted, "

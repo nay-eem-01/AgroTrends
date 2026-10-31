@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 92 of 103 steps done
+**Progress:** 93 of 104 steps done
 
 **Launch scope (decided 2026-10-13):** Phases 4–8 must all be done before the public launch. Order of work:
 5 → 6 → 7 → 8 → 4 (deploy) → live test → launch. Nothing is deployed until Phases 5–8 are done. After launch, the
@@ -114,6 +114,7 @@ Operability and regression safety. Runs after Phases 5–8 are complete; then de
 | 4.17 | An author is a user: `authors.id` = `users.id` (`@MapsId`), existing rows and their foreign keys remapped at startup in one statement; every user has a profile from sign-up (and a startup backfill), so anyone can be followed — frontend request §2 | ✅ |
 | 4.18 | Experts to follow: public `GET /api/experts?categoryId=` — verified, not banned, most accepted answers first, with field, institution, topics and `followedByMe` — frontend request §4 | ✅ |
 | 4.19 | Trending questions: public `GET /api/feed/trending/questions` (last 14 days, highest score, then most answered), shown beside `/api/feed/trending` posts — frontend request §6 | ✅ |
+| 4.20 | Question views: `viewCount` on `QuestionResponse`, counted once per signed-in user (or per address for visitors) per day on `GET /api/questions/id/{id}` — frontend request §7 | ✅ |
 
 ## Phase 5 — Launch blockers
 

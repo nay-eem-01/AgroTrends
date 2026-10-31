@@ -78,6 +78,11 @@ public class Question extends AuditModel<String> {
     @Column(name = VoteTable.SCORE, nullable = false, updatable = false)
     private long score;
 
+    /** Once per signed-in user, or per address for visitors, per day; kept by QuestionService like the score. */
+    @ColumnDefault("0")
+    @Column(name = "view_count", nullable = false, updatable = false)
+    private long viewCount;
+
     @Embedded
     private AgriMetadata agri = new AgriMetadata();
 

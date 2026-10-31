@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 92 of 103 steps done): launch blockers and one account type with
+- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 93 of 104 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8), admin dashboard endpoints (9). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -77,6 +77,10 @@ keep the AI as it is; §11 — not wanted; §12 — experts hear about new quest
 - 4.19 (§6) The home page shows two lists, not one mixed feed: trending posts (`/api/feed/trending`, as before)
   and new public `GET /api/feed/trending/questions` (last 14 days, hidden left out, highest score, then most
   answered, then newest). Checked live: a 30-day-old and a hidden question were left out.
+- 4.20 (§7) `viewCount` on `QuestionResponse`: `GET /api/questions/id/{id}` adds one per signed-in user, or per
+  client address for visitors (no server session exists), per day; an atomic update like the score. Who viewed today
+  is kept in memory (`AttemptLimiter`), so it resets on restart and is per instance. Checked live: three reads from
+  one visitor counted once; the new column defaulted existing questions to 0.
 **Breaking API changes**
 - Existing `authorId` values change to the user's id (local data only; nothing is deployed). Bookmarked author URLs
   from before point at someone else.

@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -31,6 +32,11 @@ public interface QuestionRepository extends JpaRepository<Question, Long>, JpaSp
                               function('websearch_to_tsquery', 'simple', :query)) desc, q.id desc
             """)
     Page<Question> search(@Param("query") String query, Pageable pageable);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE Question x SET x.viewCount = x.viewCount + 1 WHERE x.id = :id")
+    void addView(@Param("id") Long id);
 
     /** Atomic, so two votes at once cannot overwrite each other. */
     @Modifying

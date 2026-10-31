@@ -46,6 +46,9 @@ public class QuestionResponse {
     /** Upvotes minus downvotes. */
     private long score;
 
+    /** Once per signed-in user, or per address for visitors, per day. */
+    private long viewCount;
+
     /** The answer the asker accepted, or null. */
     private Long acceptedAnswerId;
 }
