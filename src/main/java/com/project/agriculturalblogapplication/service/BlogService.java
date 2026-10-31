@@ -77,6 +77,8 @@ public class BlogService {
         blog.setTitle(request.getTitle());
         blog.setContent(request.getContent());
         blog.setImageUrl(request.getImageUrl());
+        blog.setSubtitle(request.getSubtitle());
+        blog.setAiCitable(request.getAiCitable() == null || request.getAiCitable());
         blog.setSlug(uniqueSlug(request.getTitle()));
         if (request.getAgri() != null) {
             blog.setAgri(request.getAgri().toMetadata());
@@ -184,7 +186,14 @@ public class BlogService {
         blog.setContent(request.getContent());
         blog.setCategory(category);
         blog.setImageUrl(request.getImageUrl());
-        // Omitted tags or agri info keep the current values, so clients that do not send them do not wipe them.
+        // Omitted tags, agri info, subtitle or AI opt-out keep the current values, so clients that do not send them do
+        // not wipe them.
+        if (request.getSubtitle() != null) {
+            blog.setSubtitle(request.getSubtitle().isBlank() ? null : request.getSubtitle());
+        }
+        if (request.getAiCitable() != null) {
+            blog.setAiCitable(request.getAiCitable());
+        }
         if (request.getAgri() != null) {
             blog.setAgri(request.getAgri().toMetadata());
         }

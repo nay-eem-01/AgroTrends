@@ -10,7 +10,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 93 of 104 steps done): launch blockers and one account type with
+- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 94 of 105 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8), admin dashboard endpoints (9). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -81,6 +81,10 @@ keep the AI as it is; §11 — not wanted; §12 — experts hear about new quest
   client address for visitors (no server session exists), per day; an atomic update like the score. Who viewed today
   is kept in memory (`AttemptLimiter`), so it resets on restart and is per instance. Checked live: three reads from
   one visitor counted once; the new column defaulted existing questions to 0.
+- 4.21 (§9) Blogs get `subtitle` (≤ 200) and `aiCitable` (default true) on create/update, `BlogResponse` and
+  `BlogSummaryResponse`. An update that leaves either out keeps it (a blank subtitle clears it). `aiCitable=false`
+  drops the post from the vector index, so the AI never cites it; related posts use the same index, so an opted-out
+  post is also never shown as related. Checked live: existing posts came up `aiCitable: true`.
 **Breaking API changes**
 - Existing `authorId` values change to the user's id (local data only; nothing is deployed). Bookmarked author URLs
   from before point at someone else.

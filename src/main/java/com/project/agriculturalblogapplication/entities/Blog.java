@@ -27,6 +27,14 @@ public class Blog extends AuditModel<String> {
     @Column(name = BlogTable.TITLE)
     private String title;
 
+    @Column(name = "subtitle", length = 200)
+    private String subtitle;
+
+    /** False keeps the post out of the AI's sources (and out of related posts, which use the same index). */
+    @ColumnDefault("true")
+    @Column(name = "ai_citable", nullable = false)
+    private boolean aiCitable = true;
+
     @Column(name = BlogTable.CONTENT, columnDefinition = "TEXT")
     private String content;
 
