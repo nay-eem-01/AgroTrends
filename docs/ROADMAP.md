@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 96 of 107 steps done
+**Progress:** 101 of 108 steps done
 
 **Launch scope (decided 2026-10-13):** Phases 4–8 must all be done before the public launch. Order of work:
 5 → 6 → 7 → 8 → 4 (deploy) → live test → launch. Nothing is deployed until Phases 5–8 are done. After launch, the
@@ -95,16 +95,16 @@ Operability and regression safety. Runs after Phases 5–8 are complete; then de
 
 | # | Step | Status |
 |---|---|---|
-| 4.1 | `dev` / `prod` profiles; `ddl-auto=validate`; CORS origins from `app.frontendUrl` (audit B6); `server.forward-headers-strategy` so per-IP limits see the client IP behind the proxy | ⬜ |
-| 4.2 | Flyway baseline + migrations for the existing schema; then delete `SchemaPatches` (audit O8) | ⬜ |
-| 4.3 | `docker-compose.yml` with `pgvector/pgvector:pg16`; Dockerfile; `uploads/` on a named volume | ⬜ |
+| 4.1 | `prod` profile (no API docs); CORS origins from `CORS_ORIGINS`, default `app.frontendUrl` (audit B6); `server.forward-headers-strategy=native` so per-IP limits see the client IP behind the proxy. `ddl-auto=validate` moved to 4.2 | ✅ |
+| 4.2 | Flyway baseline + migrations for the existing schema; then delete `SchemaPatches` (audit O8) and switch to `ddl-auto=validate` | ⬜ |
+| 4.3 | `docker-compose.yml` with `pgvector/pgvector:pg16` and Caddy (HTTPS); Dockerfile; `uploads/` on a named volume; `docs/DEPLOY.md` (AWS EC2 now, VPS later) | ✅ |
 | 4.4 | Testcontainers (pgvector): `contextLoads` passes; `@WebMvcTest` slices for auth and ownership | ⬜ |
 | 4.5 | GitHub Actions: build + test + gitleaks | ⬜ |
 | 4.6 | README: prerequisites, env vars, run, endpoint table | ⬜ |
 | 4.7 | Housekeeping: rename `constatnt`, fix `AuditModel` date format (dead code moved to 5.4; 4xx logged at DEBUG since 2026-10-17) | ⬜ |
 | 4.8 | Rate-limit store: move `AttemptLimiter` to a shared store if running more than one instance | ⏸ |
-| 4.9 | Spring Boot Actuator: health + basic metrics, health endpoint public, the rest admin-only | ⬜ |
-| 4.10 | Backups: nightly `pg_dump` and `uploads/` copy, restore tested once | ⬜ |
+| 4.9 | Spring Boot Actuator: public `/actuator/health` (UP/DOWN, no details), nothing else exposed. Metrics later, when there is somewhere to send them | ✅ |
+| 4.10 | Backups: nightly `pg_dump` (`deploy/backup.sh`), last 7 on the server and a copy in a private R2 bucket; restore tested once on the local stack. Images already live in R2 | ✅ |
 | 4.11 | Logging: correlation id per request (`X-Correlation-Id`), secret masking in every appender, async appenders, rolling file outside the repo (not in `prod`) | ✅ |
 | 4.12 | Answers and comments: drop the `OneToMany` collections (`Question.answers`, `Answer.replies`, `Comment.replies`, `Blog.comments`) for `ON DELETE CASCADE` + reply queries; index the `answers` and `comment` foreign keys; `Answer` relations `LAZY` | ✅ |
 | 4.13 | Images on Cloudflare R2 (S3 API) when `R2_BUCKET` is set, local disk otherwise; e-mail through Brevo SMTP (config only) | ✅ |
@@ -118,6 +118,7 @@ Operability and regression safety. Runs after Phases 5–8 are complete; then de
 | 4.21 | Story `subtitle` (≤ 200) and `aiCitable` (default true) on blog create/update and both blog responses; an opted-out post is dropped from the AI index — frontend request §9 | ✅ |
 | 4.22 | Public numbers: `GET /api/stats/public` (members, verified experts, questions, answered questions), counted at most hourly — frontend request §10 | ✅ |
 | 4.23 | A new question reaches its topic's experts even without an AI answer: `NEW_QUESTION_IN_TOPIC` when the AI fails or the asker hit the daily limit (`NEW_REVIEW_ITEM` stays for an AI answer to review) — frontend request §12 | ✅ |
+| 4.24 | Fix: sign-up and the super-admin seed failed on a fresh database (`detached entity passed to persist`); `AuthorService.profileOf` now runs in one transaction | ✅ |
 
 ## Phase 5 — Launch blockers
 
