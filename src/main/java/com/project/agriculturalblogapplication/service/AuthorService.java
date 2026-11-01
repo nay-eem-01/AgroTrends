@@ -8,6 +8,7 @@ import com.project.agriculturalblogapplication.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -24,7 +25,11 @@ public class AuthorService {
                 new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_AUTHOR_NOT_FOUND));
     }
 
-    /** The user's profile, created the first time it is needed: every account may publish (PLAN decision 11). */
+    /**
+     * The user's profile, created the first time it is needed: every account may publish (PLAN decision 11).
+     * One transaction: the author shares the user's id (@MapsId), so the user must still be managed when it is saved.
+     */
+    @Transactional
     public Author profileOf(Long userId) {
         return authorRepository.findByUserId(userId).orElseGet(() -> {
             Author author = new Author();
