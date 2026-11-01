@@ -1,0 +1,11 @@
+# Secrets never go into the image: compose passes .env at run time.
+.env
+*-local.properties
+target
+uploads
+logfiles
+.git
+.idea
+docs
+*.pdf
+backups

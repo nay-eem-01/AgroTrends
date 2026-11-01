@@ -51,3 +51,5 @@ AgroTrends-Code-Audit.pdf
 # these are a safety net for stray local runs.
 *.log
 logfiles/
+# Database backups (deploy/backup.sh)
+backups/

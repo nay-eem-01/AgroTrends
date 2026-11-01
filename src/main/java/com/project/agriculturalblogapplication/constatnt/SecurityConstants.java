@@ -58,6 +58,7 @@ public class SecurityConstants {
             "/api/users/*/profile",
             "/api/experts",
             "/api/stats/public",
+            "/actuator/health",
     };
 
     private SecurityConstants() {
