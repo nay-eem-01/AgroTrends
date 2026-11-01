@@ -1,34 +1,17 @@
-# One server: the app, PostgreSQL with pgvector, and Caddy for HTTPS. Reads secrets from .env next to this file.
+# One server: the app and Caddy for HTTPS. The database is Supabase (PostgreSQL with pgvector), set by DB_URL,
+# DB_USERNAME and DB_PASSWORD in .env next to this file.
 #   docker compose up -d --build
-# Only Caddy publishes ports; the app and the database are reachable inside this network only.
+# Only Caddy publishes ports; the app is reachable inside this network only.
 services:
-  db:
-    image: pgvector/pgvector:pg16
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: agrotrends
-      POSTGRES_USER: ${DB_USERNAME:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
-    volumes:
-      - db-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d agrotrends"]
-      interval: 10s
-      retries: 10
-
   app:
     build: .
     restart: unless-stopped
     env_file: .env
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      DB_URL: jdbc:postgresql://db:5432/agrotrends
       STORAGE_DIR: /data/uploads
     volumes:
       - uploads:/data/uploads
-    depends_on:
-      db:
-        condition: service_healthy
     mem_limit: 1g
     logging:
       driver: json-file
@@ -50,7 +33,6 @@ services:
       - app
 
 volumes:
-  db-data:
   uploads:
   caddy-data:
   caddy-config:

@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 101 of 108 steps done
+**Progress:** 102 of 109 steps done
 
 **Launch scope (decided 2026-10-13):** Phases 4–8 must all be done before the public launch. Order of work:
 5 → 6 → 7 → 8 → 4 (deploy) → live test → launch. Nothing is deployed until Phases 5–8 are done. After launch, the
@@ -119,6 +119,7 @@ Operability and regression safety. Runs after Phases 5–8 are complete; then de
 | 4.22 | Public numbers: `GET /api/stats/public` (members, verified experts, questions, answered questions), counted at most hourly — frontend request §10 | ✅ |
 | 4.23 | A new question reaches its topic's experts even without an AI answer: `NEW_QUESTION_IN_TOPIC` when the AI fails or the asker hit the daily limit (`NEW_REVIEW_ITEM` stays for an AI answer to review) — frontend request §12 | ✅ |
 | 4.24 | Fix: sign-up and the super-admin seed failed on a fresh database (`detached entity passed to persist`); `AuthorService.profileOf` now runs in one transaction | ✅ |
+| 4.25 | Database on Supabase (managed PostgreSQL + pgvector, session pooler) instead of a container on the server; `backup.sh` dumps schema `public` from `DB_URL` and restores with `backup.sh restore` | ✅ |
 
 ## Phase 5 — Launch blockers
 
