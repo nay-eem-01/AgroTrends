@@ -9,8 +9,9 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
-- Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.**
-- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 96 of 107 steps done): launch blockers and one account type with
+- Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.** Deploy kit ready
+  (`docs/DEPLOY.md`): one AWS EC2 server for the 6-month free plan, then a VPS.
+- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 101 of 108 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8), admin dashboard endpoints (9). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -19,11 +20,10 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ## Next up
 
-1. Merge `docs/product-study` and `docs/launch-plan` into `development`.
-2. Phases 5–8 are on `development` (PR #110). Phase 9 (admin dashboard) is done on `feat/admin-dashboard-base`:
-   merge 9.1 → 9.2 → 9.3, then the base into `development`. Next: Phase 4 (ship it: profiles, Flyway, Docker,
-   Testcontainers, CI), then deploy and live-test.
-3. Then Phases 6, 7, 8; deploy (Phase 4) and live-test only after all of them.
+1. Merge `feat/ship-it-base` into `development`, then `development` → `staging` → `production`.
+2. Deploy by `docs/DEPLOY.md` (AWS EC2, one server). Before that: rotate the leaked keys (0.4), a domain, R2
+   buckets (images, backups), Brevo sender domain.
+3. After launch: 4.2 Flyway, 4.4 Testcontainers, 4.5 CI; move to a VPS before the AWS free plan ends.
 4. **Team:** 30–50 seeded Bangla articles; 5–10 experts invited; pick the 6–8 launch topics (categories).
 5. **Nayeem:** roadmap 0.4 (rotate keys, purge history); set `GOOGLE_CLIENT_ID`; make
    `development` the default branch; delete `feature/kafka-impl` (superseded by Phase 8).
@@ -52,6 +52,39 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-11-01 (ship it: the deploy kit)
+
+Decided with Nayeem: deploy today on AWS (free plan, 6 months) on **one EC2 server with Docker Compose**, not RDS:
+cheaper on credits and the same files move to the VPS planned for after the free plan. Images stay on R2, e-mail on
+Brevo. 4.2 (Flyway), 4.4 (Testcontainers) and 4.5 (CI) wait until after launch: `ddl-auto=update` and the
+`SchemaPatches` keep working as they do locally.
+
+**Done**
+- 4.1 CORS origins from `CORS_ORIGINS` (default `FRONTEND_URL`); it was hard-coded to `localhost:5173`, so a deployed
+  frontend could not call the API. `server.forward-headers-strategy=native`: behind Caddy every visitor would share
+  the proxy's IP and one rate-limit bucket. Tomcat only trusts `X-Forwarded-*` from private addresses. The `prod`
+  profile turns off Swagger and `/v3/api-docs`.
+- 4.9 `/actuator/health` is public and says only UP or DOWN; no other actuator endpoint is exposed. Mail health is
+  off so a Brevo outage does not restart the container.
+- 4.24 A fresh database could not start: the super-admin seed (and every sign-up) failed with "detached entity
+  passed to persist", because the author shares the user's id (`@MapsId`) and `profileOf` had no transaction. Found
+  by the Docker test below; existing local databases hid it because their admin already existed.
+- 4.3 `Dockerfile` (multi-stage, runs as a non-root user, heap at 75 % of the 1 GB container limit),
+  `docker-compose.yml` (pgvector, the app, Caddy with automatic HTTPS; only Caddy publishes ports; logs rotate at
+  5 × 20 MB), `.dockerignore` keeps `.env` out of the image. Checked on a fresh local stack: health UP, sign-up gives
+  `authorId` = `userId`, `/v3/api-docs` 404, `/actuator/env` 401, CORS allows only `FRONTEND_URL`, http → https.
+- 4.10 `deploy/backup.sh`: nightly `pg_dump`, the last 7 kept on the server, a copy to a private R2 bucket when
+  `BACKUP_R2_BUCKET` is set. It reads single keys from `.env` instead of sourcing it. Backup → change a row →
+  restore brought the row back.
+- `docs/DEPLOY.md`: AWS account and budget alert, EC2 (`t3.small`/`t4g.small`, Mumbai), Elastic IP, DNS, swap,
+  Docker, `.env`, first start, backups, uptime monitor, releases, and moving to a VPS later.
+
+**Known limitations**
+- One server: the app, the database and the backups' first copy share one disk. The R2 copy is what survives losing it.
+- A release takes the API down for about 30 seconds (`docker compose up -d --build app`).
+- The R2 upload in `backup.sh` was not run (no bucket yet); the dump and restore were.
+- The regression test for 4.24 checks the `@Transactional` annotation, not a database; 4.4 replaces it.
 
 ## 2026-11-01 (frontend requests, second batch)
 
