@@ -108,7 +108,8 @@ public class CommentService {
         Comment reply = new Comment();
         reply.setUser(user);
         reply.setBlog(blog);
-        reply.setParentComment(parentComment);
+        // Two levels, like Facebook: a reply to a reply joins the same thread; its author is still the one notified.
+        reply.setParentComment(parentComment.getParentComment() == null ? parentComment : parentComment.getParentComment());
         reply.setCommentContent(request.getContent());
 
         reply =  commentRepository.save(reply);

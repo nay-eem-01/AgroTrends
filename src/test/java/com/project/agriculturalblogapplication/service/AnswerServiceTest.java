@@ -17,7 +17,9 @@ import com.project.agriculturalblogapplication.model.response.UserAnswerResponse
 import com.project.agriculturalblogapplication.repositories.AnswerRepository;
 import com.project.agriculturalblogapplication.repositories.QuestionAiAnswerRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
+import com.project.agriculturalblogapplication.model.request.ReplyToAnswerRequest;
 import org.junit.jupiter.api.BeforeEach;
+import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageImpl;
@@ -52,7 +54,9 @@ class AnswerServiceTest {
     private final QuestionAiAnswerRepository aiAnswers = mock(QuestionAiAnswerRepository.class);
     private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
     private final NotificationPublisher notifications = mock(NotificationPublisher.class);
-    private final AnswerService answerService = new AnswerService(mock(QuestionService.class), mock(UserService.class),
+    private final QuestionService questionService = mock(QuestionService.class);
+    private final UserService userService = mock(UserService.class);
+    private final AnswerService answerService = new AnswerService(questionService, userService,
             authorization, answerRepository, aiAnswers, reputation, events, notifications);
 
     private Question question;
@@ -105,6 +109,26 @@ class AnswerServiceTest {
         answer(4L, 0).setParentAnswer(parent);
 
         assertThrows(ApplicationException.class, () -> answerService.findById(4L));
+    }
+
+    @Test
+    void aReplyToAReplyJoinsTheThreadUnderTheAnswer() {
+        when(authorization.currentUserId(LANG)).thenReturn(ASKER);
+        when(userService.findByIdWithException(ASKER, LANG)).thenReturn(user(ASKER));
+        when(questionService.findByIdWithException(1L)).thenReturn(question);
+        when(answerRepository.save(any(Answer.class))).thenAnswer(call -> call.getArgument(0));
+        Answer root = answer(3L, 0);
+        answer(4L, 0).setParentAnswer(root);
+        ReplyToAnswerRequest request = new ReplyToAnswerRequest();
+        request.setQuestionId(1L);
+        request.setParentAnswerId(4L);
+        request.setContent("@Karim thanks");
+
+        answerService.replyToAnswer(request, LANG);
+
+        ArgumentCaptor<Answer> saved = ArgumentCaptor.forClass(Answer.class);
+        verify(answerRepository).save(saved.capture());
+        assertEquals(root, saved.getValue().getParentAnswer());
     }
 
     @Test
