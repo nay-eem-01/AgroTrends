@@ -1,22 +1,56 @@
 # Deploying the backend (one server, Docker)
 
-One Linux server runs everything with `docker-compose.yml`: the app, PostgreSQL with pgvector, and Caddy for HTTPS.
-The same steps work on AWS EC2 now and on a VPS later; only section 2 is AWS-specific.
+One Linux server runs the app and Caddy (HTTPS) with `docker-compose.yml`; the database is **Supabase** (managed
+PostgreSQL with pgvector). The same steps work on AWS EC2 now and on a VPS later; only section 3 is AWS-specific, and
+moving servers never touches the database.
 
 ## 1. Before you start
 
-- [ ] **Rotate the leaked keys** (roadmap 0.4): new Gemini API key, new DB password. Never reuse the old ones.
+- [ ] **Rotate the leaked keys** (roadmap 0.4): a new Gemini API key. Never reuse the old ones.
 - [ ] **A domain** for the API, e.g. `api.agrotrends.com`. HTTPS needs one; a bare IP cannot get a certificate.
 - [ ] **Cloudflare R2:** two buckets, `agrotrends-images` (public access on) and `agrotrends-backups` (private), each
       with its own "Object Read & Write" token scoped to that bucket.
 - [ ] **Brevo:** verified sender domain and an SMTP key.
 - [ ] **Google sign-in:** add the frontend's address under "Authorized JavaScript origins" of the OAuth client.
 
-## 2. AWS: account and server
+## 2. Supabase: the database
+
+1. Sign up at supabase.com (GitHub sign-in works; no card on the free plan) and create an organization (Free).
+2. **New project:**
+   - Name: `agrotrends`.
+   - Database password: **Generate a password** and save it in your password manager. It becomes `DB_PASSWORD`.
+   - Region: **South Asia (Mumbai)** — the same as the EC2 server, so every query stays close.
+   - Under the security options, **turn off the Data API**. The app talks to the database directly; with the Data
+     API on, Supabase would also publish every table (users included) as a web API.
+3. Wait until the project is ready (about 2 minutes).
+4. **Database → Extensions:** search `vector` and enable it (schema `extensions`). The app needs it for the AI.
+5. **Data API off check:** if you did not see the option at creation, open Project Settings, find **Data API**,
+   and turn it off there.
+6. **Connect** (the button at the top of the project) → connection string → method **Session pooler**. The direct
+   connection is IPv6-only and EC2 has IPv4. From what it shows, note:
+   - host — like `aws-0-ap-south-1.pooler.supabase.com` (copy yours exactly; the prefix may differ)
+   - port `5432` (session mode; **not 6543**, the transaction pooler breaks the app's prepared statements)
+   - database `postgres`
+   - user — `postgres.<project ref>`, with the dot and the project ref
+
+   These become, in `.env`:
+
+   ```
+   DB_URL=jdbc:postgresql://<host>:5432/postgres?sslmode=require
+   DB_USERNAME=postgres.<project ref>
+   DB_PASSWORD=<the generated password>
+   ```
+7. Nothing else: the app creates its tables on the first start.
+
+Free plan limits to know: **500 MB** of database (plenty for launch; watch it under Reports), **no backups**
+(section 6 is the only copy), and a project with no activity for a week is paused (Restore it from the dashboard;
+the running app and the nightly backup keep it active).
+
+## 3. AWS: account and server
 
 1. Sign up and pick the **Free plan**. Region: **Asia Pacific (Mumbai) `ap-south-1`**, the closest to Bangladesh.
 2. **Billing → Budgets:** a monthly budget of $20 with an e-mail alert at 50 %. The free plan ends after 6 months or
-   when the credits run out, and AWS then closes the account: move to the VPS (section 8) before that.
+   when the credits run out, and AWS then closes the account: move to the VPS (section 9) before that.
 3. **EC2 → Launch instance:**
    - Ubuntu Server 24.04 LTS.
    - `t3.small` (2 GB) — or `t4g.small` (ARM, cheaper; every image here has an ARM build). Pick one marked
@@ -28,7 +62,7 @@ The same steps work on AWS EC2 now and on a VPS later; only section 2 is AWS-spe
 5. At your DNS provider: an **A record** `api` → the Elastic IP. On Cloudflare, set it to **DNS only** (grey
    cloud): the orange proxy hides visitors' IPs from the rate limits.
 
-## 3. Prepare the server
+## 4. Prepare the server
 
 ```bash
 ssh -i agrotrends.pem ubuntu@<elastic ip>
@@ -41,7 +75,7 @@ curl -fsSL https://get.docker.com | sudo sh
 sudo usermod -aG docker ubuntu && exit        # sign in again so the group applies
 ```
 
-## 4. Configure and start
+## 5. Configure and start
 
 ```bash
 git clone https://github.com/nay-eem-01/AgroTrends.git && cd AgroTrends
@@ -54,7 +88,7 @@ Set in `.env` (each is explained in `.env.example`):
 | Key | Value |
 |---|---|
 | `API_DOMAIN` | `api.agrotrends.com` |
-| `DB_PASSWORD` | new, long, random (`openssl rand -base64 24`) |
+| `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` | from Supabase (section 2, step 6) |
 | `JWT_SECRET` | `openssl rand -base64 48` |
 | `GEMINI_API_KEY` | the new key |
 | `FRONTEND_URL` | the frontend's address, e.g. `https://agrotrends.com` (used in e-mail links) |
@@ -65,8 +99,6 @@ Set in `.env` (each is explained in `.env.example`):
 | `R2_BUCKET`, `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `UPLOADS_PUBLIC_BASE_URL` | images bucket |
 | `BACKUP_R2_BUCKET`, `BACKUP_R2_ACCESS_KEY_ID`, `BACKUP_R2_SECRET_ACCESS_KEY` | backups bucket |
 
-Leave `DB_URL` unset: docker-compose points the app at its own database.
-
 ```bash
 docker compose up -d --build                 # first build takes a few minutes
 docker compose logs -f app                   # wait for "Started AgriculturalBlogApplication"
@@ -75,7 +107,9 @@ curl https://api.agrotrends.com/actuator/health     # {"status":"UP"}
 
 Then sign in as the super-admin and change the password.
 
-## 5. Backups
+## 6. Backups
+
+Supabase's free plan keeps none, so this nightly dump is the only backup.
 
 ```bash
 ./deploy/backup.sh                           # once by hand: writes backups/…dump and copies it to R2
@@ -84,16 +118,16 @@ crontab -e
 ```
 
 In the R2 dashboard, add a lifecycle rule on the backups bucket that deletes objects after 30 days.
-**Test a restore once** (it replaces the current data):
-`docker compose exec -T db pg_restore -U postgres -d agrotrends --clean --if-exists < backups/<file>.dump`
+**Test a restore once**, on a second free Supabase project (enable `vector` there first, point a copy of `.env`
+at it), never on the live one: `./deploy/backup.sh restore backups/<file>.dump` replaces the app's tables.
 
-## 6. Watch it
+## 7. Watch it
 
 - A free uptime monitor (e.g. UptimeRobot) on `https://api.agrotrends.com/actuator/health`, alerting by e-mail.
 - Logs: `docker compose logs --since 1h app`. They rotate at 5 × 20 MB.
-- Disk: `df -h` now and then; the database and backups grow over time.
+- Database size: Supabase → Reports (free plan stops at 500 MB). Server disk: `df -h` now and then.
 
-## 7. Release a new version
+## 8. Release a new version
 
 After `staging → production` is merged on GitHub:
 
@@ -103,12 +137,10 @@ cd ~/AgroTrends && git pull && docker compose up -d --build app
 
 The API is down for about 30 seconds while the new container starts.
 
-## 8. Move to a VPS later
+## 9. Move to a VPS later
 
-1. On the new server: sections 3 and 4, with the same `.env` (copy it over `scp`, never through git or chat).
-2. On the old server: `./deploy/backup.sh`, then `docker compose stop app` so nothing changes after the dump.
-3. Copy the newest `backups/*.dump` to the new server and restore it (section 5).
-4. Point the `api` DNS record at the new server; Caddy gets a certificate on its own.
-5. Check health, then shut the AWS account down.
+1. On the new server: sections 4 and 5, with the same `.env` (copy it over `scp`, never through git or chat).
+2. Point the `api` DNS record at the new server; Caddy gets a certificate on its own.
+3. Check health, then stop the old server and shut the AWS account down.
 
-Images live in R2, so nothing else has to move.
+The database stays on Supabase and the images on R2, so nothing else moves.

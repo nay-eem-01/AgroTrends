@@ -10,8 +10,9 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.** Deploy kit ready
-  (`docs/DEPLOY.md`): one AWS EC2 server for the 6-month free plan, then a VPS.
-- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 101 of 108 steps done): launch blockers and one account type with
+  (`docs/DEPLOY.md`): one AWS EC2 server for the 6-month free plan, then a VPS;
+  the database on Supabase.
+- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 102 of 109 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8), admin dashboard endpoints (9). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -21,8 +22,8 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 ## Next up
 
 1. Merge `feat/ship-it-base` into `development`, then `development` → `staging` → `production`.
-2. Deploy by `docs/DEPLOY.md` (AWS EC2, one server). Before that: rotate the leaked keys (0.4), a domain, R2
-   buckets (images, backups), Brevo sender domain.
+2. Deploy by `docs/DEPLOY.md` (Supabase database, one AWS EC2 server). Before that: rotate the leaked keys (0.4),
+   a domain, R2 buckets (images, backups), Brevo sender domain.
 3. After launch: 4.2 Flyway, 4.4 Testcontainers, 4.5 CI; move to a VPS before the AWS free plan ends.
 4. **Team:** 30–50 seeded Bangla articles; 5–10 experts invited; pick the 6–8 launch topics (categories).
 5. **Nayeem:** roadmap 0.4 (rotate keys, purge history); set `GOOGLE_CLIENT_ID`; make
@@ -52,6 +53,31 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-11-01 (database on Supabase)
+
+Decided with Nayeem: the database moves to **Supabase** (free plan, Mumbai) instead of a container on the EC2 server.
+Losing the server no longer loses the data, the move to the VPS becomes a DNS change, and the server's 2 GB go to
+the app. Trade-offs accepted: 500 MB cap, no backups on the free plan (our nightly dump is the only one), a project
+idle for a week pauses.
+
+**Done**
+- 4.25 `docker-compose.yml` without the `db` service; the app takes `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` from `.env`.
+  Supabase is reached through the **session pooler** (port 5432): the direct host is IPv6-only and EC2 is IPv4, and
+  the transaction pooler (6543) breaks JDBC prepared statements.
+- `deploy/backup.sh` runs `pg_dump --schema=public` from a `postgres:17` container against `DB_URL` (the JDBC URL
+  without `jdbc:`), so Supabase's own schemas are left alone; `backup.sh restore <file>` restores with `--clean`.
+- `docs/DEPLOY.md` section 2: creating the project, enabling `vector`, turning the Data API off (it would publish
+  every table, `users` included, as a web API), and the connection values.
+- Checked on a local stand-in set up like Supabase (pgvector in an `extensions` schema on the search path): the app
+  started, created `vector_store` with `vector(768)` and its HNSW index, sign-up created the author row; backup →
+  change a row → restore brought it back.
+
+**Known limitations**
+- Not yet run against a real Supabase project (none exists yet): the pooler, SSL and the extension schema are checked
+  only on the stand-in.
+- Restoring with the PostgreSQL 17 client into a 15/16 server prints a harmless `transaction_timeout` error and exits
+  non-zero; new Supabase projects run 17.
 
 ## 2026-11-01 (ship it: the deploy kit)
 
