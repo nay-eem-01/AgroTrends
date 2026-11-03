@@ -28,7 +28,7 @@ class PublicReadMatchersTest {
             "/api/comments/blog/9", "/api/comments/replies/4", "/api/comments/id/4",
             "/api/questions/all", "/api/questions/all/user/7", "/api/questions/id/5", "/api/questions/search", "/api/users/7/reputation",
             "/api/answers/question/5", "/api/answers/replies/6", "/api/answers/id/6", "/api/answers/all/user/7", "/api/users/7/profile", "/api/experts", "/api/stats/public", "/api/questions/id/5/ai-answer",
-            "/actuator/health",
+            "/actuator/health", "/share/questions/5", "/share/stories/boro-rice-abc123",
     })
     void publishedContentIsReadableWithoutSigningIn(String path) {
         assertTrue(isPublicGet(path), path);
