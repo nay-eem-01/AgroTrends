@@ -17,6 +17,7 @@ public class SecurityConstants {
             "/swagger-ui/**",
             "/api-docs/**",
             "/api/verify/**",
+            "/api/user/unsubscribe",
             "/v3/api-docs/**",
             "/configuration/ui",
             "/swagger-resources/**",

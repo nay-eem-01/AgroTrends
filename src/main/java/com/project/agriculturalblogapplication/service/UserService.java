@@ -113,6 +113,7 @@ public class UserService {
         user.setEmail(createUserRequest.getEmail());
         user.setPassword(passwordEncoder.encode(createUserRequest.getPassword()));
         user.setMobileNumber(createUserRequest.getMobileNumber());
+        user.setPreferredLang(User.languageOf(lang));
         user.setRoles(new HashSet<>(Set.of(role)));
         user = userRepository.save(user);
         // Every user has a profile from the start, so anyone can be followed before they post.
@@ -134,6 +135,7 @@ public class UserService {
         user.setEmail(google.email());
         user.setGoogleSubject(google.subject());
         user.setEmailVerifiedAt(LocalDateTime.now());
+        user.setPreferredLang(User.languageOf(lang));
         user.setRoles(new HashSet<>(Set.of(role)));
         user = userRepository.save(user);
         authorService.profileOf(user.getId());
