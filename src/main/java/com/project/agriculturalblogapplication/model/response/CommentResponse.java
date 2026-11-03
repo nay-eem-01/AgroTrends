@@ -25,4 +25,7 @@ public class CommentResponse {
     private Instant createdAt;
 
     private Instant updatedAt;
+
+    /** Visible replies in this comment's thread (0 for a reply: threads are two levels). */
+    private long replyCount;
 }

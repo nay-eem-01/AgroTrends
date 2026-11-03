@@ -32,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -239,16 +240,21 @@ public class AnswerService {
 
 
     private AnswerResponse mapToAnswerResponse(Answer answer) {
-        return mapToAnswerResponse(answer, reputationService.standings(List.of(answer.getUser().getId())));
+        return mapToAnswerResponses(List.of(answer)).get(0);
     }
 
-    /** One reputation query for the whole list. */
+    /** One reputation query and one reply-count query for the whole list. */
     private List<AnswerResponse> mapToAnswerResponses(List<Answer> answers) {
+        if (answers.isEmpty()) {
+            return List.of();
+        }
         Map<Long, AuthorStanding> standings = reputationService.standings(answers.stream().map(a -> a.getUser().getId()).toList());
-        return answers.stream().map(answer -> mapToAnswerResponse(answer, standings)).toList();
+        Map<Long, Long> replyCounts = answerRepository.replyCounts(answers.stream().map(Answer::getId).toList()).stream()
+                .collect(Collectors.toMap(row -> (Long) row[0], row -> (Long) row[1]));
+        return answers.stream().map(answer -> mapToAnswerResponse(answer, standings, replyCounts)).toList();
     }
 
-    private AnswerResponse mapToAnswerResponse(Answer answer, Map<Long, AuthorStanding> standings) {
+    private AnswerResponse mapToAnswerResponse(Answer answer, Map<Long, AuthorStanding> standings, Map<Long, Long> replyCounts) {
         AnswerResponse response = new AnswerResponse();
         response.setAnswerId(answer.getId());
         response.setUserId(answer.getUser().getId());
@@ -263,6 +269,7 @@ public class AnswerService {
         response.setUpdatedAt(CommonUtils.toInstant(answer.getLastModifiedDate()));
         response.setScore(answer.getScore());
         response.setAccepted(isAccepted(answer));
+        response.setReplyCount(replyCounts.getOrDefault(answer.getId(), 0L));
 
         return response;
     }

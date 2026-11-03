@@ -135,6 +135,18 @@ class AnswerServiceTest {
     }
 
     @Test
+    void theAnswerListCarriesEachThreadsReplyCount() {
+        Answer first = answer(3L, 5);
+        Answer second = answer(4L, 1);
+        when(answerRepository.findByQuestionIdAndParentAnswerIsNullAndHiddenFalse(1L)).thenReturn(List.of(first, second));
+        when(answerRepository.replyCounts(List.of(3L, 4L))).thenReturn(List.<Object[]>of(new Object[]{4L, 2L}));
+
+        List<AnswerResponse> list = answerService.getAllByQuestionId(1L);
+
+        assertEquals(List.of(0L, 2L), list.stream().map(AnswerResponse::getReplyCount).toList());
+    }
+
+    @Test
     void aReplyCannotBeAccepted() {
         when(authorization.currentUserId(LANG)).thenReturn(ASKER);
         answer(3L, 0).setParentAnswer(new Answer());

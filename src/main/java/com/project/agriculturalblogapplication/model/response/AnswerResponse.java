@@ -36,4 +36,7 @@ public class AnswerResponse {
 
     /** True for the answer the asker accepted. */
     private boolean accepted;
+
+    /** Visible replies in this answer's thread (0 for a reply: threads are two levels). */
+    private long replyCount;
 }
