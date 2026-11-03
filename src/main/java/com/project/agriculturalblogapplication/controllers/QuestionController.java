@@ -14,6 +14,7 @@ import com.project.agriculturalblogapplication.payloads.PaginationArgs;
 import com.project.agriculturalblogapplication.service.AiService;
 import com.project.agriculturalblogapplication.service.QuestionService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -51,6 +52,8 @@ public class QuestionController {
             @RequestParam(name = "categoryId", required = false) Long categoryId,
             @RequestParam(name = "tag", required = false) String tag,
             @RequestParam(name = "unanswered", defaultValue = "false") boolean unanswered,
+            @Parameter(description = "Only questions with a tag the caller follows (signed in; empty when they follow none)")
+            @RequestParam(name = "following", defaultValue = "false") boolean following,
             @RequestParam(name = "crop", required = false) String crop,
             @RequestParam(name = "season", required = false) CropSeason season,
             @RequestParam(name = "region", required = false) String region,
@@ -59,7 +62,7 @@ public class QuestionController {
         return HttpResponse.getResponseEntity(
                 true,
                 "Data loaded successfully.",
-                questionService.getAll(paginationArgs, categoryId, tag, unanswered, new AgriInfo(crop, season, region, soil), lang));
+                questionService.getAll(paginationArgs, categoryId, tag, unanswered, following, new AgriInfo(crop, season, region, soil), lang));
     }
 
     @Operation(summary = "Search questions by words in the title or text (supports \"quoted phrases\" and -exclusions), best match first")
