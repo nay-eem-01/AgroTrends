@@ -1,5 +1,6 @@
 package com.project.agriculturalblogapplication.entities;
 
+import org.hibernate.annotations.Formula;
 import com.project.agriculturalblogapplication.util.SafeHtml;
 import com.project.agriculturalblogapplication.constatnt.AppTables.CategoryTable;
 import com.project.agriculturalblogapplication.constatnt.AppTables.BlogTable;
@@ -48,6 +49,12 @@ public class Blog extends AuditModel<String> {
     @ColumnDefault("0")
     @Column(name = BlogTable.CLAP_COUNT, nullable = false)
     private long clapCount;
+
+    /** AI answers on public questions that cite this post (flagged ones left out); computed by the database. */
+    @Formula("(select count(*) from question_ai_answers a join questions q on q.id = a.question_id"
+            + " where q.hidden = false and a.status <> 'FLAGGED'"
+            + " and a.sources @> jsonb_build_array(jsonb_build_object('blogId', id)))")
+    private long citedCount;
 
     /** Set once at creation from the title and never changed, so shared links keep working. */
     @Column(name = BlogTable.SLUG, unique = true)

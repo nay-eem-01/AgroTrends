@@ -57,6 +57,7 @@ public class SecurityConstants {
             "/api/answers/id/*",
             "/api/answers/all/user/*",
             "/api/users/*/profile",
+            "/api/users/*/impact",
             "/api/experts",
             "/api/stats/public",
             "/actuator/health",
