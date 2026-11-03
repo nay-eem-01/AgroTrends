@@ -88,6 +88,7 @@ Set in `.env` (each is explained in `.env.example`):
 | Key | Value |
 |---|---|
 | `API_DOMAIN` | `api.agrotrends.com` |
+| `BACKEND_URL` | `https://api.agrotrends.com` (unsubscribe links in e-mails) |
 | `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` | from Supabase (section 2, step 6) |
 | `JWT_SECRET` | `openssl rand -base64 48` |
 | `GEMINI_API_KEY` | the new key |
@@ -120,6 +121,9 @@ crontab -e
 In the R2 dashboard, add a lifecycle rule on the backups bucket that deletes objects after 30 days.
 **Test a restore once**, on a second free Supabase project (enable `vector` there first, point a copy of `.env`
 at it), never on the live one: `./deploy/backup.sh restore backups/<file>.dump` replaces the app's tables.
+
+Link previews for Facebook: share `https://api.agrotrends.com/share/questions/{id}` or `/share/stories/{slug}`.
+They work as they are; no extra Caddy rule is needed.
 
 ## 7. Watch it
 

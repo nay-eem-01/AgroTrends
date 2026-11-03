@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 104 of 111 steps done
+**Progress:** 114 of 123 steps done
 
 **Launch scope (decided 2026-10-13):** Phases 4–8 must all be done before the public launch. Order of work:
 5 → 6 → 7 → 8 → 4 (deploy) → live test → launch. Nothing is deployed until Phases 5–8 are done. After launch, the
@@ -122,6 +122,18 @@ Operability and regression safety. Runs after Phases 5–8 are complete; then de
 | 4.25 | Database on Supabase (managed PostgreSQL + pgvector, session pooler) instead of a container on the server; `backup.sh` dumps schema `public` from `DB_URL` and restores with `backup.sh restore` | ✅ |
 | 4.26 | Reply to a reply, two levels (like Facebook): a reply to a reply joins the same thread under the top-level comment or answer; on comments, the author of the reply that was answered is the one notified. No schema change | ✅ |
 | 4.27 | Replies on answers notify: `ANSWER_REPLY` to the author of the answer or reply that was answered, linked to the question | ✅ |
+| 4.28 | B1 Reply counts: `replyCount` on answers and comments, one grouped count per list, hidden replies not counted | ✅ |
+| 4.29 | B2 `GET /api/ai/allowance`: limit, used today, reset time; the advisor's day is midnight Asia/Dhaka in the check too | ✅ |
+| 4.30 | B4 `GET /api/questions/all?following=true`: questions with a tag the caller follows; 401 signed out, empty page when none followed | ✅ |
+| 4.31 | B5 `preferredLang`, `emailOnAnswer`, `emailWeeklyDigest`; `GET/PUT /api/user/settings`; signed one-click unsubscribe (GET redirects to the web, POST for RFC 8058); `BACKEND_URL` | ✅ |
+| 4.32 | B6 `GET /api/admin/launch-metrics?weeks=8`: the week-8 numbers per Dhaka week, with a staff-only row | ✅ |
+| 4.33 | B7 `/share/questions/{id}`, `/share/stories/{slug}`: Open Graph preview pages, escaped, nothing private, honest expert claim | ✅ |
+| 4.34 | B8 E-mail the asker about new answers and expert checks: at most hourly per question, folded, claimed once, HTML + text, List-Unsubscribe | ✅ |
+| 4.35 | B9 `citedCount` on blog responses (JSONB containment, GIN index); `GET /api/users/{id}/impact`, cached an hour | ✅ |
+| 4.36 | B10 Weekly digest, Mondays 08:00 Asia/Dhaka: unanswered questions in followed tags, experts' waiting reviews; `digest_sent`; admin preview | ✅ |
+| 4.37 | B12 Refresh token also in an HttpOnly `agrotrends_refresh` cookie (Strict, `/api/auth`); refresh reads it; sign-out clears it | ✅ |
+| 4.38 | B3 Relax the password rule (8–64, no composition rule) — waits for Nayeem's decision | ⏸ |
+| 4.39 | B11 Follow a question — after week 8 | ⏸ |
 
 ## Phase 5 — Launch blockers
 
