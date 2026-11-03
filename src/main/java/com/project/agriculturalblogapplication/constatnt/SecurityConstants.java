@@ -60,6 +60,8 @@ public class SecurityConstants {
             "/api/experts",
             "/api/stats/public",
             "/actuator/health",
+            "/share/questions/*",
+            "/share/stories/*",
     };
 
     private SecurityConstants() {
