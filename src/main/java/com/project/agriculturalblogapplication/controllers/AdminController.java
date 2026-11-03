@@ -18,6 +18,9 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpServletRequest;
+import com.project.agriculturalblogapplication.model.response.LaunchWeekResponse;
+import com.project.agriculturalblogapplication.service.LaunchMetricsService;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -40,6 +43,8 @@ public class AdminController {
     private final AuthService authService;
 
     private final AdminService adminService;
+
+    private final LaunchMetricsService launchMetricsService;
 
     @Operation(summary = "Sign in")
     @ApiResponse(content = @Content(schema = @Schema(implementation = WebTokenResponse.class)), responseCode = "200")
@@ -82,5 +87,16 @@ public class AdminController {
     @GetMapping("/stats")
     public ResponseEntity<HttpResponse> stats() {
         return HttpResponse.getResponseEntity(true, "Data loaded successfully.", adminService.stats());
+    }
+
+    @Operation(summary = "Admin: the launch test, one row per Monday-to-Sunday week (Asia/Dhaka), newest first",
+            description = "The current week is partial. staffActivity counts only what admin and staff accounts did.",
+            security = @SecurityRequirement(name = "jwtToken"))
+    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = LaunchWeekResponse.class))),
+            responseCode = "200")
+    @PreAuthorize("hasAnyAuthority('USER_READ', 'CONTENT_MODERATE', 'EXPERT_REVIEW')")
+    @GetMapping("/launch-metrics")
+    public ResponseEntity<HttpResponse> launchMetrics(@RequestParam(name = "weeks", defaultValue = "8") int weeks) {
+        return HttpResponse.getResponseEntity(true, "Data loaded successfully.", launchMetricsService.weeks(weeks));
     }
 }
