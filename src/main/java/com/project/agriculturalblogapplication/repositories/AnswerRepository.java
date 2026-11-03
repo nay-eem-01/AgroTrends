@@ -45,4 +45,9 @@ public interface AnswerRepository extends JpaRepository<Answer, Long> {
     @Query("select a.parentAnswer.id, count(a) from Answer a where a.parentAnswer.id in :ids and a.hidden = false"
             + " group by a.parentAnswer.id")
     List<Object[]> replyCounts(@Param("ids") Collection<Long> ids);
+
+    /** Answers from others on this question since a moment, oldest first: what the asker has not been e-mailed about. */
+    @Query("select a from Answer a where a.question.id = :questionId and a.parentAnswer is null and a.hidden = false"
+            + " and a.user.id <> a.question.user.id and a.creationDate > :since order by a.creationDate asc")
+    List<Answer> newAnswersSince(@Param("questionId") Long questionId, @Param("since") java.time.LocalDateTime since);
 }
