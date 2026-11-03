@@ -23,6 +23,7 @@ import com.project.agriculturalblogapplication.service.DigestService;
 import com.project.agriculturalblogapplication.service.LaunchMetricsService;
 import org.springframework.http.MediaType;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
+import com.project.agriculturalblogapplication.security.RefreshCookies;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -56,10 +57,10 @@ public class AdminController {
     public ResponseEntity<HttpResponse> signIn(@Valid @RequestBody SignInRequest request,
                                                @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang,
                                                HttpServletRequest httpServletRequest) throws JsonProcessingException {
-        return HttpResponse.getResponseEntity(
+        return RefreshCookies.withCookie(HttpResponse.getResponseEntity(
                 true,
                 "Sign-in successful.",
-                authService.signInAsAdmin(request, lang, httpServletRequest.getRemoteAddr()));
+                authService.signInAsAdmin(request, lang, httpServletRequest.getRemoteAddr())));
     }
 
     @Operation(summary = "Admin: users whose name or e-mail contains q; banned=true/false filters by ban state; newest first",

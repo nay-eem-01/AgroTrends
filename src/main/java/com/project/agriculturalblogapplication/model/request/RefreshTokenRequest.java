@@ -1,7 +1,5 @@
 package com.project.agriculturalblogapplication.model.request;
 
-import com.project.agriculturalblogapplication.constatnt.ErrorCode;
-import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -9,6 +7,6 @@ import lombok.Setter;
 @Setter
 public class RefreshTokenRequest {
 
-    @NotBlank(message = ErrorCode.ERROR_TOKEN_IS_REQUIRED)
+    /** Optional: without it the refresh endpoint reads the agrotrends_refresh cookie. */
     private String refreshToken;
 }

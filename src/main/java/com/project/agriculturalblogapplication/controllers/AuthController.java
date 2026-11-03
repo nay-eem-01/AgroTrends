@@ -19,6 +19,10 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import com.project.agriculturalblogapplication.security.RefreshCookies;
+import com.project.agriculturalblogapplication.constatnt.ErrorCode;
+import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
+import org.springframework.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -60,10 +64,10 @@ public class AuthController {
     public ResponseEntity<HttpResponse> signIn(@Valid @RequestBody SignInRequest request,
                                                @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang,
                                                HttpServletRequest httpServletRequest) throws JsonProcessingException {
-        return HttpResponse.getResponseEntity(
+        return RefreshCookies.withCookie(HttpResponse.getResponseEntity(
                 true,
                 "Sign-in successful.",
-                authService.signIn(request, lang, httpServletRequest.getRemoteAddr()));
+                authService.signIn(request, lang, httpServletRequest.getRemoteAddr())));
     }
 
     @Operation(summary = "Sign in (or up) with Google",
@@ -77,21 +81,29 @@ public class AuthController {
     @PostMapping(value = "/google")
     public ResponseEntity<HttpResponse> signInWithGoogle(@Valid @RequestBody GoogleSignInRequest request,
                                                          @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
-        return HttpResponse.getResponseEntity(
+        return RefreshCookies.withCookie(HttpResponse.getResponseEntity(
                 true,
                 "Sign-in successful.",
-                authService.signInWithGoogle(request, lang));
+                authService.signInWithGoogle(request, lang)));
     }
 
-    @Operation(summary = "Exchange a refresh token for a new access token (the refresh token is single-use and rotated)")
+    @Operation(summary = "Exchange a refresh token for a new access token (the refresh token is single-use and rotated)",
+            description = "The token comes from the body, or else from the agrotrends_refresh cookie set at sign-in.")
     @ApiResponse(content = @Content(schema = @Schema(implementation = WebTokenResponse.class)), responseCode = "200")
     @PostMapping(value = "/refresh-token")
-    public ResponseEntity<HttpResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest request,
+    public ResponseEntity<HttpResponse> refreshToken(@RequestBody(required = false) RefreshTokenRequest request,
+                                                     @CookieValue(name = RefreshCookies.NAME, required = false) String cookieToken,
                                                      @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
-        return HttpResponse.getResponseEntity(
+        String token = request != null && StringUtils.hasText(request.getRefreshToken()) ? request.getRefreshToken() : cookieToken;
+        if (!StringUtils.hasText(token)) {
+            throw new ApplicationException(HttpStatus.UNAUTHORIZED, ErrorCode.ERROR_INVALID_TOKEN, lang);
+        }
+        RefreshTokenRequest resolved = new RefreshTokenRequest();
+        resolved.setRefreshToken(token);
+        return RefreshCookies.withCookie(HttpResponse.getResponseEntity(
                 true,
                 "Token refreshed.",
-                authService.refreshToken(request, lang));
+                authService.refreshToken(resolved, lang)));
     }
 
     @Operation(summary = "Request a password-reset e-mail. Always answers 200 so accounts cannot be enumerated.")
@@ -194,8 +206,8 @@ public class AuthController {
     @GetMapping(value = "/sign-out")
     public ResponseEntity<HttpResponse> signOut(HttpServletRequest httpServletRequest, @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
         authService.signOut(httpServletRequest, lang);
-        return HttpResponse.getResponseEntity(
+        return RefreshCookies.cleared(HttpResponse.getResponseEntity(
                 true,
-                "You are signed out.");
+                "You are signed out."));
     }
 }
