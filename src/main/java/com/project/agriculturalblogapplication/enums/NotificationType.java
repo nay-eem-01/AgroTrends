@@ -16,6 +16,8 @@ public enum NotificationType {
     APPLICATION_DECIDED,
     /** Someone replied to your comment. */
     COMMENT_REPLY,
+    /** Someone replied to your answer, or to your reply under an answer. */
+    ANSWER_REPLY,
     /** A moderator removed your post after a report. */
     CONTENT_REMOVED,
     /** Several users reported your post: it is hidden until a moderator reviews it. */

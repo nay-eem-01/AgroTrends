@@ -212,6 +212,8 @@ public class AnswerService {
         // Two levels: a reply to a reply joins the same thread under the answer.
         reply.setParentAnswer(parentAnswer.getParentAnswer() == null ? parentAnswer : parentAnswer.getParentAnswer());
         reply = answerRepository.save(reply);
+        notificationPublisher.publish(new NotificationMessage(parentAnswer.getUser().getId(), user.getId(),
+                NotificationType.ANSWER_REPLY, NotificationTarget.QUESTION, question.getId()));
 
         return mapToAnswerResponse(reply);
     }

@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 103 of 110 steps done
+**Progress:** 104 of 111 steps done
 
 **Launch scope (decided 2026-10-13):** Phases 4–8 must all be done before the public launch. Order of work:
 5 → 6 → 7 → 8 → 4 (deploy) → live test → launch. Nothing is deployed until Phases 5–8 are done. After launch, the
@@ -121,6 +121,7 @@ Operability and regression safety. Runs after Phases 5–8 are complete; then de
 | 4.24 | Fix: sign-up and the super-admin seed failed on a fresh database (`detached entity passed to persist`); `AuthorService.profileOf` now runs in one transaction | ✅ |
 | 4.25 | Database on Supabase (managed PostgreSQL + pgvector, session pooler) instead of a container on the server; `backup.sh` dumps schema `public` from `DB_URL` and restores with `backup.sh restore` | ✅ |
 | 4.26 | Reply to a reply, two levels (like Facebook): a reply to a reply joins the same thread under the top-level comment or answer; on comments, the author of the reply that was answered is the one notified. No schema change | ✅ |
+| 4.27 | Replies on answers notify: `ANSWER_REPLY` to the author of the answer or reply that was answered, linked to the question | ✅ |
 
 ## Phase 5 — Launch blockers
 
