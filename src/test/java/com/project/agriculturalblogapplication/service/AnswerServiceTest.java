@@ -129,6 +129,9 @@ class AnswerServiceTest {
         ArgumentCaptor<Answer> saved = ArgumentCaptor.forClass(Answer.class);
         verify(answerRepository).save(saved.capture());
         assertEquals(root, saved.getValue().getParentAnswer());
+        // The author of the reply that was answered hears about it, linked to the question.
+        verify(notifications).publish(new NotificationMessage(24L, ASKER, NotificationType.ANSWER_REPLY,
+                NotificationTarget.QUESTION, 1L));
     }
 
     @Test
