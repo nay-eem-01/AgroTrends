@@ -94,4 +94,11 @@ public interface QuestionRepository extends JpaRepository<Question, Long>, JpaSp
     @Query("select distinct a.question.id from Answer a where a.user.id = :userId and a.parentAnswer is null"
             + " and a.hidden = false and a.question.hidden = false and a.question.category.id in :topicIds")
     List<Long> idsAnsweredInTopics(@Param("userId") Long userId, @Param("topicIds") java.util.Collection<Long> topicIds);
+
+    /** Unanswered public questions with any of these tags since a moment, newest first; not the reader's own. */
+    @Query("select distinct q from Question q join q.tags t where t.id in :tagIds and q.hidden = false"
+            + " and q.answerCount = 0 and q.creationDate >= :since and q.user.id <> :readerId order by q.creationDate desc")
+    List<Question> unansweredWithTagsSince(@Param("tagIds") java.util.Collection<Long> tagIds,
+                                           @Param("since") LocalDateTime since, @Param("readerId") Long readerId,
+                                           org.springframework.data.domain.Pageable pageable);
 }

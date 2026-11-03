@@ -100,4 +100,9 @@ public interface QuestionAiAnswerRepository extends JpaRepository<QuestionAiAnsw
             where q.hidden = false and a.status <> 'FLAGGED' and b.author_id = :userId and b.status = 'PUBLISHED'
             """, nativeQuery = true)
     long countStoryCitations(@Param("userId") Long userId);
+
+    long countByStatusAndQuestionCategoryIdInAndQuestionHiddenFalse(AiAnswerStatus status, Collection<Long> topicIds);
+
+    Optional<QuestionAiAnswer> findFirstByStatusAndQuestionCategoryIdInAndQuestionHiddenFalseOrderByCreationDateAsc(
+            AiAnswerStatus status, Collection<Long> topicIds);
 }

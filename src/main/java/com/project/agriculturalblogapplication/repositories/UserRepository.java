@@ -50,4 +50,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     long countByBannedAtIsNotNull();
 
     long countByBannedAtIsNull();
+
+    /** Who may get the weekly digest: switched on, a confirmed e-mail, not banned. */
+    @Query("select u.id from User u where u.emailWeeklyDigest = true and u.email is not null"
+            + " and u.emailVerifiedAt is not null and u.bannedAt is null")
+    java.util.List<Long> digestRecipientIds();
 }
