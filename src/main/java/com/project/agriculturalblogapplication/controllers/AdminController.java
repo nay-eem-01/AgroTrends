@@ -19,7 +19,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpServletRequest;
 import com.project.agriculturalblogapplication.model.response.LaunchWeekResponse;
+import com.project.agriculturalblogapplication.service.DigestService;
 import com.project.agriculturalblogapplication.service.LaunchMetricsService;
+import org.springframework.http.MediaType;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -45,6 +47,8 @@ public class AdminController {
     private final AdminService adminService;
 
     private final LaunchMetricsService launchMetricsService;
+
+    private final DigestService digestService;
 
     @Operation(summary = "Sign in")
     @ApiResponse(content = @Content(schema = @Schema(implementation = WebTokenResponse.class)), responseCode = "200")
@@ -98,5 +102,13 @@ public class AdminController {
     @GetMapping("/launch-metrics")
     public ResponseEntity<HttpResponse> launchMetrics(@RequestParam(name = "weeks", defaultValue = "8") int weeks) {
         return HttpResponse.getResponseEntity(true, "Data loaded successfully.", launchMetricsService.weeks(weeks));
+    }
+
+    @Operation(summary = "Admin: your own weekly digest as HTML, not sent, to check the copy",
+            security = @SecurityRequirement(name = "jwtToken"))
+    @PreAuthorize("hasAnyAuthority('USER_READ', 'CONTENT_MODERATE', 'EXPERT_REVIEW')")
+    @PostMapping(value = "/digest/preview", produces = MediaType.TEXT_HTML_VALUE)
+    public ResponseEntity<String> digestPreview(@RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).body(digestService.preview(lang));
     }
 }
