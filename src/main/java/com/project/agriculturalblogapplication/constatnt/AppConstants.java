@@ -1,11 +1,15 @@
 package com.project.agriculturalblogapplication.constatnt;
 
 import java.math.BigDecimal;
+import java.time.ZoneId;
 import java.util.HashMap;
 
 public final class AppConstants {
 
     private AppConstants() {}
+
+    /** The users' clock: daily limits reset and launch-test weeks start at midnight here, whatever the server's zone. */
+    public static final ZoneId APP_ZONE = ZoneId.of("Asia/Dhaka");
 
     public static final String PAGE_NO = "pageNo";
     public static final String PAGE_SIZE = "pageSize";
