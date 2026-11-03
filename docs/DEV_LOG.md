@@ -12,7 +12,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.** Deploy kit ready
   (`docs/DEPLOY.md`): one AWS EC2 server for the 6-month free plan, then a VPS;
   the database on Supabase.
-- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 104 of 111 steps done): launch blockers and one account type with
+- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 114 of 123 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8), admin dashboard endpoints (9). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -53,6 +53,64 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-11-03 (frontend audit requests)
+
+From `agrotrends-web/docs/BACKEND_REQUESTS_AUDIT.md`. B3 (password rule) waits for Nayeem; B11 (follow a question) is
+after week 8 by the doc's own note. Everything else is built, one branch each on `feat/audit-requests-base`.
+
+**Done**
+- 4.28 B1 `replyCount` on `AnswerResponse` and `CommentResponse`.
+- 4.29 B2 `GET /api/ai/allowance` → `{ limit, usedToday, resetsAt }`. The advisor limit check now counts from midnight
+  `Asia/Dhaka` too (`AppConstants.APP_ZONE`), converted to the server's zone, so a UTC server agrees with users.
+- 4.30 B4 `?following=true` on `GET /api/questions/all`.
+- 4.31 B5 user settings and unsubscribe. Tokens are `{userId}.{HMAC}` keyed from the JWT secret: no expiry, rotating
+  the secret voids old links. `BACKEND_URL` (new) is the API's public address for those links.
+- 4.32 B6 launch metrics: seven queries for the whole range, bucketed per week in memory.
+- 4.33 B7 share pages.
+- 4.34 B8 answer e-mails: `questions.answer_mail_pending` / `answer_mailed_at`, a claim query per send, a 10-minute job
+  for mails that waited for their hour. `@EnableScheduling` is on.
+- 4.35 B9 `Blog.citedCount` (a `@Formula`), `GET /api/users/{id}/impact`, GIN index on `question_ai_answers.sources`.
+- 4.36 B10 weekly digest, `digest_sent` table, `POST /api/admin/digest/preview`.
+- 4.37 B12 refresh cookie on every sign-in and refresh; the body keeps `refreshToken` for one release.
+- Checked live on a throwaway pgvector database (port 8082, dummy AI key, mail to the log): every item above through
+  the API, including the hourly fold (a second answer within the hour sent nothing and left the mail pending), the
+  unsubscribe redirect, a forged and a wrong-kind token, the 404 card for a hidden question, and an escaped
+  `"><script>` title. 439 unit tests pass.
+
+**Decisions for Nayeem** (made to unblock the build; each is easy to change)
+1. B3 not built: the password rule stays 8–16 with a digit and a special character until you decide.
+2. B11 not built: after week 8.
+3. B7 sends people on with a one-line script, not `<meta http-equiv="refresh">`: Facebook's crawler follows meta
+   refresh and would land on the generic card. A plain link is the fallback.
+4. B7 says "Answered by a verified expert" only when an expert confirmed or corrected the AI answer, or the accepted
+   answer's author holds a badge in that topic. The doc also counted any accepted answer, which would be untrue.
+5. B7 needs no proxy on our side: share links can be `https://api.<domain>/share/...` directly. If the web host proxies
+   `/share/*` instead, links stay on the web's domain; that is the web host's rule, not Caddy's here.
+6. B2 reports the advisor (`/api/ai/ask`) allowance only. Public questions have their own daily AI limit (a rolling 24
+   hours, in memory), which is not shown.
+7. B5 unsubscribe: GET (the link in the mail) switches the kind off and redirects to `{frontendUrl}/unsubscribed?kind=`
+   (`&error=invalid` for a bad link); POST is the RFC 8058 one-click mail apps use. A link scanner that opens every
+   link would unsubscribe the reader; the usual trade-off, accepted.
+8. B6 staff row: "what staff did" — questions staff asked, questions a staff member answered within 24 h, AI answers on
+   staff questions, expert checks within 48 h made by staff, staff with badges, staff sign-ups. Hidden questions are
+   left out of every count.
+9. B8 mails go only to a confirmed e-mail; phone-only accounts get nothing (SMS still on hold). The 250-a-day warning
+   counts this instance's sends in memory.
+10. B9 `citedInAiAnswers` counts AI answers citing a question where the user's answer is vetted (accepted by someone
+    else, or theirs in a topic they are expert in), the same rule the AI index uses. Flagged AI answers never count.
+11. B10 sends one user at a time from the scheduler thread; fine for thousands.
+12. B12 `SameSite=Strict`: works when the web and the API share a site (`agrotrends.com` and `api.agrotrends.com`) or
+    the web proxies `/api`. A web on another domain would need `SameSite=None`.
+
+**Frontend**
+- Regenerate the API types: `replyCount`, `citedCount`, settings, allowance, impact, launch metrics, `LaunchWeekResponse`.
+- `/unsubscribed?kind=answer|digest[&error=invalid]` page. `/og-default.png` in the web's public folder (B7).
+- Call `/api/auth/*` with `credentials: 'include'`; stop storing the refresh token after the next release.
+
+**Known limitations**
+- The impact cache and the mail counter are per instance, in memory.
+- Answer and digest e-mails were checked against the log mail service, not Brevo.
 
 ## 2026-11-03 (reply to a reply)
 
