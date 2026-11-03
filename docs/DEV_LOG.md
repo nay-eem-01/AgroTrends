@@ -81,8 +81,10 @@ after week 8 by the doc's own note. Everything else is built, one branch each on
 **Decisions for Nayeem** (made to unblock the build; each is easy to change)
 1. B3 not built: the password rule stays 8–16 with a digit and a special character until you decide.
 2. B11 not built: after week 8.
-3. B7 sends people on with a one-line script, not `<meta http-equiv="refresh">`: Facebook's crawler follows meta
-   refresh and would land on the generic card. A plain link is the fallback.
+3. B7 sends people on with a one-line script, not `<meta http-equiv="refresh">`: crawlers can follow a meta refresh
+   (Facebook's debugger lists it as a redirect) and would then read the web's generic card; a script they never run.
+   Not verified against Facebook itself yet: check one link in the Sharing Debugger after deploying. A plain link is
+   the fallback.
 4. B7 says "Answered by a verified expert" only when an expert confirmed or corrected the AI answer, or the accepted
    answer's author holds a badge in that topic. The doc also counted any accepted answer, which would be untrue.
 5. B7 needs no proxy on our side: share links can be `https://api.<domain>/share/...` directly. If the web host proxies
