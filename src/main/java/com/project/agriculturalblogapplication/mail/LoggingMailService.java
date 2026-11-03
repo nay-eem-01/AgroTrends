@@ -24,4 +24,10 @@ public class LoggingMailService implements MailService {
     public void sendEmailVerification(String to, String verifyLink) {
         log.warn("[DEV MAIL] e-mail confirmation for {}: {}", to, verifyLink);
     }
+
+    @Override
+    public void send(Mail mail) {
+        log.warn("[DEV MAIL] to {}: {}\n{}\n{}: {}\nunsubscribe: {}", mail.to(), mail.subject(), mail.text(),
+                mail.actionLabel(), mail.actionUrl(), mail.unsubscribeUrl());
+    }
 }

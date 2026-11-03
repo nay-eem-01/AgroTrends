@@ -16,6 +16,7 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.type.SqlTypes;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -82,6 +83,15 @@ public class Question extends AuditModel<String> {
     @ColumnDefault("0")
     @Column(name = "view_count", nullable = false, updatable = false)
     private long viewCount;
+
+    /** An answer or expert check is waiting to be e-mailed to the asker (AnswerMailService); written by query only. */
+    @ColumnDefault("false")
+    @Column(name = "answer_mail_pending", nullable = false, updatable = false)
+    private boolean answerMailPending;
+
+    /** When the asker was last e-mailed about this question: at most one mail per hour. */
+    @Column(name = "answer_mailed_at", updatable = false)
+    private LocalDateTime answerMailedAt;
 
     @Embedded
     private AgriMetadata agri = new AgriMetadata();

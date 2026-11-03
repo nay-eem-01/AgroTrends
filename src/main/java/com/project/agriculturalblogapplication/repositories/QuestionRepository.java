@@ -57,4 +57,27 @@ public interface QuestionRepository extends JpaRepository<Question, Long>, JpaSp
     Page<Question> findAllByHiddenFalseAndCreationDateAfter(LocalDateTime since, Pageable pageable);
 
     long countByCreationDateAfter(LocalDateTime since);
+
+    @Modifying
+    @Transactional
+    @Query("update Question q set q.answerMailPending = true where q.id = :id")
+    void markAnswerMailPending(@Param("id") Long id);
+
+    /** Takes the pending mail for this sender, so two threads never send the same one. 1 when it was ours. */
+    @Modifying
+    @Transactional
+    @Query("update Question q set q.answerMailPending = false, q.answerMailedAt = :now"
+            + " where q.id = :id and q.answerMailPending = true and q.answerMailedAt is null")
+    int claimFirstAnswerMail(@Param("id") Long id, @Param("now") LocalDateTime now);
+
+    @Modifying
+    @Transactional
+    @Query("update Question q set q.answerMailPending = false, q.answerMailedAt = :now"
+            + " where q.id = :id and q.answerMailPending = true and q.answerMailedAt = :previous")
+    int claimNextAnswerMail(@Param("id") Long id, @Param("previous") LocalDateTime previous, @Param("now") LocalDateTime now);
+
+    /** Pending mails whose hour has passed. */
+    @Query("select q.id from Question q where q.answerMailPending = true"
+            + " and (q.answerMailedAt is null or q.answerMailedAt < :before)")
+    List<Long> answerMailsDue(@Param("before") LocalDateTime before);
 }

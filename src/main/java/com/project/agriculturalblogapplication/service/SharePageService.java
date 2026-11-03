@@ -9,7 +9,7 @@ import com.project.agriculturalblogapplication.repositories.BlogRepositories;
 import com.project.agriculturalblogapplication.repositories.QuestionAiAnswerRepository;
 import com.project.agriculturalblogapplication.repositories.QuestionRepository;
 import lombok.RequiredArgsConstructor;
-import org.jsoup.Jsoup;
+import com.project.agriculturalblogapplication.util.CommonUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -119,14 +119,8 @@ public class SharePageService {
         return HtmlUtils.htmlEscape(value == null ? "" : value, "UTF-8");
     }
 
-    /** Text only, never HTML, cut at a word near DESCRIPTION_LENGTH characters. */
     static String plainText(String html) {
-        String text = html == null ? "" : Jsoup.parse(html).text().strip();
-        if (text.length() <= DESCRIPTION_LENGTH) {
-            return text;
-        }
-        int cut = text.lastIndexOf(' ', DESCRIPTION_LENGTH);
-        return text.substring(0, cut > DESCRIPTION_LENGTH / 2 ? cut : DESCRIPTION_LENGTH) + "…";
+        return CommonUtils.excerpt(html, DESCRIPTION_LENGTH);
     }
 
     static boolean isBangla(String text) {

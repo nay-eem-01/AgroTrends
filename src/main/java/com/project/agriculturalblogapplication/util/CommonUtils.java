@@ -38,6 +38,16 @@ public final class CommonUtils {
 
 	private CommonUtils() {}
 
+	/** Plain text of user HTML (never the HTML itself), cut at a word near {@code max} characters. */
+	public static String excerpt(String html, int max) {
+		String text = html == null ? "" : org.jsoup.Jsoup.parse(html).text().strip();
+		if (text.length() <= max) {
+			return text;
+		}
+		int cut = text.lastIndexOf(' ', max);
+		return text.substring(0, cut > max / 2 ? cut : max) + "…";
+	}
+
 	public static boolean isTrue (Boolean value) {
 		return value != null && value;
 	}
