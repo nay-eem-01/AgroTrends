@@ -17,6 +17,7 @@ public class SecurityConstants {
             "/swagger-ui/**",
             "/api-docs/**",
             "/api/verify/**",
+            "/api/user/unsubscribe",
             "/v3/api-docs/**",
             "/configuration/ui",
             "/swagger-resources/**",
@@ -56,9 +57,12 @@ public class SecurityConstants {
             "/api/answers/id/*",
             "/api/answers/all/user/*",
             "/api/users/*/profile",
+            "/api/users/*/impact",
             "/api/experts",
             "/api/stats/public",
             "/actuator/health",
+            "/share/questions/*",
+            "/share/stories/*",
     };
 
     private SecurityConstants() {

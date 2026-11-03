@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.project.agriculturalblogapplication.constatnt.AppTables;
 import com.project.agriculturalblogapplication.constatnt.AppTables.UserTable;
 import com.project.agriculturalblogapplication.model.AuditModel;
+import org.hibernate.annotations.ColumnDefault;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -81,5 +82,24 @@ public class User extends AuditModel<String> {
 
     @Column(name = UserTable.COVER_URL, length = 500)
     private String coverUrl;
+
+    /** The language of the e-mails we send: "bn" or "en", from the sign-up's lang and changeable in settings. */
+    @ColumnDefault("'bn'")
+    @Column(name = UserTable.PREFERRED_LANG, nullable = false, length = 2)
+    private String preferredLang = "bn";
+
+    /** E-mail the asker when their question gets an answer or an expert checks its AI answer. */
+    @ColumnDefault("true")
+    @Column(name = UserTable.EMAIL_ON_ANSWER, nullable = false)
+    private boolean emailOnAnswer = true;
+
+    @ColumnDefault("true")
+    @Column(name = UserTable.EMAIL_WEEKLY_DIGEST, nullable = false)
+    private boolean emailWeeklyDigest = true;
+
+    /** "en" for English, anything else Bangla: the audience is Bangladesh. */
+    public static String languageOf(String lang) {
+        return "en".equalsIgnoreCase(lang) ? "en" : "bn";
+    }
 }
 

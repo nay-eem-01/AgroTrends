@@ -72,6 +72,9 @@ public final class AppTables {
         public static final String BAN_REASON = "ban_reason";
         public static final String LOCATION = "location";
         public static final String COVER_URL = "cover_url";
+        public static final String PREFERRED_LANG = "preferred_lang";
+        public static final String EMAIL_ON_ANSWER = "email_on_answer";
+        public static final String EMAIL_WEEKLY_DIGEST = "email_weekly_digest";
     }
 
     public static final class FollowTable {

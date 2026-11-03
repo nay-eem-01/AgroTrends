@@ -57,4 +57,48 @@ public interface QuestionRepository extends JpaRepository<Question, Long>, JpaSp
     Page<Question> findAllByHiddenFalseAndCreationDateAfter(LocalDateTime since, Pageable pageable);
 
     long countByCreationDateAfter(LocalDateTime since);
+
+    @Modifying
+    @Transactional
+    @Query("update Question q set q.answerMailPending = true where q.id = :id")
+    void markAnswerMailPending(@Param("id") Long id);
+
+    /** Takes the pending mail for this sender, so two threads never send the same one. 1 when it was ours. */
+    @Modifying
+    @Transactional
+    @Query("update Question q set q.answerMailPending = false, q.answerMailedAt = :now"
+            + " where q.id = :id and q.answerMailPending = true and q.answerMailedAt is null")
+    int claimFirstAnswerMail(@Param("id") Long id, @Param("now") LocalDateTime now);
+
+    @Modifying
+    @Transactional
+    @Query("update Question q set q.answerMailPending = false, q.answerMailedAt = :now"
+            + " where q.id = :id and q.answerMailPending = true and q.answerMailedAt = :previous")
+    int claimNextAnswerMail(@Param("id") Long id, @Param("previous") LocalDateTime previous, @Param("now") LocalDateTime now);
+
+    /** Pending mails whose hour has passed. */
+    @Query("select q.id from Question q where q.answerMailPending = true"
+            + " and (q.answerMailedAt is null or q.answerMailedAt < :before)")
+    List<Long> answerMailsDue(@Param("before") LocalDateTime before);
+
+    /** Views on the public questions this user answered (each question once). */
+    @Query("select coalesce(sum(q.viewCount), 0) from Question q where q.hidden = false and exists"
+            + " (select 1 from Answer a where a.question = q and a.user.id = :userId and a.parentAnswer is null and a.hidden = false)")
+    long sumViewsOfQuestionsAnsweredBy(@Param("userId") Long userId);
+
+    /** Questions where this user's answer is vetted: accepted by someone else, or theirs in a topic they are expert in. */
+    @Query("select q.id from Question q where q.hidden = false and q.acceptedAnswer.user.id = :userId"
+            + " and q.user.id <> :userId and q.acceptedAnswer.hidden = false")
+    List<Long> idsWithAnswerAcceptedFrom(@Param("userId") Long userId);
+
+    @Query("select distinct a.question.id from Answer a where a.user.id = :userId and a.parentAnswer is null"
+            + " and a.hidden = false and a.question.hidden = false and a.question.category.id in :topicIds")
+    List<Long> idsAnsweredInTopics(@Param("userId") Long userId, @Param("topicIds") java.util.Collection<Long> topicIds);
+
+    /** Unanswered public questions with any of these tags since a moment, newest first; not the reader's own. */
+    @Query("select distinct q from Question q join q.tags t where t.id in :tagIds and q.hidden = false"
+            + " and q.answerCount = 0 and q.creationDate >= :since and q.user.id <> :readerId order by q.creationDate desc")
+    List<Question> unansweredWithTagsSince(@Param("tagIds") java.util.Collection<Long> tagIds,
+                                           @Param("since") LocalDateTime since, @Param("readerId") Long readerId,
+                                           org.springframework.data.domain.Pageable pageable);
 }

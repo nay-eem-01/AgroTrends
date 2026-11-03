@@ -35,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -47,9 +48,12 @@ class QuestionServiceTest {
     private final TagService tagService = mock(TagService.class);
     private final ImageService imageService = mock(ImageService.class);
     private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
+    private final com.project.agriculturalblogapplication.repositories.TagFollowRepository tagFollows =
+            mock(com.project.agriculturalblogapplication.repositories.TagFollowRepository.class);
     private final QuestionService questionService =
             new QuestionService(questionRepository, userService, authorization, categoryService, tagService, imageService,
-                    mock(ReputationService.class), events, new com.project.agriculturalblogapplication.security.service.AttemptLimiter());
+                    mock(ReputationService.class), events, new com.project.agriculturalblogapplication.security.service.AttemptLimiter(),
+                    tagFollows);
 
     @Test
     void aViewerCountsOncePerDayAndAnotherViewerCountsAgain() {
@@ -211,5 +215,35 @@ class QuestionServiceTest {
         update.setCategoryId(2L);
 
         assertEquals("bogura", questionService.update(update, "en").getAgri().region());
+    }
+
+    @Test
+    void forYouIsEmptyWhenTheCallerFollowsNoTags() {
+        when(authorization.currentUserId("en")).thenReturn(7L);
+        when(tagFollows.followedTagIds(7L)).thenReturn(List.of());
+
+        var page = questionService.getAll(new com.project.agriculturalblogapplication.payloads.PaginationArgs(0, 10, "creationDate",
+                com.project.agriculturalblogapplication.enums.AscOrDescType.desc), null, null, false, true,
+                new com.project.agriculturalblogapplication.model.AgriInfo(null, null, null, null), "en");
+
+        assertTrue(page.isEmpty());
+        verify(questionRepository, never()).findAll(
+                org.mockito.ArgumentMatchers.<org.springframework.data.jpa.domain.Specification<Question>>any(),
+                any(org.springframework.data.domain.Pageable.class));
+    }
+
+    @Test
+    void forYouAsksForQuestionsWithAFollowedTag() {
+        when(authorization.currentUserId("en")).thenReturn(7L);
+        when(tagFollows.followedTagIds(7L)).thenReturn(List.of(4L));
+        when(questionRepository.findAll(
+                org.mockito.ArgumentMatchers.<org.springframework.data.jpa.domain.Specification<Question>>any(),
+                any(org.springframework.data.domain.Pageable.class))).thenReturn(org.springframework.data.domain.Page.empty());
+
+        questionService.getAll(new com.project.agriculturalblogapplication.payloads.PaginationArgs(0, 10, "creationDate",
+                com.project.agriculturalblogapplication.enums.AscOrDescType.desc), null, null, false, true,
+                new com.project.agriculturalblogapplication.model.AgriInfo(null, null, null, null), "en");
+
+        verify(tagFollows).followedTagIds(7L);
     }
 }

@@ -23,6 +23,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 // Comment's user, blog and parent are lazy: every method maps them inside a transaction (open-in-view is off).
 @Service
@@ -88,9 +90,19 @@ public class CommentService {
         blogService.findVisibleBlog(blogId, lang);
 
         List<Comment> comments = commentRepository.findByBlogIdAndParentCommentIsNullAndHiddenFalse(blogId);
+        if (comments.isEmpty()) {
+            return List.of();
+        }
+        // One grouped count for the whole list; replies themselves have none (threads are two levels).
+        Map<Long, Long> replyCounts = commentRepository.replyCounts(comments.stream().map(Comment::getId).toList()).stream()
+                .collect(Collectors.toMap(row -> (Long) row[0], row -> (Long) row[1]));
 
         return comments.stream()
-                .map(this::mapToCommentResponse)
+                .map(comment -> {
+                    CommentResponse response = mapToCommentResponse(comment);
+                    response.setReplyCount(replyCounts.getOrDefault(comment.getId(), 0L));
+                    return response;
+                })
                 .toList();
     }
 
