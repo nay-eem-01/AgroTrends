@@ -4,6 +4,7 @@ import com.project.agriculturalblogapplication.config.CommonApiResponses;
 import com.project.agriculturalblogapplication.model.request.AskExpertsRequest;
 import com.project.agriculturalblogapplication.model.request.AskQuestionRequest;
 import com.project.agriculturalblogapplication.model.request.BlogAssistRequest;
+import com.project.agriculturalblogapplication.model.response.AiAllowanceResponse;
 import com.project.agriculturalblogapplication.model.response.AiAnswerResponse;
 import com.project.agriculturalblogapplication.model.response.AiHistoryItemResponse;
 import com.project.agriculturalblogapplication.model.response.BlogAssistResponse;
@@ -50,6 +51,14 @@ public class AiChatController {
                 true,
                 "Answer created successfully.",
                 aiService.ask(request.question(), lang));
+    }
+
+    @Operation(summary = "Today's advisor allowance: the daily limit, asks used since midnight (Asia/Dhaka) and when it resets",
+            security = @SecurityRequirement(name = "jwtToken"))
+    @ApiResponse(content = @Content(schema = @Schema(implementation = AiAllowanceResponse.class)), responseCode = "200")
+    @GetMapping(value = "/allowance")
+    public ResponseEntity<HttpResponse> allowance(@RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        return HttpResponse.getResponseEntity(true, "Data loaded successfully.", aiService.allowance(lang));
     }
 
     @Operation(summary = "Your own AI questions and answers, newest first", security = @SecurityRequirement(name = "jwtToken"))

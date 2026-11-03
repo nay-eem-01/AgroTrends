@@ -16,6 +16,7 @@ import com.project.agriculturalblogapplication.notification.NotificationPublishe
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.request.AskExpertsRequest;
 import com.project.agriculturalblogapplication.model.request.CreateQuestionRequest;
+import com.project.agriculturalblogapplication.model.response.AiAllowanceResponse;
 import com.project.agriculturalblogapplication.model.response.AiAnswerResponse;
 import com.project.agriculturalblogapplication.model.response.AiHistoryItemResponse;
 import com.project.agriculturalblogapplication.model.response.AiSourceResponse;
@@ -47,6 +48,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -237,8 +239,22 @@ public class AiService {
     }
 
     /** Only answered questions count, so a failed or timed-out call does not use up the allowance. */
+    /** The advisor's daily allowance: asks since midnight in Bangladesh, the same count the limit check uses. */
+    @Transactional(readOnly = true)
+    public AiAllowanceResponse allowance(String lang) {
+        ZonedDateTime midnight = LocalDate.now(AppConstants.APP_ZONE).atStartOfDay(AppConstants.APP_ZONE);
+        return new AiAllowanceResponse(aiProperties.getDailyQuestionLimit(),
+                askedSince(authorizationService.currentUserId(lang), midnight), midnight.plusDays(1).toOffsetDateTime());
+    }
+
+    private long askedSince(Long userId, ZonedDateTime midnight) {
+        // creation_date is the server's local time, so the boundary is converted into the server's zone.
+        return aiRepositories.countByUserIdAndCreationDateGreaterThanEqual(userId,
+                midnight.withZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime());
+    }
+
     private void assertDailyLimitNotReached(Long userId, String lang) {
-        long askedToday = aiRepositories.countByUserIdAndCreationDateGreaterThanEqual(userId, LocalDate.now().atStartOfDay());
+        long askedToday = askedSince(userId, LocalDate.now(AppConstants.APP_ZONE).atStartOfDay(AppConstants.APP_ZONE));
         if (askedToday >= aiProperties.getDailyQuestionLimit()) {
             throw new ApplicationException(HttpStatus.TOO_MANY_REQUESTS, ErrorCode.ERROR_AI_DAILY_LIMIT_REACHED, lang);
         }

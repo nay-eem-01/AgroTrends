@@ -1,8 +1,16 @@
 package com.project.agriculturalblogapplication.service;
 
+import com.project.agriculturalblogapplication.constatnt.AppConstants;
+import com.project.agriculturalblogapplication.model.response.AiAllowanceResponse;
+import org.mockito.ArgumentCaptor;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import static org.mockito.ArgumentMatchers.eq;
 import com.project.agriculturalblogapplication.config.AiProperties;
 import com.project.agriculturalblogapplication.entities.AiAnswer;
-import com.project.agriculturalblogapplication.constatnt.AppConstants;
 import com.project.agriculturalblogapplication.entities.Category;
 import com.project.agriculturalblogapplication.entities.Question;
 import com.project.agriculturalblogapplication.entities.QuestionAiAnswer;
@@ -28,7 +36,6 @@ import com.project.agriculturalblogapplication.enums.NotificationType;
 import com.project.agriculturalblogapplication.notification.NotificationMessage;
 import com.project.agriculturalblogapplication.notification.NotificationPublisher;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -44,9 +51,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -56,7 +60,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -399,5 +402,22 @@ class AiServiceTest {
         ChatResponse chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage(answer))),
                 ChatResponseMetadata.builder().usage(new DefaultUsage(120, 30)).build());
         return new ChatClientResponse(chatResponse, Map.of(RetrievalAugmentationAdvisor.DOCUMENT_CONTEXT, retrieved));
+    }
+
+    @Test
+    void theAllowanceCountsAsksSinceMidnightInBangladeshAndResetsAtTheNext() {
+        aiProperties.setDailyQuestionLimit(10);
+        when(authorization.currentUserId("en")).thenReturn(7L);
+        ArgumentCaptor<LocalDateTime> since = ArgumentCaptor.forClass(LocalDateTime.class);
+        when(aiRepositories.countByUserIdAndCreationDateGreaterThanEqual(eq(7L), since.capture())).thenReturn(3L);
+
+        AiAllowanceResponse allowance = aiService.allowance("en");
+
+        ZonedDateTime midnight = LocalDate.now(AppConstants.APP_ZONE).atStartOfDay(AppConstants.APP_ZONE);
+        assertEquals(10, allowance.limit());
+        assertEquals(3L, allowance.usedToday());
+        assertEquals(midnight.withZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime(), since.getValue());
+        assertEquals(midnight.plusDays(1).toOffsetDateTime(), allowance.resetsAt());
+        assertEquals(ZoneOffset.ofHours(6), allowance.resetsAt().getOffset());
     }
 }
