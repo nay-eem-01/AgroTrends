@@ -112,6 +112,9 @@ public class SchemaPatches implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         jdbcTemplate.execute(BLOG_SEARCH_INDEX);
+        // Serves Blog.citedCount's containment test (sources @> ...).
+        jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS question_ai_answers_sources_idx"
+                + " ON question_ai_answers USING gin (sources jsonb_path_ops)");
         CASCADE_ON_DELETE.forEach(fk -> cascadeOnDelete(fk[0], fk[1], fk[2]));
         DROP_NOT_NULL.forEach(jdbcTemplate::execute);
         int profiles = jdbcTemplate.update(AUTHOR_BACKFILL);

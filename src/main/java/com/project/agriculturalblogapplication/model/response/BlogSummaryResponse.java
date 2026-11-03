@@ -29,7 +29,8 @@ public record BlogSummaryResponse(
         Instant publishedAt,
         Instant createdAt,
         Instant updatedAt,
-        boolean aiCitable
+        boolean aiCitable,
+        long citedCount
 ) {
 
     static final int EXCERPT_CHARS = 200;
@@ -43,7 +44,7 @@ public record BlogSummaryResponse(
                 CategoryResponse.from(blog.getCategory()), AuthorSummaryResponse.from(blog.getAuthor()),
                 blog.getStatus(), CommonUtils.toInstant(blog.getPublishedAt()),
                 CommonUtils.toInstant(blog.getCreationDate()), CommonUtils.toInstant(blog.getLastModifiedDate()),
-                blog.isAiCitable());
+                blog.isAiCitable(), blog.getCitedCount());
     }
 
     static String excerpt(String content) {

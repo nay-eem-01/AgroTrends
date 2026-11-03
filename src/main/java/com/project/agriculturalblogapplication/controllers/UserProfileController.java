@@ -12,6 +12,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import com.project.agriculturalblogapplication.model.response.UserImpactResponse;
+import com.project.agriculturalblogapplication.service.ImpactService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +28,16 @@ import static com.project.agriculturalblogapplication.constatnt.AppConstants.LAN
 public class UserProfileController {
 
     private final AuthorProfileService authorProfileService;
+
+    private final ImpactService impactService;
+
+    @Operation(summary = "What a member's work did: answers, accepted answers, readers reached and AI citations (public, hourly)")
+    @ApiResponse(content = @Content(schema = @Schema(implementation = UserImpactResponse.class)), responseCode = "200")
+    @GetMapping("/api/users/{userId}/impact")
+    public ResponseEntity<HttpResponse> impact(@PathVariable Long userId,
+                                               @RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        return HttpResponse.getResponseEntity(true, "Data loaded successfully.", impactService.of(userId, lang));
+    }
 
     @Operation(summary = "A user's public summary: authorId, location, cover, counts and checked credentials (public)")
     @ApiResponse(content = @Content(schema = @Schema(implementation = UserProfileResponse.class)), responseCode = "200")

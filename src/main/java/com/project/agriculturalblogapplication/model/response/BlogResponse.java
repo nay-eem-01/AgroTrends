@@ -27,7 +27,8 @@ public record BlogResponse(
         Instant publishedAt,
         Instant createdAt,
         Instant updatedAt,
-        boolean aiCitable
+        boolean aiCitable,
+        long citedCount
 ) {
 
     public static BlogResponse from(Blog blog) {
@@ -39,6 +40,6 @@ public record BlogResponse(
                 CategoryResponse.from(blog.getCategory()), AuthorSummaryResponse.from(blog.getAuthor()),
                 blog.getStatus(), CommonUtils.toInstant(blog.getPublishedAt()),
                 CommonUtils.toInstant(blog.getCreationDate()), CommonUtils.toInstant(blog.getLastModifiedDate()),
-                blog.isAiCitable());
+                blog.isAiCitable(), blog.getCitedCount());
     }
 }

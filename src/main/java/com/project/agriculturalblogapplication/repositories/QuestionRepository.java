@@ -80,4 +80,18 @@ public interface QuestionRepository extends JpaRepository<Question, Long>, JpaSp
     @Query("select q.id from Question q where q.answerMailPending = true"
             + " and (q.answerMailedAt is null or q.answerMailedAt < :before)")
     List<Long> answerMailsDue(@Param("before") LocalDateTime before);
+
+    /** Views on the public questions this user answered (each question once). */
+    @Query("select coalesce(sum(q.viewCount), 0) from Question q where q.hidden = false and exists"
+            + " (select 1 from Answer a where a.question = q and a.user.id = :userId and a.parentAnswer is null and a.hidden = false)")
+    long sumViewsOfQuestionsAnsweredBy(@Param("userId") Long userId);
+
+    /** Questions where this user's answer is vetted: accepted by someone else, or theirs in a topic they are expert in. */
+    @Query("select q.id from Question q where q.hidden = false and q.acceptedAnswer.user.id = :userId"
+            + " and q.user.id <> :userId and q.acceptedAnswer.hidden = false")
+    List<Long> idsWithAnswerAcceptedFrom(@Param("userId") Long userId);
+
+    @Query("select distinct a.question.id from Answer a where a.user.id = :userId and a.parentAnswer is null"
+            + " and a.hidden = false and a.question.hidden = false and a.question.category.id in :topicIds")
+    List<Long> idsAnsweredInTopics(@Param("userId") Long userId, @Param("topicIds") java.util.Collection<Long> topicIds);
 }

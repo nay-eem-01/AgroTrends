@@ -82,4 +82,22 @@ public interface QuestionAiAnswerRepository extends JpaRepository<QuestionAiAnsw
                    @Param("correction") Answer correction);
 
     long countByStatusAndQuestionHiddenFalse(AiAnswerStatus status);
+
+    /** AI answers on public questions (not flagged) citing any of these questions' vetted answers. */
+    @Query(value = """
+            select count(*) from question_ai_answers a join questions q on q.id = a.question_id
+            where q.hidden = false and a.status <> 'FLAGGED'
+              and exists (select 1 from jsonb_array_elements(a.sources) s
+                          where cast(s ->> 'questionId' as bigint) in (:questionIds))
+            """, nativeQuery = true)
+    long countCitingQuestions(@Param("questionIds") java.util.Collection<Long> questionIds);
+
+    /** Citations of a user's published stories by AI answers on public questions (not flagged), summed over stories. */
+    @Query(value = """
+            select count(*) from question_ai_answers a join questions q on q.id = a.question_id
+              cross join lateral jsonb_array_elements(a.sources) s
+              join blogs b on b.id = cast(s ->> 'blogId' as bigint)
+            where q.hidden = false and a.status <> 'FLAGGED' and b.author_id = :userId and b.status = 'PUBLISHED'
+            """, nativeQuery = true)
+    long countStoryCitations(@Param("userId") Long userId);
 }
