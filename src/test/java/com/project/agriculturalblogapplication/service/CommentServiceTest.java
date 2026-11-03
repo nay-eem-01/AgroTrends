@@ -107,6 +107,30 @@ class CommentServiceTest {
     }
 
     @Test
+    void aReplyToAReplyJoinsTheThreadAndNotifiesTheReplysAuthor() {
+        User replier = new User();
+        replier.setId(8L);
+        User firstReplier = new User();
+        firstReplier.setId(9L);
+        Comment root = comment(10L, null);
+        Comment firstReply = comment(11L, root);
+        firstReply.setUser(firstReplier);
+        when(authorization.currentUserId("en")).thenReturn(8L);
+        when(userService.findByIdWithException(8L, "en")).thenReturn(replier);
+        when(blogService.findVisibleBlog(3L, "en")).thenReturn(blog);
+        when(commentRepository.findById(11L)).thenReturn(Optional.of(firstReply));
+        when(commentRepository.save(any(Comment.class))).thenAnswer(call -> call.getArgument(0));
+        ReplyCommentRequest request = new ReplyCommentRequest();
+        request.setBlogId(3L);
+        request.setParentCommentId(11L);
+        request.setContent("@Karim how much?");
+
+        assertEquals(10L, commentService.reply(request, "en").getParentCommentId());
+        verify(notifications).publish(new NotificationMessage(9L, 8L, NotificationType.COMMENT_REPLY,
+                NotificationTarget.BLOG, 3L));
+    }
+
+    @Test
     void aCommentOnAHiddenOrDraftPostOrUnderAHiddenCommentIsNotFound() {
         blog.setStatus(BlogStatus.HIDDEN);
         when(commentRepository.findById(10L)).thenReturn(Optional.of(comment(10L, null)));

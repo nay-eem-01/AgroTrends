@@ -12,7 +12,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.** Deploy kit ready
   (`docs/DEPLOY.md`): one AWS EC2 server for the 6-month free plan, then a VPS;
   the database on Supabase.
-- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 102 of 109 steps done): launch blockers and one account type with
+- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 103 of 110 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8), admin dashboard endpoints (9). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -53,6 +53,24 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 | The audit PDF (`AgroTrends-Code-Audit.pdf`) is intentionally not committed | — | — |
 
 ---
+
+## 2026-11-03 (reply to a reply)
+
+Decided with Nayeem: nested replies stay **two levels** (Facebook/YouTube), not an unlimited tree (Reddit): deep
+indents do not fit a phone, and the frontend already shows one level of replies.
+
+**Done**
+- 4.26 `POST /api/comments/reply` and `POST /api/answers/reply` accept a reply as the parent: the new reply is stored
+  under the top-level comment or answer (same `parent_*_id` column, no schema change), so threads never go deeper
+  than two levels. Comments notify the author of the reply that was answered, not the thread's starter.
+
+**Frontend**
+- Show Reply on replies too and prefill the composer with `@name `; send the reply's own id as `parentCommentId` /
+  `parentAnswerId`. The thread lists already refresh after a reply.
+
+**Known limitations**
+- Deleting a reply no longer takes the replies to it along (they are siblings now), like Facebook.
+- Replies on answers still notify nobody (unchanged).
 
 ## 2026-11-01 (database on Supabase)
 

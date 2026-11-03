@@ -209,7 +209,8 @@ public class AnswerService {
         reply.setContent(request.getContent());
         reply.setUser(user);
         reply.setQuestion(question);
-        reply.setParentAnswer(parentAnswer);
+        // Two levels: a reply to a reply joins the same thread under the answer.
+        reply.setParentAnswer(parentAnswer.getParentAnswer() == null ? parentAnswer : parentAnswer.getParentAnswer());
         reply = answerRepository.save(reply);
 
         return mapToAnswerResponse(reply);
