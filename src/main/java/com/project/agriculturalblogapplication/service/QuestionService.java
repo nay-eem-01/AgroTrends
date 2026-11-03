@@ -17,6 +17,7 @@ import com.project.agriculturalblogapplication.model.AuthorStanding;
 import com.project.agriculturalblogapplication.model.response.CategoryResponse;
 import com.project.agriculturalblogapplication.repositories.AgriSpecifications;
 import com.project.agriculturalblogapplication.repositories.QuestionRepository;
+import com.project.agriculturalblogapplication.repositories.TagFollowRepository;
 import com.project.agriculturalblogapplication.util.CommonUtils;
 import com.project.agriculturalblogapplication.security.service.AttemptLimiter;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
@@ -60,6 +61,8 @@ public class QuestionService {
 
     private final AttemptLimiter attemptLimiter;
 
+    private final TagFollowRepository tagFollowRepository;
+
     /** Saves the question; the AI answers it after the commit (AiService.answerQuestion). */
     @Transactional
     public QuestionResponse create(CreateQuestionRequest request, String lang) {
@@ -82,13 +85,30 @@ public class QuestionService {
         return mapToQuestionResponse(question);
     }
 
-    /** All questions, optionally filtered by topic, tag, no answers yet, crop, season, region and soil. */
+    /**
+     * All questions, optionally filtered by topic, tag, no answers yet, crop, season, region and soil. {@code following}
+     * keeps those carrying a tag the caller follows: a 401 when signed out, an empty page when they follow none.
+     */
     public Page<QuestionResponse> getAll(PaginationArgs paginationArgs, Long categoryId, String tag, boolean unanswered,
-                                         AgriInfo filter, String lang) {
+                                         boolean following, AgriInfo filter, String lang) {
         Pageable pageable = CommonUtils.getPageable(paginationArgs, SORTABLE_FIELDS, lang);
         Specification<Question> spec = AgriSpecifications.<Question>matches(filter)
                 .and(inTopicWithTag(categoryId, tag, unanswered));
+        if (following) {
+            List<Long> tagIds = tagFollowRepository.followedTagIds(authorizationService.currentUserId(lang));
+            if (tagIds.isEmpty()) {
+                return Page.empty(pageable);
+            }
+            spec = spec.and(withAnyTag(tagIds));
+        }
         return mapToQuestionResponses(questionRepository.findAll(spec, pageable));
+    }
+
+    static Specification<Question> withAnyTag(List<Long> tagIds) {
+        return (root, query, cb) -> {
+            query.distinct(true); // a question with two followed tags would otherwise come twice
+            return root.join("tags").get("id").in(tagIds);
+        };
     }
 
     static Specification<Question> inTopicWithTag(Long categoryId, String tag, boolean unanswered) {
