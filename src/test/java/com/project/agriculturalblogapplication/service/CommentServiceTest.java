@@ -76,6 +76,19 @@ class CommentServiceTest {
     }
 
     @Test
+    void theCommentListCarriesEachThreadsReplyCount() {
+        blog.setStatus(BlogStatus.PUBLISHED);
+        when(blogService.findVisibleBlog(3L, "en")).thenReturn(blog);
+        when(commentRepository.findByBlogIdAndParentCommentIsNullAndHiddenFalse(3L))
+                .thenReturn(List.of(comment(10L, null), comment(12L, null)));
+        when(commentRepository.replyCounts(List.of(10L, 12L))).thenReturn(List.<Object[]>of(new Object[]{10L, 3L}));
+
+        List<CommentResponse> list = commentService.getAllByBlogId(3L, "en");
+
+        assertEquals(List.of(3L, 0L), list.stream().map(CommentResponse::getReplyCount).toList());
+    }
+
+    @Test
     void topLevelCommentMapsWithNullParentInsteadOfThrowing() {
         when(commentRepository.findById(10L)).thenReturn(Optional.of(comment(10L, null)));
 

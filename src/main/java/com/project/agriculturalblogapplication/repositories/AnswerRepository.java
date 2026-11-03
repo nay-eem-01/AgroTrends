@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 
 
@@ -39,4 +40,9 @@ public interface AnswerRepository extends JpaRepository<Answer, Long> {
     @Query("select count(q) from Question q where q.acceptedAnswer.user.id = :userId"
             + " and q.hidden = false and q.acceptedAnswer.hidden = false")
     long countAcceptedByUserId(@Param("userId") Long userId);
+
+    /** Pairs of (answerId, visible replies) for these answers; answers without replies are left out. */
+    @Query("select a.parentAnswer.id, count(a) from Answer a where a.parentAnswer.id in :ids and a.hidden = false"
+            + " group by a.parentAnswer.id")
+    List<Object[]> replyCounts(@Param("ids") Collection<Long> ids);
 }
