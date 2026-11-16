@@ -51,7 +51,7 @@ class QuestionServiceTest {
     private final com.project.agriculturalblogapplication.repositories.TagFollowRepository tagFollows =
             mock(com.project.agriculturalblogapplication.repositories.TagFollowRepository.class);
     private final QuestionService questionService =
-            new QuestionService(questionRepository, userService, authorization, categoryService, tagService, imageService,
+            new QuestionService(mock(ImageCleanup.class), questionRepository, userService, authorization, categoryService, tagService, imageService,
                     mock(ReputationService.class), events, new com.project.agriculturalblogapplication.security.service.AttemptLimiter(),
                     tagFollows);
 

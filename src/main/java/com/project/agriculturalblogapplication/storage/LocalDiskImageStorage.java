@@ -30,6 +30,17 @@ public class LocalDiskImageStorage implements ImageStorage {
     }
 
     @Override
+    public void delete(String url) {
+        if (!isStored(url)) return;
+        try {
+            Files.deleteIfExists(Path.of(storageProperties.getLocalDir()).toAbsolutePath()
+                    .resolve(url.substring(url.lastIndexOf('/') + 1)));
+        } catch (IOException e) {
+            throw new UncheckedIOException("Could not delete image", e);
+        }
+    }
+
+    @Override
     public boolean isStored(String url) {
         return storageProperties.isPublicUrl(url);
     }

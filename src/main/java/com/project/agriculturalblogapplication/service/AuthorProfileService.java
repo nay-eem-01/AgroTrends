@@ -25,6 +25,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AuthorProfileService {
 
+    private final ImageCleanup imageCleanup;
+
     private final AuthorService authorService;
 
     private final BlogService blogService;
@@ -57,6 +59,7 @@ public class AuthorProfileService {
     }
 
     /** Edits the caller's own profile. */
+    @Transactional
     public AuthorProfileResponse updateMine(UpdateAuthorProfileRequest request, String lang) {
         Long callerId = authorizationService.currentUserId(lang);
         Author author = authorService.profileOf(callerId);
@@ -65,6 +68,7 @@ public class AuthorProfileService {
         author.setOccupation(request.getOccupation());
         author.setWorkPlaceOrInstitution(request.getWorkPlaceOrInstitution());
         author.setBio(request.getBio());
+        imageCleanup.consider(author.getProfileImageUrl());
         author.setProfileImageUrl(request.getProfileImageUrl());
         author.setLinks(request.getLinks());
         return toResponse(authorService.save(author), callerId);
@@ -95,11 +99,13 @@ public class AuthorProfileService {
     }
 
     /** Edits the caller's own location and cover; the cover must be an image uploaded here. */
+    @Transactional
     public UserProfileResponse updateSummary(UpdateUserProfileRequest request, String lang) {
         User user = userService.findByIdWithException(authorizationService.currentUserId(lang), lang);
         String coverUrl = StringUtils.hasText(request.getCoverUrl())
                 ? imageService.requireUploaded(List.of(request.getCoverUrl()), lang).get(0) : null;
         user.setLocation(StringUtils.hasText(request.getLocation()) ? request.getLocation().strip() : null);
+        imageCleanup.consider(user.getCoverUrl());
         user.setCoverUrl(coverUrl);
         return toSummary(userService.saveUser(user));
     }

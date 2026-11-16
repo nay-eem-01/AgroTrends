@@ -38,6 +38,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AnswerService {
 
+    private final ImageCleanup imageCleanup;
+
     private final QuestionService questionService;
 
     private final UserService userService;
@@ -76,6 +78,7 @@ public class AnswerService {
     public AnswerResponse update(UpdateAnswerRequest request, String lang) {
         Answer answer = findByIdWithException(request.getAnswerId());
         authorizationService.assertOwnerOrAdmin(answer.getUser().getId(), lang);
+        imageCleanup.consider(answer.getContent());
         answer.setContent(request.getContent());
         answer = answerRepository.save(answer);
         eventPublisher.publishEvent(new AnswerChanged(answer.getId()));
@@ -112,6 +115,8 @@ public class AnswerService {
             answer.getQuestion().setAcceptedAnswer(null);
         }
         aiAnswerRepository.reopenCorrectedBy(answer.getId());
+        imageCleanup.consider(answer.getContent());
+        imageCleanup.answerReplies(answer.getId());
         answerRepository.delete(answer);
         eventPublisher.publishEvent(new AnswerChanged(answer.getId()));
     }

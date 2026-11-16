@@ -9,6 +9,7 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 
 import java.net.URI;
 
@@ -54,6 +55,13 @@ public class R2ImageStorage implements ImageStorage {
                         .build(),
                 RequestBody.fromBytes(bytes));
         return storageProperties.publicUrl(fileName);
+    }
+
+    @Override
+    public void delete(String url) {
+        if (!isStored(url)) return;
+        s3.deleteObject(DeleteObjectRequest.builder().bucket(storageProperties.getR2().getBucket())
+                .key(url.substring(url.lastIndexOf('/') + 1)).build());
     }
 
     @Override

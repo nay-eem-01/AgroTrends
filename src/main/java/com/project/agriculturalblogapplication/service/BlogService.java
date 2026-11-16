@@ -26,6 +26,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
@@ -39,6 +40,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class BlogService {
+
+    private final ImageCleanup imageCleanup;
 
     private static final int REINDEX_PAGE_SIZE = 50;
 
@@ -176,12 +179,14 @@ public class BlogService {
         return BlogResponse.from(blog);
     }
 
+    @Transactional
     public BlogResponse update(UpdateBlogRequest request, String lang) {
         Blog blog = findByIdWithException(request.getBlogId());
         authorizationService.assertOwnerOrAdmin(blog.getAuthor().getUser().getId(), lang);
 
         assertNotUnderReview(blog, lang);
         Category category = categoryService.findByIdWithException(request.getCategoryId());
+        imageCleanup.consider(blog.getImageUrl(), blog.getContent());
         blog.setTitle(request.getTitle());
         blog.setContent(request.getContent());
         blog.setCategory(category);
@@ -209,6 +214,7 @@ public class BlogService {
         return BlogResponse.from(blog);
     }
 
+    @Transactional
     public void delete(Long id, String lang) {
         Blog blog = findByIdWithException(id);
         authorizationService.assertOwnerOrAdmin(blog.getAuthor().getUser().getId(), lang);
@@ -219,11 +225,14 @@ public class BlogService {
      * Deletes after a moderator confirmed reports about it; the authorization is the moderation endpoint's.
      * Package-private: only ModerationService may skip the owner-or-admin check.
      */
+    @Transactional
     void removeForModeration(Long id) {
         remove(findByIdWithException(id));
     }
 
     private void remove(Blog blog) {
+        imageCleanup.consider(blog.getImageUrl(), blog.getContent());
+        imageCleanup.blogComments(blog.getId());
         blogRepositories.delete(blog);
         documentService.deleteBlog(blog.getId());
     }
