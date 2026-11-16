@@ -5,14 +5,31 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-11-16 — Deployment checkpoint and readiness fixes
+
+**Done**
+- Deployment status supplied by Nayeem: Supabase/profile writes, R2 upload/display (`agrotrends-files`), Brevo domain
+  and delivery, Docker build/Supabase/health, and frontend login against Docker are verified.
+- Current host target is Azure; VM, production DNS/HTTPS and monitoring remain pending.
+
+**Decisions**
+- Docker-specific R2 and mail checks remain pending. WSL backup authentication is deferred and unresolved.
+- No successful real backup/restore or production rollout is claimed.
+
+**Known limitations**
+- Cleanup retries are manual if R2 is unavailable; old or abandoned uploads are not swept. Cached image copies may outlive deletion.
+- Old deployment notes below are historical; this checkpoint supersedes their AWS plan and local service status.
+
 ## Where we are
+
+- Deployment follow-up uses `feat/deployment-fixes-base`: documentation, storage cleanup, saved-image cleanup, then starter topics. No deployment is performed here.
 
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.** Deploy kit ready
-  (`docs/DEPLOY.md`): one AWS EC2 server for the 6-month free plan, then a VPS;
+  (`docs/DEPLOY.md`): one Azure VM (pending);
   the database on Supabase.
-- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 114 of 123 steps done): launch blockers and one account type with
+- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 114 of 126 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8), admin dashboard endpoints (9). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).
@@ -21,10 +38,14 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ## Next up
 
+- Review and land the local deployment documentation, image cleanup and starter-topic changes through the feature base.
+
+- Current deployment: Docker R2/mail checks, unresolved WSL backup authentication, then Azure/DNS/HTTPS/monitoring.
+
 1. Merge `feat/ship-it-base` into `development`, then `development` → `staging` → `production`.
-2. Deploy by `docs/DEPLOY.md` (Supabase database, one AWS EC2 server). Before that: rotate the leaked keys (0.4),
+2. Deploy by `docs/DEPLOY.md` (Supabase database, one Azure VM). Before that: rotate the leaked keys (0.4),
    a domain, R2 buckets (images, backups), Brevo sender domain.
-3. After launch: 4.2 Flyway, 4.4 Testcontainers, 4.5 CI; move to a VPS before the AWS free plan ends.
+3. After launch: 4.2 Flyway, 4.4 Testcontainers, 4.5 CI; confirm Azure costs and budget alerts before provisioning.
 4. **Team:** 30–50 seeded Bangla articles; 5–10 experts invited; pick the 6–8 launch topics (categories).
 5. **Nayeem:** roadmap 0.4 (rotate keys, purge history); set `GOOGLE_CLIENT_ID`; make
    `development` the default branch; delete `feature/kafka-impl` (superseded by Phase 8).
