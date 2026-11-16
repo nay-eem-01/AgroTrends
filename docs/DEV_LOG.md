@@ -5,6 +5,18 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-11-16 — Image cleanup infrastructure
+
+**Done**
+- Added idempotent deletion to R2 and local storage, restricted to this storage's own URLs.
+- Added after-commit cleanup with shared-reference checks, rollback safety and safe failure logging.
+
+**Validation**
+- Storage and cleanup unit/transaction regression tests pass in the validated Java 21 suite.
+
+**Known limitations**
+- Service hooks are the next step. Live R2 checks remain pending; retries are manual and existing orphans are not swept.
+
 ## 2026-11-16 — Deployment checkpoint and readiness fixes
 
 **Done**
@@ -29,7 +41,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.** Deploy kit ready
   (`docs/DEPLOY.md`): one Azure VM (pending);
   the database on Supabase.
-- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 114 of 126 steps done): launch blockers and one account type with
+- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 115 of 126 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8), admin dashboard endpoints (9). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).

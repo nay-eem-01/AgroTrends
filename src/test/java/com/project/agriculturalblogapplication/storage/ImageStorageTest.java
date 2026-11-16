@@ -26,6 +26,29 @@ class ImageStorageTest {
     static final byte[] WEBP = {'R', 'I', 'F', 'F', 0, 0, 0, 0, 'W', 'E', 'B', 'P', 0};
 
     @Test
+    void deletionUsesTheConfiguredBucketAndRejectsForeignPaths(@TempDir Path dir) throws Exception {
+        StorageProperties properties = new StorageProperties();
+        properties.setLocalDir(dir.toString());
+        properties.getR2().setBucket("agrotrends-files");
+        S3Client s3 = mock(S3Client.class);
+        R2ImageStorage r2 = new R2ImageStorage(properties, s3);
+        String url = properties.publicUrl("abc.png");
+        r2.delete(url);
+        r2.delete("https://other.example/abc.png");
+        r2.delete(properties.getPublicBaseUrl() + "/../abc.png");
+        ArgumentCaptor<software.amazon.awssdk.services.s3.model.DeleteObjectRequest> deleted =
+                ArgumentCaptor.forClass(software.amazon.awssdk.services.s3.model.DeleteObjectRequest.class);
+        verify(s3).deleteObject(deleted.capture());
+        assertEquals("agrotrends-files", deleted.getValue().bucket());
+        assertEquals("abc.png", deleted.getValue().key());
+        LocalDiskImageStorage local = new LocalDiskImageStorage(properties);
+        String stored = local.store(PNG, ImageType.PNG);
+        local.delete(stored);
+        local.delete(stored);
+        assertEquals(0, Files.list(dir).count());
+    }
+
+    @Test
     void typesAreRecognisedByTheirFirstBytes() {
         assertEquals(Optional.of(ImageType.PNG), ImageType.detect(PNG));
         assertEquals(Optional.of(ImageType.JPEG), ImageType.detect(JPEG));
