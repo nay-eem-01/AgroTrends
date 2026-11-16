@@ -5,6 +5,19 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-11-16 — Clean up removed saved images
+
+**Done**
+- Capture detached profile photos, covers, question/story images and inline images on edits and deletes.
+- Include reply images removed by database cascades; ownership checks still run before scheduling cleanup.
+- Commit the owning mutation before checking references and deleting the stored object.
+
+**Validation**
+- Targeted storage/topic/profile/post suite: 74/74 passed in the final combined snapshot.
+
+**Known limitations**
+- Live Docker/R2 acceptance remains pending; hidden posts keep their images for restoration.
+
 ## 2026-11-16 — Image cleanup infrastructure
 
 **Done**
@@ -41,7 +54,7 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.** Deploy kit ready
   (`docs/DEPLOY.md`): one Azure VM (pending);
   the database on Supabase.
-- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 115 of 126 steps done): launch blockers and one account type with
+- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 116 of 126 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8), admin dashboard endpoints (9). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).

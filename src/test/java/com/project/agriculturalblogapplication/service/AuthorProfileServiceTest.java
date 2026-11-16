@@ -35,6 +35,7 @@ import static org.mockito.Mockito.when;
 
 class AuthorProfileServiceTest {
 
+    private final ImageCleanup cleanup = mock(ImageCleanup.class);
     private final AuthorService authorService = mock(AuthorService.class);
     private final BlogService blogService = mock(BlogService.class);
     private final FollowService followService = mock(FollowService.class);
@@ -44,8 +45,21 @@ class AuthorProfileServiceTest {
     private final QuestionService questionService = mock(QuestionService.class);
     private final UserService userService = mock(UserService.class);
     private final ImageService imageService = mock(ImageService.class);
-    private final AuthorProfileService service = new AuthorProfileService(authorService, blogService, followService,
+    private final AuthorProfileService service = new AuthorProfileService(cleanup, authorService, blogService, followService,
             authorization, answerService, expertService, questionService, userService, imageService);
+
+    @Test
+    void removingACoverSchedulesTheOldFileForCleanup() {
+        User me = author().getUser();
+        me.setCoverUrl("https://images.example.com/abc.png");
+        when(userService.findByIdWithException(7L, "en")).thenReturn(me);
+        when(userService.saveUser(me)).thenReturn(me);
+        UpdateUserProfileRequest request = new UpdateUserProfileRequest();
+        request.setCoverUrl("");
+        service.updateSummary(request, "en");
+        assertNull(me.getCoverUrl());
+        verify(cleanup).consider("https://images.example.com/abc.png");
+    }
 
     @BeforeEach
     void setUp() {

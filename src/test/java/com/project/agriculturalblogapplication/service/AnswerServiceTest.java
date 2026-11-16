@@ -56,7 +56,7 @@ class AnswerServiceTest {
     private final NotificationPublisher notifications = mock(NotificationPublisher.class);
     private final QuestionService questionService = mock(QuestionService.class);
     private final UserService userService = mock(UserService.class);
-    private final AnswerService answerService = new AnswerService(questionService, userService,
+    private final AnswerService answerService = new AnswerService(mock(ImageCleanup.class), questionService, userService,
             authorization, answerRepository, aiAnswers, reputation, events, notifications);
 
     private Question question;

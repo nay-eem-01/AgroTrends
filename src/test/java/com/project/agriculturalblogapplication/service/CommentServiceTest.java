@@ -41,7 +41,7 @@ class CommentServiceTest {
     private final AuthorizationService authorization = mock(AuthorizationService.class);
     private final NotificationPublisher notifications = mock(NotificationPublisher.class);
     private final CommentService commentService =
-            new CommentService(blogService, userService, authorization, commentRepository, notifications);
+            new CommentService(mock(ImageCleanup.class), blogService, userService, authorization, commentRepository, notifications);
 
     private User author;
     private Blog blog;
