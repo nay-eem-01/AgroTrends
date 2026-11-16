@@ -5,6 +5,47 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-11-16 — Deployment checkpoint and readiness fixes
+
+**Done**
+- Deployment status supplied by Nayeem: Supabase/profile writes, R2 upload/display (`agrotrends-files`), Brevo domain
+  and delivery, Docker build/Supabase/health, and frontend login against Docker are verified.
+- Current host target is Azure; VM, production DNS/HTTPS and monitoring remain pending.
+
+- Added after-commit cleanup for removed/replaced saved profile photos, covers, story/question images and inline
+  post images, including replies removed by database cascades. Keep objects referenced by other live rows.
+- Added 40 agriculture starter topics only when the categories table is empty; existing topics are preserved.
+
+**Validation**
+- Final Java 21 unit suite with `-Duser.timezone=Asia/Dhaka`: 447/447 passed; the DB-dependent context test is excluded.
+- Targeted cleanup/storage/topic/profile/post regression suite: 74/74 passed.
+- Java 21 unit suite (DB-dependent context test excluded): 446/447 passed. The AI quota test fails in UTC because
+  its stub uses server-local midnight instead of Dhaka midnight; the same failure was reproduced on unchanged
+  `development` (`fd9b490`). No AI quota code was changed.
+- Cleanup tests cover commit/rollback, shared references, external URLs, storage errors and configured R2 deletion;
+  topic tests cover empty/repeated startup and preserving an existing taxonomy. Live R2/DB acceptance is pending.
+
+**Decisions**
+- Docker-specific R2 and mail checks remain pending. WSL backup authentication is deferred and unresolved.
+- No successful real backup/restore or production rollout is claimed.
+
+**Known limitations**
+- Cleanup retries are manual if R2 is unavailable; old or abandoned uploads are not swept. Cached image copies may outlive deletion.
+- Old deployment notes below are historical; this checkpoint supersedes their AWS plan and local service status.
+
+## 2026-11-16 — Clean up removed saved images
+
+**Done**
+- Capture detached profile photos, covers, question/story images and inline images on edits and deletes.
+- Include reply images removed by database cascades; ownership checks still run before scheduling cleanup.
+- Commit the owning mutation before checking references and deleting the stored object.
+
+**Validation**
+- Targeted storage/topic/profile/post suite: 74/74 passed in the final combined snapshot.
+
+**Known limitations**
+- Live Docker/R2 acceptance remains pending; hidden posts keep their images for restoration.
+
 ## 2026-11-16 — Image cleanup infrastructure
 
 **Done**
@@ -17,31 +58,16 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 **Known limitations**
 - Service hooks are the next step. Live R2 checks remain pending; retries are manual and existing orphans are not swept.
 
-## 2026-11-16 — Deployment checkpoint and readiness fixes
-
-**Done**
-- Deployment status supplied by Nayeem: Supabase/profile writes, R2 upload/display (`agrotrends-files`), Brevo domain
-  and delivery, Docker build/Supabase/health, and frontend login against Docker are verified.
-- Current host target is Azure; VM, production DNS/HTTPS and monitoring remain pending.
-
-**Decisions**
-- Docker-specific R2 and mail checks remain pending. WSL backup authentication is deferred and unresolved.
-- No successful real backup/restore or production rollout is claimed.
-
-**Known limitations**
-- Cleanup retries are manual if R2 is unavailable; old or abandoned uploads are not swept. Cached image copies may outlive deletion.
-- Old deployment notes below are historical; this checkpoint supersedes their AWS plan and local service status.
-
 ## Where we are
 
-- Deployment follow-up uses `feat/deployment-fixes-base`: documentation, storage cleanup, saved-image cleanup, then starter topics. No deployment is performed here.
+- Deployment fixes are prepared as serial steps: `docs/deployment-checkpoint`, `feat/image-cleanup-storage`, `fix/saved-image-cleanup`, `feat/starter-topics`, into `feat/deployment-fixes-base`. They are not deployed.
 
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
   instantly, verified experts confirm; articles feed the AI. Students and young professionals first.
 - Phases 0–3 and Google sign-in (2.15) are on `development`. **Not deployed, zero users.** Deploy kit ready
   (`docs/DEPLOY.md`): one Azure VM (pending);
   the database on Supabase.
-- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 115 of 126 steps done): launch blockers and one account type with
+- **Launch = Phases 4–9** (`docs/ROADMAP.md`, 117 of 126 steps done): launch blockers and one account type with
   e-mail confirmation (5), shipping (4), votes + reputation (6), verified experts + AI review queue (7),
   in-process notifications + moderation (8), admin dashboard endpoints (9). The Kafka phase is dropped.
 - How the features connect: `docs/ARCHITECTURE.md`. Partner-facing plan: a shared doc (link in the PR).

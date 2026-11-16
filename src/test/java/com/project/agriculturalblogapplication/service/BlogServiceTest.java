@@ -63,7 +63,7 @@ class BlogServiceTest {
     private final AuthorizationService authorization = mock(AuthorizationService.class);
     private final TagService tagService = mock(TagService.class);
     private final BlogService blogService =
-            new BlogService(blogRepositories, categoryService, authorService, documentService, authorization, tagService);
+            new BlogService(mock(ImageCleanup.class), blogRepositories, categoryService, authorService, documentService, authorization, tagService);
 
     @Test
     void updateReplacesTheBlogsVectorsInsteadOfAddingMore() {

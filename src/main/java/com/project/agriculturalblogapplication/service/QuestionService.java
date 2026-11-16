@@ -41,6 +41,8 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class QuestionService {
 
+    private final ImageCleanup imageCleanup;
+
     static final Set<String> SORTABLE_FIELDS = Set.of("creationDate", "lastModifiedDate", "title");
 
     private final QuestionRepository questionRepository;
@@ -152,6 +154,7 @@ public class QuestionService {
         Question question = findByIdWithException(request.getQuestionId());
         authorizationService.assertOwnerOrAdmin(question.getUser().getId(), lang);
 
+        imageCleanup.consider(question.getContent());
         question.setTitle(request.getTitle());
         question.setContent(request.getContent());
         question.setCategory(categoryService.findByIdWithException(request.getCategoryId()));
@@ -160,6 +163,7 @@ public class QuestionService {
             question.setTags(tagService.resolve(request.getTags()));
         }
         if (request.getImageUrls() != null) {
+            imageCleanup.consider(question.getImageUrls().toArray(String[]::new));
             question.setImageUrls(imageService.requireUploaded(request.getImageUrls(), lang));
         }
         if (request.getAgri() != null) {
@@ -194,6 +198,9 @@ public class QuestionService {
     }
 
     private void remove(Question question) {
+        imageCleanup.consider(question.getContent());
+        imageCleanup.consider(question.getImageUrls().toArray(String[]::new));
+        imageCleanup.questionReplies(question.getId());
         questionRepository.delete(question);
         eventPublisher.publishEvent(new QuestionDeleted(question.getId()));
     }

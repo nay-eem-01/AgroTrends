@@ -8,7 +8,7 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 115 of 126 steps done
+**Progress:** 117 of 126 steps done
 
 **Launch scope (decided 2026-10-13):** Phases 4–8 must all be done before the public launch. Order of work:
 5 → 6 → 7 → 8 → 4 (deploy) → live test → launch. Nothing is deployed until Phases 5–8 are done. After launch, the
@@ -28,8 +28,8 @@ The three implementation steps below are included in the feature count; infrastr
 | Resolve WSL backup authentication; verify real dump, R2 copy and isolated restore | ⏸ unresolved |
 | Azure VM, production DNS/HTTPS, monitoring | ⬜ |
 | Storage deletion and after-commit cleanup infrastructure | ✅ |
-| Detached saved image cleanup in R2/local storage, preserving shared references | ⬜ |
-| Seed 40 starter topics on an empty database without replacing existing topics | ⬜ |
+| Detached saved image cleanup in R2/local storage, preserving shared references | ✅ |
+| Seed 40 starter topics on an empty database without replacing existing topics | ✅ |
 
 ## Phase 0 — Stop the bleeding
 

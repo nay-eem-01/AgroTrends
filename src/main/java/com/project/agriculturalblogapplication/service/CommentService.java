@@ -32,6 +32,8 @@ import java.util.stream.Collectors;
 @Transactional
 public class CommentService {
 
+    private final ImageCleanup imageCleanup;
+
     private final BlogService blogService;
 
     private final UserService userService;
@@ -60,6 +62,7 @@ public class CommentService {
 
         authorizationService.assertOwnerOrAdmin(comment.getUser().getId(), lang);
 
+        imageCleanup.consider(comment.getCommentContent());
         comment.setCommentContent(request.getContent());
         comment = commentRepository.save(comment);
 
@@ -69,6 +72,8 @@ public class CommentService {
     public void delete(Long commentId, String lang) {
         Comment comment = findIncludingHidden(commentId);
         authorizationService.assertOwnerOrAdmin(comment.getUser().getId(), lang);
+        imageCleanup.consider(comment.getCommentContent());
+        imageCleanup.commentReplies(comment.getId());
         commentRepository.delete(comment);
     }
 
@@ -77,7 +82,10 @@ public class CommentService {
      * Package-private: only ModerationService may skip the owner-or-admin check.
      */
     void removeForModeration(Long commentId) {
-        commentRepository.delete(findIncludingHidden(commentId));
+        Comment comment = findIncludingHidden(commentId);
+        imageCleanup.consider(comment.getCommentContent());
+        imageCleanup.commentReplies(comment.getId());
+        commentRepository.delete(comment);
     }
 
     // Hidden comments can still be deleted, by their author or a moderator confirming the reports.
