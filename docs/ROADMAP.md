@@ -8,13 +8,28 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 114 of 123 steps done
+**Progress:** 114 of 126 steps done
 
 **Launch scope (decided 2026-10-13):** Phases 4–8 must all be done before the public launch. Order of work:
 5 → 6 → 7 → 8 → 4 (deploy) → live test → launch. Nothing is deployed until Phases 5–8 are done. After launch, the
 8-week test decides what comes from **Later** (see `docs/PLAN.md` §6).
 
 ---
+
+## Deployment follow-up (2026-11-16)
+
+Supabase/profile writes, R2 upload/display (`agrotrends-files`), Brevo delivery, Docker build/database/health and
+frontend login against Docker are confirmed by Nayeem. See `docs/DEPLOY.md` for the current Azure plan.
+The three implementation steps below are included in the feature count; infrastructure acceptance checks are tracked separately.
+
+| Step | Status |
+|---|---|
+| Docker R2 and Brevo acceptance checks | ⬜ |
+| Resolve WSL backup authentication; verify real dump, R2 copy and isolated restore | ⏸ unresolved |
+| Azure VM, production DNS/HTTPS, monitoring | ⬜ |
+| Storage deletion and after-commit cleanup infrastructure | ⬜ |
+| Detached saved image cleanup in R2/local storage, preserving shared references | ⬜ |
+| Seed 40 starter topics on an empty database without replacing existing topics | ⬜ |
 
 ## Phase 0 — Stop the bleeding
 
@@ -97,7 +112,7 @@ Operability and regression safety. Runs after Phases 5–8 are complete; then de
 |---|---|---|
 | 4.1 | `prod` profile (no API docs); CORS origins from `CORS_ORIGINS`, default `app.frontendUrl` (audit B6); `server.forward-headers-strategy=native` so per-IP limits see the client IP behind the proxy. `ddl-auto=validate` moved to 4.2 | ✅ |
 | 4.2 | Flyway baseline + migrations for the existing schema; then delete `SchemaPatches` (audit O8) and switch to `ddl-auto=validate` | ⬜ |
-| 4.3 | `docker-compose.yml` with `pgvector/pgvector:pg16` and Caddy (HTTPS); Dockerfile; `uploads/` on a named volume; `docs/DEPLOY.md` (AWS EC2 now, VPS later) | ✅ |
+| 4.3 | `docker-compose.yml` with `pgvector/pgvector:pg16` and Caddy (HTTPS); Dockerfile; `uploads/` on a named volume; `docs/DEPLOY.md` (Azure VM) | ✅ |
 | 4.4 | Testcontainers (pgvector): `contextLoads` passes; `@WebMvcTest` slices for auth and ownership | ⬜ |
 | 4.5 | GitHub Actions: build + test + gitleaks | ⬜ |
 | 4.6 | README: prerequisites, env vars, run, endpoint table | ⬜ |
