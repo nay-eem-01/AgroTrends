@@ -5,6 +5,31 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-11-17 — Staging deployment automation prepared
+
+**Done**
+- Added staging-only GitHub Actions, versioned releases, verified SSH, health probes and deployment rollback scripts.
+- Backend builds on GitHub and deploys an immutable GHCR digest; frontend builds from all three public Vite
+  environment variables, including Google client ID. Backend .env remains on the VM.
+- Added isolated regression checks for successful deploys, bad inputs and failed health checks restoring the old app.
+- Updated deployment instructions for the actual Lightsail/Nginx setup; Azure/Caddy is historical.
+
+**Validation**
+- Four deployment-script regression tests per repo pass; both workflows pass Actionlint, shell syntax and Compose
+  validation pass. Frontend lint/build pass. Full local Java tests are blocked by a missing JDK 21 compiler; the
+  frontend full test run stalled and was stopped. Actions requires the full application checks before deployment.
+
+**Decisions**
+- Nayeem explicitly selected staging as the deploy branch for BOTH repos. Feature → development → staging
+  promotion flow remains; production is not a deployment trigger for now.
+
+**Known limitations**
+- Prepared for review on `chore/staging-deployment`; automation is not activated. Environment variables/secrets,
+  dedicated SSH key, GHCR access and the
+  frontend Nginx symlink need one-time configuration. Real workflow/VM acceptance remains pending.
+- Backup authentication/isolated restore remains unresolved. App rollback does not undo Hibernate schema updates.
+
+
 ## 2026-11-16 — Deployment checkpoint and readiness fixes
 
 **Done**
@@ -60,6 +85,9 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ## Where we are
 
+- Lightsail/Nginx/HTTPS and live API health verified by Nayeem. Staging automation is prepared locally; see the
+  2026-11-17 entry and docs/DEPLOY.md. Older Azure/Caddy host instructions are superseded.
+
 - Deployment fixes are prepared as serial steps: `docs/deployment-checkpoint`, `feat/image-cleanup-storage`, `fix/saved-image-cleanup`, `feat/starter-topics`, into `feat/deployment-fixes-base`. They are not deployed.
 
 - **Direction reset 2026-10-13** (`docs/PLAN.md`): a Q&A-first community for young agri people; AI answers
@@ -76,6 +104,9 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ## Next up
 
+- Configure staging Environments/deploy key/VM prerequisites, land the deployment step through its feature base
+  and development, then promote to staging and verify both automated releases.
+
 - Review and land the local deployment documentation, image cleanup and starter-topic changes through the feature base.
 
 - Current deployment: Docker R2/mail checks, unresolved WSL backup authentication, then Azure/DNS/HTTPS/monitoring.
@@ -89,6 +120,8 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
    `development` the default branch; delete `feature/kafka-impl` (superseded by Phase 8).
 
 ## Open items
+
+- Automated deployment activation and real VM acceptance remain pending. Real backup/restore remains unresolved.
 
 | Item | Needs | Blocks |
 |---|---|---|
