@@ -16,6 +16,18 @@ gets split here first.
 
 ---
 
+## Staging hosting automation (2026-11-17)
+
+Deployment operations are tracked separately from feature counts.
+
+| Step | Status |
+|---|---|
+| Scripts, staging Actions workflows, rollback checks and Nginx/Vite documentation | ✅ prepared locally |
+| Configure dedicated SSH key, GitHub staging Environments and VM prerequisites | ⬜ |
+| Promote via development → staging and verify the first automated releases | ⬜ |
+| Resolve real backup/upload/isolated restore, monitor uptime/credits/disk | ⬜ |
+
+
 ## Deployment follow-up (2026-11-16)
 
 Supabase/profile writes, R2 upload/display (`agrotrends-files`), Brevo delivery, Docker build/database/health and

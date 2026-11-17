@@ -1,7 +1,4 @@
-# One server: the app and Caddy for HTTPS. The database is Supabase (PostgreSQL with pgvector), set by DB_URL,
-# DB_USERNAME and DB_PASSWORD in .env next to this file.
-#   docker compose up -d --build
-# Only Caddy publishes ports; the app is reachable inside this network only.
+# Local source build. Host Nginx handles HTTPS; PostgreSQL is hosted on Supabase.
 services:
   app:
     build: .
@@ -10,29 +7,13 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: prod
       STORAGE_DIR: /data/uploads
+    ports:
+      - "127.0.0.1:8080:8080"
     volumes:
       - uploads:/data/uploads
     mem_limit: 1g
     logging:
       driver: json-file
-      options: { max-size: 20m, max-file: "5" }
-
-  caddy:
-    image: caddy:2.10
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    environment:
-      API_DOMAIN: ${API_DOMAIN:?set API_DOMAIN in .env, e.g. api.example.com}
-    volumes:
-      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy-data:/data
-      - caddy-config:/config
-    depends_on:
-      - app
-
+      options: { max-size: "20m", max-file: "5" }
 volumes:
   uploads:
-  caddy-data:
-  caddy-config:

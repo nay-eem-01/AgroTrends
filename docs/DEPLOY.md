@@ -1,175 +1,149 @@
-# Deploying the backend (one server, Docker)
+# AgroTrends deployment: Lightsail, host Nginx, GitHub Actions
 
-One Linux server runs the app and Caddy (HTTPS) with `docker-compose.yml`; the database is **Supabase** (managed
-PostgreSQL with pgvector). The current target is an Azure VM. Moving servers never touches the database; older AWS instructions are
-replaced below. Production infrastructure is not yet provisioned.
+## Current checkpoint (2026-11-17)
 
-## Deployment checkpoint — 2026-11-16
+Reported by Nayeem: Lightsail Ubuntu 24.04, Sydney, 2 GB RAM/2 GB swap, static IP `52.65.208.166`, Docker and
+Compose, host Nginx, DNS, Let's Encrypt HTTPS and renewal dry-run work. The API's public health is UP. Frontend
+build/files are served by Nginx; Google sign-in needs `VITE_GOOGLE_CLIENT_ID` in the frontend build.
+The AWS account is Free with $100 credits and a plan deadline of **2027-05-17**. The VM is $12/month before
+extras/taxes. This replaces the old Azure/Caddy instructions. Hosting after the free-plan deadline needs action.
 
-Reported and verified by Nayeem locally (these are not checks run from this workspace):
+Supabase/profile writes, R2 upload/display (`agrotrends-files`), Brevo delivery and earlier Docker login are verified.
+Docker-specific R2/Brevo acceptance and real backup/upload/isolated restore remain pending. WSL backup
+authentication is unresolved. Do not claim a verified backup. Monitor AWS credit usage and VM disk space.
 
-- Supabase connection and profile writes work.
-- R2 uploads and display work; the actual public image bucket is **`agrotrends-files`**.
-- Brevo sender domain is authenticated and e-mail delivery works.
-- Docker image builds, the container connects to Supabase, and health returns `UP`.
-- Frontend login against the Docker backend works.
+## Branches and activation
 
-Still pending:
+Nayeem's 2026-11-17 decision: **`staging` is the live deploy branch for both repos**.
+Keep feature step → feature base → `development` → `staging` promotion PRs. Do not deploy from `main` or
+`production`. Protect `staging` with reviewed PRs and the `checks` job. A successful merge triggers a deployment;
+failed checks leave the live version unchanged. `workflow_dispatch` supports a manual run **with staging selected**.
+A manual run from any other branch runs checks but cannot deploy. No additional required environment approval is
+needed if the intention is deployment immediately after a merge.
 
-- Repeat image upload/display/deletion and Brevo delivery **through Docker**.
-- Backup authentication fails in WSL. Deferred and unresolved: no successful real backup/restore is claimed.
-- Provision the **Azure VM**, configure production DNS/HTTPS and monitoring.
-- Image cleanup was absent at this checkpoint. The deployment-fixes work adds cleanup for removed/replaced
-  saved images; verify it against `agrotrends-files` after deploying that code. Existing orphan objects are not swept.
+Create a GitHub **Environment named `staging`** in each repo under Settings → Environments. Restrict its deployment
+branches to `staging`. Configure these values separately in both repos:
 
-## 1. Before you start
+| Kind | Name | Value |
+|---|---|---|
+| Variable | `DEPLOY_HOST` | `52.65.208.166` |
+| Variable | `DEPLOY_USER` | `ubuntu` |
+| Variable | `DEPLOY_KNOWN_HOSTS` | Full verified ED25519 known_hosts line for this IP, not just the fingerprint |
+| Secret | `DEPLOY_SSH_KEY` | A dedicated Actions SSH private key; never the personal Lightsail key |
 
-- [ ] **Rotate the leaked keys** (roadmap 0.4): a new Gemini API key. Never reuse the old ones.
-- [ ] **A domain** for the API, e.g. `api.agrotrends.com`. HTTPS needs one; a bare IP cannot get a certificate.
-- [ ] **Cloudflare R2:** two buckets, `agrotrends-files` (public access on) and `agrotrends-backups` (private), each
-      with its own "Object Read & Write" token scoped to that bucket.
-- [ ] **Brevo:** verified sender domain and an SMTP key.
-- [ ] **Google sign-in:** add the frontend's address under "Authorized JavaScript origins" of the OAuth client.
+Generate a dedicated Ed25519 key on your own PC, with a unique filename and no passphrase for unattended Actions.
+Enter the private part only in GitHub's secret editor, never in chat or Git. Add the public `.pub` line to the VM's
+`~/.ssh/authorized_keys` with the `restrict` prefix (disables forwarding and PTY, while allowing deployment commands).
+Keep the personal key so you can still log in interactively.
 
-## 2. Supabase: the database
-
-1. Sign up at supabase.com (GitHub sign-in works; no card on the free plan) and create an organization (Free).
-2. **New project:**
-   - Name: `agrotrends`.
-   - Database password: **Generate a password** and save it in your password manager. It becomes `DB_PASSWORD`.
-   - Region: **South Asia (Mumbai)** — close to the planned server, so every query stays close.
-   - Under the security options, **turn off the Data API**. The app talks to the database directly; with the Data
-     API on, Supabase would also publish every table (users included) as a web API.
-3. Wait until the project is ready (about 2 minutes).
-4. **Database → Extensions:** search `vector` and enable it (schema `extensions`). The app needs it for the AI.
-5. **Data API off check:** if you did not see the option at creation, open Project Settings, find **Data API**,
-   and turn it off there.
-6. **Connect** (the button at the top of the project) → connection string → method **Session pooler**. The direct
-   connection is IPv6-only and an IPv4 VM needs the pooler. From what it shows, note:
-   - host — like `aws-0-ap-south-1.pooler.supabase.com` (copy yours exactly; the prefix may differ)
-   - port `5432` (session mode; **not 6543**, the transaction pooler breaks the app's prepared statements)
-   - database `postgres`
-   - user — `postgres.<project ref>`, with the dot and the project ref
-
-   These become, in `.env`:
-
-   ```
-   DB_URL=jdbc:postgresql://<host>:5432/postgres?sslmode=require
-   DB_USERNAME=postgres.<project ref>
-   DB_PASSWORD=<the generated password>
-   ```
-7. Nothing else: the app creates its tables on the first start.
-
-Free plan limits to know: **500 MB** of database (plenty for launch; watch it under Reports), **no backups**
-(section 6 is the only copy), and a project with no activity for a week is paused (Restore it from the dashboard;
-the running app and the nightly backup keep it active).
-
-## 3. Azure: server (pending)
-
-1. Create an Ubuntu 24.04 LTS Azure VM with at least 2 GB RAM; choose a region near the Supabase region.
-   Confirm the subscription's actual price/credits and configure a budget alert before provisioning.
-2. Use SSH key authentication. In the network security group allow SSH 22 from your IP only, and HTTP 80 / HTTPS
-   443 publicly. Keep PostgreSQL and the app's internal port private.
-3. Assign a static public IP. Point the API DNS A record to it. On Cloudflare use DNS only until the proxy and
-   trusted-forwarded-IP configuration have been verified.
-4. Record the chosen SSH username and IP locally; use them in section 4.
-
-## 4. Prepare the server
+Verify the VM's key through an already trusted session:
 
 ```bash
-ssh -i <private-key-path> <vm-user>@<static-public-ip>
-
-# 2 GB of swap: the Docker build and the JVM need headroom on a 2 GB server
-sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
-echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
-
-curl -fsSL https://get.docker.com | sudo sh
-sudo usermod -aG docker "$USER" && exit        # sign in again so the group applies
+sudo ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
 ```
 
-## 5. Configure and start
+Expected fingerprint from the initial setup:
+`SHA256:CVe4PtACewz/yDSAWPSee6G4eyBoUykiQ34Kg0TvtuU`.
+On your PC, `ssh-keyscan -t ed25519 52.65.208.166` obtains the public line. Save to a temporary file and run
+`ssh-keygen -lf <file>`; only copy it to `DEPLOY_KNOWN_HOSTS` if its fingerprint matches the trusted VM output.
+The workflow enforces host-key checking, never accepting an arbitrary key on first use.
+
+The deployment key logs in as `ubuntu`, which has passwordless sudo and therefore broad server access. It is
+separate from the personal key, but is **not** a least-privilege deployment user. Limit who can edit staging,
+workflow files, and environment secrets. The VM needs outbound HTTPS and SSH 22 reachable by the GitHub-hosted
+runner; the current Lightsail SSH rule permits this. Do not install a self-hosted runner on this small live VM.
+
+Backend and frontend workflows run independently. For incompatible API changes, deploy a backward-compatible
+backend first, then the frontend. Their locks prevent overlapping releases within each service. GitHub may coalesce
+pending runs; the intention is convergence on the latest staging version, not deploying every intermediate commit.
+
+## Backend runtime
+
+- CI runs Java 21 unit tests (`Asia/Dhaka`), excluding the known DB-dependent context test, and script regression tests.
+- GitHub builds the image from the staging commit and pushes `ghcr.io/nay-eem-01/agrotrends` with a unique run tag.
+- The VM deploys the returned **immutable digest**, using `deploy/compose.image.yml` with project name `backend`.
+- Only `127.0.0.1:8080` is published. The existing `backend_uploads` volume is reused. Caddy is not started.
+- Secrets stay at `/home/ubuntu/agrotrends/backend/.env` (mode 600). This file is never uploaded by CI or printed.
+- Release scripts live in `~/agrotrends/backend-releases/<commit>-<run>-<attempt>`; source checkout state is not altered.
+- `~/agrotrends/backend-deploy/current` records the successful deployment, `previous` the preceding release.
+
+Keep the verified DB/session-pooler, R2 and Brevo values in `.env`, with these public settings:
+
+```dotenv
+BACKEND_URL='https://api.agrotrends.ahmednayeem.tech'
+FRONTEND_URL='https://app.agrotrends.ahmednayeem.tech'
+CORS_ORIGINS='https://app.agrotrends.ahmednayeem.tech'
+R2_BUCKET='agrotrends-files'
+```
+
+The backend Google client ID must match the frontend. `INITIAL_ADMIN_PASSWORD` seeds a new admin; it does not
+reset an existing one. `API_DOMAIN` is no longer consumed by Compose. Never read/print/commit `.env`.
+
+### GHCR access on the VM, before first deployment
+
+Packages initially may be private. In a trusted server terminal run:
 
 ```bash
-git clone https://github.com/nay-eem-01/AgroTrends.git && cd AgroTrends
-git checkout production
-cp .env.example .env && chmod 600 .env && nano .env
+sudo docker login ghcr.io -u nay-eem-01
 ```
 
-Set in `.env` (each is explained in `.env.example`):
+Enter a suitable GitHub token with `read:packages` at the password prompt, never in the command line or chat.
+Grant the token access to the package as required by the account/org. The deployment uses root's Docker credential
+store because it invokes `sudo docker`. Alternatively make this source-public package public in GitHub's package
+settings once it exists; then no VM registry token is needed. Publishing in CI uses the built-in `GITHUB_TOKEN`.
 
-| Key | Value |
-|---|---|
-| `API_DOMAIN` | `api.agrotrends.com` |
-| `BACKEND_URL` | `https://api.agrotrends.com` (unsubscribe links in e-mails) |
-| `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` | from Supabase (section 2, step 6) |
-| `JWT_SECRET` | `openssl rand -base64 48` |
-| `GEMINI_API_KEY` | the new key |
-| `FRONTEND_URL` | the frontend's address, e.g. `https://agrotrends.com` (used in e-mail links) |
-| `CORS_ORIGINS` | only if the frontend has more than one address, comma-separated |
-| `INITIAL_ADMIN_EMAIL`, `INITIAL_ADMIN_PASSWORD` | the super-admin (first start only; must be changed on first sign-in) |
-| `GOOGLE_CLIENT_ID` | the OAuth web client id |
-| `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM` | Brevo |
-| `R2_BUCKET`, `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `UPLOADS_PUBLIC_BASE_URL` | images bucket (`R2_BUCKET=agrotrends-files`) |
-| `BACKUP_R2_BUCKET`, `BACKUP_R2_ACCESS_KEY_ID`, `BACKUP_R2_SECRET_ACCESS_KEY` | backups bucket |
+### Health and rollback
+
+The script downloads the image and validates Compose before replacing the running container. It waits up to roughly
+8 minutes (60 attempts, each with a 5-second probe and 3-second delay), requiring JSON `status=UP` locally. On a
+startup or local health failure, it restarts the previous actual image and checks health again. A failed deployment
+still fails the workflow. A separate final workflow probe checks the public HTTPS API.
+
+**Automatic rollback restores app code only.** `spring.jpa.hibernate.ddl-auto=update` can change Supabase during
+startup. Those changes are not undone, and can make an old image incompatible. Resolve backups/isolated restore
+before promoting schema-changing work. Backend restarts have brief downtime; this is not a blue/green rollout.
+
+Manual rollback, after at least two successful automated deployments:
 
 ```bash
-docker compose up -d --build                 # first build takes a few minutes
-docker compose logs -f app                   # wait for "Started AgriculturalBlogApplication"
-curl https://api.agrotrends.com/actuator/health     # {"status":"UP"}
+previous=$(readlink -f ~/agrotrends/backend-deploy/previous)
+bash "$previous/deploy.sh" "$(cat "$previous/image")"
 ```
 
-Then sign in as the super-admin and change the password.
+Keep previous images/releases for rollback. Do not use Docker prune with `-a` blindly. Retention is manual for now;
+monitor `docker system df` and `df -h`. Initial first-release rollback can restore the existing local-build image,
+but it is not represented by a previous automated release directory.
 
-## 6. Backups
+## Nginx and frontend prerequisite
 
-Supabase's free plan keeps none. **WSL authentication currently fails; this procedure is not operationally verified.**
-Resolve the pooler username/password authentication locally without printing credentials, run a dump and upload,
-and prove restoration on a separate database before enabling the schedule. Earlier local stand-in checks do not
-prove the real Supabase backup works.
+Nginx remains a host service and keeps Certbot's certificates. `deploy/nginx.conf` is a reference matching this
+installation, not something Actions overwrites. Back up `/etc/nginx/sites-available/agrotrends` before changing it.
+Never copy certificate private keys into a repo. Certbot's current certificate covers both hostnames.
+
+Before frontend automation, make an initial link preserving today's working frontend:
 
 ```bash
-./deploy/backup.sh                           # once by hand: writes backups/…dump and copies it to R2
-crontab -e
-# add:  15 3 * * * /home/<vm-user>/AgroTrends/deploy/backup.sh >> /home/<vm-user>/backup.log 2>&1
+sudo ln -s /var/www/agrotrends /var/www/agrotrends-current
 ```
 
-In the R2 dashboard, add a lifecycle rule on the backups bucket that deletes objects after 30 days.
-**Test a restore once**, on a second free Supabase project (enable `vector` there first, point a copy of `.env`
-at it), never on the live one: `./deploy/backup.sh restore backups/<file>.dump` replaces the app's tables.
+In **only the app HTTPS server block**, change the root to `/var/www/agrotrends-current`. Keep the API proxy and
+Certbot settings. Serve `/deployment-version.txt` without caching and use SPA fallback for frontend routes; see the
+reference config. Test `sudo nginx -t`, then reload Nginx. The first automated frontend release will switch the link.
+Do not rerun `ln -s` if the link already exists; inspect its destination instead.
 
-Link previews for Facebook: share `https://api.agrotrends.com/share/questions/{id}` or `/share/stories/{slug}`.
-They work as they are; no extra Caddy rule is needed.
+## Manual build and recovery
 
-## 7. Watch it
+For emergency source builds, `docker-compose.yml` builds `app` locally, binds loopback and has no Caddy. Run from
+the backend checkout with its private `.env`. Routine automated releases use the digest-based Compose instead.
+Do not switch branches or pull over the existing VM changes until they are safely preserved in a reviewed PR.
+Feature branches go into their feature base, then development, then staging; no direct staging commits.
 
-- A free uptime monitor (e.g. UptimeRobot) on `https://api.agrotrends.com/actuator/health`, alerting by e-mail.
-- Logs: `docker compose logs --since 1h app`. They rotate at 5 × 20 MB.
-- Database size: Supabase → Reports (free plan stops at 500 MB). Server disk: `df -h` now and then.
+## Acceptance and monitoring still to complete
 
-## 8. Release a new version
-
-After `staging → production` is merged on GitHub:
-
-```bash
-cd ~/AgroTrends && git pull && docker compose up -d --build app
-```
-
-The API is down for about 30 seconds while the new container starts.
-
-## 9. Move to a VPS later
-
-1. On the new server: sections 4 and 5, with the same `.env` (copy it over `scp`, never through git or chat).
-2. Point the `api` DNS record at the new server; Caddy gets a certificate on its own.
-3. Check health, then stop the old server and decommission the old VM.
-
-The database stays on Supabase and the images on R2, so nothing else moves.
-
-## 10. Docker acceptance checks before production
-
-- Sign in from the frontend, update a profile, restart the app, and verify the persisted profile.
-- Upload a photo and cover; verify display from `agrotrends-files`. Replace/remove each and save; confirm that
-  unreferenced old objects disappear from R2 while shared images remain. Deleting the origin object does not purge
-  an already cached CDN/browser copy. Cleanup failures are logged and need manual retry; no historical orphan sweep.
-- Request a password reset against Docker; verify actual Brevo delivery and complete the reset from the frontend.
-- On an empty test database, verify the starter topics appear and a question/story can select one.
-- Complete the unresolved backup/restore check, then Azure VM, DNS/HTTPS and uptime alerts.
+- Login and refresh persistence, Google sign-in, profile writes, image upload/display/replace/delete through the live Docker backend.
+- Brevo password-reset delivery and completion; inspect logs locally without sharing tokens/reset links.
+- `deploy/backup.sh` with the real session-pooler credentials, R2 backup copy and restore on a separate disposable DB.
+  Never restore onto the live database as a test; never enable the schedule before successful verification.
+- Uptime alerts on `https://api.agrotrends.ahmednayeem.tech/actuator/health`, credit and disk monitoring.
+- Unit checks here do not prove a real VM deployment or backup works. Activate workflows only after the documented
+  SSH/GHCR/Nginx/environment setup and run both staging deployments once under observation.
