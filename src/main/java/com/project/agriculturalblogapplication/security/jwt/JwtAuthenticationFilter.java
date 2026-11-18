@@ -1,11 +1,11 @@
 package com.project.agriculturalblogapplication.security.jwt;
 
+import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import com.project.agriculturalblogapplication.constatnt.SecurityConstants;
 import com.project.agriculturalblogapplication.model.response.HttpResponse;
 import com.project.agriculturalblogapplication.security.service.CustomUserDetailService;
 import com.project.agriculturalblogapplication.security.service.CustomUserDetails;
 import com.project.agriculturalblogapplication.security.service.UserSessionService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,7 +13,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -21,7 +20,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Set;
 
 @Slf4j
@@ -35,10 +33,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/api/user/me",
             "/api/auth/sign-out");
 
+    /** Account housekeeping an unconfirmed user may still do (besides /api/auth/**); every other write needs it. */
+    private static final Set<String> WRITES_ALLOWED_BEFORE_CONFIRMED = Set.of(
+            "/api/user/update",
+            "/api/user/change-password",
+            "/api/user/delete");
+
+    private static final Set<String> READ_METHODS = Set.of("GET", "HEAD", "OPTIONS");
+
     private final CustomUserDetailService userDetailsService;
     private final JwtUtil jwtUtil;
     private final UserSessionService userSessionService;
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
@@ -51,10 +56,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String jwt = authHeader.substring(SecurityConstants.TOKEN_PREFIX.length());
             CustomUserDetails userDetails = authenticate(jwt);
 
-            if (userDetails != null) {
-                if (userDetails.isMustChangePassword()
-                        && !ALLOWED_WHILE_PASSWORD_CHANGE_PENDING.contains(request.getRequestURI())) {
-                    writeError(response, HttpStatus.FORBIDDEN, "Password change required before using this API.");
+            // A banned account's token counts as no token: public reads still work, everything else is a 401, and
+            // the client's refresh then gets the ban message.
+            if (userDetails != null && !userDetails.isBanned()) {
+                String refusal = refusal(userDetails, request);
+                if (refusal != null) {
+                    HttpResponse.writeError(response, HttpStatus.FORBIDDEN, refusal);
                     return;
                 }
 
@@ -68,6 +75,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
+    /** Why a signed-in request is refused before it reaches a controller, or null when it may go on. */
+    static String refusal(CustomUserDetails user, HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        if (user.isMustChangePassword() && !ALLOWED_WHILE_PASSWORD_CHANGE_PENDING.contains(uri)) {
+            return "Password change required before using this API.";
+        }
+        if (!user.isContactVerified() && !READ_METHODS.contains(request.getMethod())
+                && !uri.startsWith("/api/auth/") && !WRITES_ALLOWED_BEFORE_CONFIRMED.contains(uri)) {
+            return ErrorCode.ERROR_EMAIL_NOT_VERIFIED;
+        }
+        return null;
+    }
+
     /**
      * Returns the user for a valid access token that still has an active session, or null. A malformed, expired,
      * forged or signed-out token never throws: the request simply stays unauthenticated and the entry point
@@ -75,12 +95,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      */
     private CustomUserDetails authenticate(String jwt) {
         try {
-            String username = jwtUtil.extractUsername(jwt);
-            if (username == null) {
+            String subject = jwtUtil.extractUsername(jwt);
+            if (subject == null) {
                 return null;
             }
 
-            CustomUserDetails userDetails = (CustomUserDetails) userDetailsService.loadUserByUsername(username);
+            // Tokens from before the subject became the user id do not parse and count as no token.
+            CustomUserDetails userDetails = userDetailsService.loadUserById(Long.valueOf(subject));
             if (!jwtUtil.isAccessTokenValid(jwt, userDetails)) {
                 return null;
             }
@@ -94,12 +115,5 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             log.debug("Rejected bearer token: {}", e.getClass().getSimpleName());
             return null;
         }
-    }
-
-    private void writeError(HttpServletResponse response, HttpStatus status, String message) throws IOException {
-        response.setStatus(status.value());
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        response.getWriter().write(objectMapper.writeValueAsString(new HttpResponse(status, false, message)));
     }
 }

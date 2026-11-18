@@ -18,7 +18,9 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AuthorizationServiceTest {
 
@@ -32,7 +34,7 @@ class AuthorizationServiceTest {
     private void signInAs(long id, RoleType type) {
         Role role = new Role();
         role.setRoleType(type);
-        CustomUserDetails details = new CustomUserDetails(id, "n", "u" + id + "@x.com", "pw", Set.of(role), List.of(), false);
+        CustomUserDetails details = new CustomUserDetails(id, "n", "u" + id + "@x.com", "pw", Set.of(role), List.of(), false, true, false);
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(details, null, details.getAuthorities()));
     }
@@ -54,6 +56,23 @@ class AuthorizationServiceTest {
     void adminMayTouchAnyResource() {
         signInAs(1, RoleType.SUPER_ADMIN);
         assertDoesNotThrow(() -> authorization.assertOwnerOrAdmin(99L, "en"));
+    }
+
+    @Test
+    void publicReadHelpersTreatAnonymousAsNobodyInsteadOf401() {
+        SecurityContextHolder.getContext().setAuthentication(
+                new AnonymousAuthenticationToken("key", "anonymousUser", AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS")));
+
+        assertTrue(authorization.signedInUserId().isEmpty());
+
+        SecurityContextHolder.clearContext();
+        assertTrue(authorization.signedInUserId().isEmpty());
+    }
+
+    @Test
+    void publicReadHelpersRecogniseOwnerAndAdmin() {
+        signInAs(7, RoleType.USER);
+        assertEquals(7L, authorization.signedInUserId().orElseThrow());
     }
 
     @Test

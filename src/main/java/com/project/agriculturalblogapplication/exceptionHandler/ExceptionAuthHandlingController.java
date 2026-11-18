@@ -1,5 +1,7 @@
 package com.project.agriculturalblogapplication.exceptionHandler;
 
+import com.project.agriculturalblogapplication.constatnt.ErrorCode;
+
 import com.project.agriculturalblogapplication.model.response.HttpResponse;
 import io.swagger.v3.oas.annotations.Hidden;
 import org.springframework.core.Ordered;
@@ -27,7 +29,7 @@ public class ExceptionAuthHandlingController {
 	@ExceptionHandler(value = AuthenticationException.class)
 	public ResponseEntity<Object> handleAuthenticationExceptions(AuthenticationException ex,
 			HttpServletResponse response) {
-		return new ResponseEntity<>(new HttpResponse(HttpStatus.UNAUTHORIZED, false, "Invalid email or password.", null), HttpStatus.UNAUTHORIZED);
+		return new ResponseEntity<>(new HttpResponse(HttpStatus.UNAUTHORIZED, false, ErrorCode.ERROR_INVALID_CREDENTIALS, null), HttpStatus.UNAUTHORIZED);
 	}
 
 	@ResponseBody
@@ -45,6 +47,6 @@ public class ExceptionAuthHandlingController {
 	@ResponseStatus(HttpStatus.UNAUTHORIZED)
 	@ExceptionHandler(value = BadCredentialsException.class)
 	public ResponseEntity<Object> handleBadCredentialException(BadCredentialsException ex) {
-		return new ResponseEntity<>(new HttpResponse(HttpStatus.UNAUTHORIZED, false, "Invalid email or password.", null), HttpStatus.UNAUTHORIZED);
+		return new ResponseEntity<>(new HttpResponse(HttpStatus.UNAUTHORIZED, false, ErrorCode.ERROR_INVALID_CREDENTIALS, null), HttpStatus.UNAUTHORIZED);
 	}
 }

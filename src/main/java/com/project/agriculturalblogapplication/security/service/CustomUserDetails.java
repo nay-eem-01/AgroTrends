@@ -27,6 +27,10 @@ public class CustomUserDetails implements UserDetails {
     private Set<Role> roles;
     private Collection<? extends GrantedAuthority> grantedAuthorities;
     private boolean mustChangePassword;
+    /** A confirmed e-mail or phone; every write except account housekeeping needs it. */
+    private boolean contactVerified;
+    /** Checked on every request, so a ban also stops a session created while it was being applied. */
+    private boolean banned;
 
     public static CustomUserDetails build(User user) {
         List<GrantedAuthority> authorities = new ArrayList<>();
@@ -46,12 +50,15 @@ public class CustomUserDetails implements UserDetails {
                 user.getPassword(),
                 user.getRoles(),
                 authorities,
-                Boolean.TRUE.equals(user.getMustChangePassword()));
+                Boolean.TRUE.equals(user.getMustChangePassword()),
+                user.isContactVerified(),
+                user.getBannedAt() != null);
     }
 
+    /** The JWT subject: the user id, since an account may have no e-mail (phone sign-up). */
     @Override
     public String getUsername() {
-        return email;
+        return String.valueOf(id);
     }
 
     @Override

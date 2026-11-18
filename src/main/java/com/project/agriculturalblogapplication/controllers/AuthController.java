@@ -2,12 +2,15 @@ package com.project.agriculturalblogapplication.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.project.agriculturalblogapplication.config.CommonApiResponses;
-import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.model.request.*;
 import com.project.agriculturalblogapplication.model.response.HttpResponse;
+import com.project.agriculturalblogapplication.model.response.UserResponse;
 import com.project.agriculturalblogapplication.model.response.WebTokenResponse;
 import com.project.agriculturalblogapplication.service.AuthService;
+import com.project.agriculturalblogapplication.service.EmailVerificationService;
 import com.project.agriculturalblogapplication.service.PasswordResetService;
+import com.project.agriculturalblogapplication.service.PhonePasswordResetService;
+import com.project.agriculturalblogapplication.service.PhoneVerificationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -16,6 +19,10 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import com.project.agriculturalblogapplication.security.RefreshCookies;
+import com.project.agriculturalblogapplication.constatnt.ErrorCode;
+import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
+import org.springframework.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,8 +41,14 @@ public class AuthController {
 
     private final PasswordResetService passwordResetService;
 
+    private final EmailVerificationService emailVerificationService;
+
+    private final PhoneVerificationService phoneVerificationService;
+
+    private final PhonePasswordResetService phonePasswordResetService;
+
     @Operation(summary = "Sign up")
-    @ApiResponse(content = @Content(schema = @Schema(implementation = User.class)), responseCode = "200")
+    @ApiResponse(content = @Content(schema = @Schema(implementation = UserResponse.class)), responseCode = "200")
     @PostMapping(value = "/sign-up")
     public ResponseEntity<HttpResponse> signUp(@Valid @RequestBody SignUpRequest request,
                                                @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
@@ -51,27 +64,52 @@ public class AuthController {
     public ResponseEntity<HttpResponse> signIn(@Valid @RequestBody SignInRequest request,
                                                @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang,
                                                HttpServletRequest httpServletRequest) throws JsonProcessingException {
-        return HttpResponse.getResponseEntity(
+        return RefreshCookies.withCookie(HttpResponse.getResponseEntity(
                 true,
                 "Sign-in successful.",
-                authService.signIn(request, lang, httpServletRequest.getRemoteAddr()));
+                authService.signIn(request, lang, httpServletRequest.getRemoteAddr())));
     }
 
-    @Operation(summary = "Exchange a refresh token for a new access token (the refresh token is single-use and rotated)")
+    @Operation(summary = "Sign in (or up) with Google",
+            description = "Send the ID token (credential) Google Identity Services gives the page. Finds the account "
+                    + "linked to that Google account, else links the account with the same e-mail, else creates one "
+                    + "(no password). Linking an account whose e-mail was never verified drops "
+                    + "its password and sessions. Admin accounts must use the admin sign-in.")
+    @ApiResponse(content = @Content(schema = @Schema(implementation = WebTokenResponse.class)), responseCode = "200")
+    @ApiResponse(responseCode = "401", description = "Invalid Google token, unverified Google e-mail, or an admin account")
+    @ApiResponse(responseCode = "503", description = "Google sign-in is not configured (no GOOGLE_CLIENT_ID)")
+    @PostMapping(value = "/google")
+    public ResponseEntity<HttpResponse> signInWithGoogle(@Valid @RequestBody GoogleSignInRequest request,
+                                                         @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        return RefreshCookies.withCookie(HttpResponse.getResponseEntity(
+                true,
+                "Sign-in successful.",
+                authService.signInWithGoogle(request, lang)));
+    }
+
+    @Operation(summary = "Exchange a refresh token for a new access token (the refresh token is single-use and rotated)",
+            description = "The token comes from the body, or else from the agrotrends_refresh cookie set at sign-in.")
     @ApiResponse(content = @Content(schema = @Schema(implementation = WebTokenResponse.class)), responseCode = "200")
     @PostMapping(value = "/refresh-token")
-    public ResponseEntity<HttpResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest request,
+    public ResponseEntity<HttpResponse> refreshToken(@RequestBody(required = false) RefreshTokenRequest request,
+                                                     @CookieValue(name = RefreshCookies.NAME, required = false) String cookieToken,
                                                      @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
-        return HttpResponse.getResponseEntity(
+        String token = request != null && StringUtils.hasText(request.getRefreshToken()) ? request.getRefreshToken() : cookieToken;
+        if (!StringUtils.hasText(token)) {
+            throw new ApplicationException(HttpStatus.UNAUTHORIZED, ErrorCode.ERROR_INVALID_TOKEN, lang);
+        }
+        RefreshTokenRequest resolved = new RefreshTokenRequest();
+        resolved.setRefreshToken(token);
+        return RefreshCookies.withCookie(HttpResponse.getResponseEntity(
                 true,
                 "Token refreshed.",
-                authService.refreshToken(request, lang));
+                authService.refreshToken(resolved, lang)));
     }
 
     @Operation(summary = "Request a password-reset e-mail. Always answers 200 so accounts cannot be enumerated.")
     @ApiResponse(content = @Content(schema = @Schema(implementation = HttpResponse.class)), responseCode = "200")
     @PostMapping(value = "/forgot-password")
-    public ResponseEntity<HttpResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request,
+    public ResponseEntity<HttpResponse> forgotPassword(@Valid @RequestBody EmailRequest request,
                                                        @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang,
                                                        HttpServletRequest httpServletRequest) {
         passwordResetService.requestReset(request.getEmail(), httpServletRequest.getRemoteAddr(), lang);
@@ -91,13 +129,85 @@ public class AuthController {
                 "Password has been reset. Please sign in with your new password.");
     }
 
+    @Operation(summary = "Send a password-reset code by SMS. Always answers 200 so accounts cannot be enumerated.")
+    @ApiResponse(content = @Content(schema = @Schema(implementation = HttpResponse.class)), responseCode = "200")
+    @ApiResponse(responseCode = "429", description = "Too many requests for this number or network")
+    @PostMapping(value = "/forgot-password/phone")
+    public ResponseEntity<HttpResponse> forgotPasswordByPhone(@Valid @RequestBody PhoneRequest request,
+                                                              @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang,
+                                                              HttpServletRequest httpServletRequest) {
+        phonePasswordResetService.requestReset(request.getCountryCode(), request.getMobileNumber(),
+                httpServletRequest.getRemoteAddr(), lang);
+        return HttpResponse.getResponseEntity(true, "If an account exists for that number, a reset code has been sent.");
+    }
+
+    @Operation(summary = "Set a new password using the 6-digit code from the reset SMS")
+    @ApiResponse(content = @Content(schema = @Schema(implementation = HttpResponse.class)), responseCode = "200")
+    @ApiResponse(responseCode = "400", description = "Weak password, or the code is wrong or has expired (5 wrong tries kill it)")
+    @PostMapping(value = "/reset-password/phone")
+    public ResponseEntity<HttpResponse> resetPasswordByPhone(@Valid @RequestBody ResetPasswordWithCodeRequest request,
+                                                             @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang,
+                                                             HttpServletRequest httpServletRequest) {
+        phonePasswordResetService.reset(request.getCountryCode(), request.getMobileNumber(), request.getCode(),
+                request.getNewPassword(), httpServletRequest.getRemoteAddr(), lang);
+        return HttpResponse.getResponseEntity(true, "Password has been reset. Please sign in with your new password.");
+    }
+
+    @Operation(summary = "Confirm your e-mail address with the token from the confirmation e-mail")
+    @ApiResponse(content = @Content(schema = @Schema(implementation = HttpResponse.class)), responseCode = "200")
+    @ApiResponse(responseCode = "400", description = "The link is invalid or has expired; ask for a new one")
+    @PostMapping(value = "/verify-email")
+    public ResponseEntity<HttpResponse> verifyEmail(@Valid @RequestBody VerifyEmailRequest request,
+                                                    @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        emailVerificationService.verify(request.getToken(), lang);
+        return HttpResponse.getResponseEntity(true, "Your e-mail address is confirmed.");
+    }
+
+    @Operation(summary = "Send a new confirmation e-mail. Always answers 200 so accounts cannot be enumerated.")
+    @ApiResponse(content = @Content(schema = @Schema(implementation = HttpResponse.class)), responseCode = "200")
+    @ApiResponse(responseCode = "429", description = "Too many requests for this e-mail or network")
+    @PostMapping(value = "/resend-verification")
+    public ResponseEntity<HttpResponse> resendVerification(@Valid @RequestBody EmailRequest request,
+                                                           @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang,
+                                                           HttpServletRequest httpServletRequest) {
+        emailVerificationService.resend(request.getEmail(), httpServletRequest.getRemoteAddr(), lang);
+        return HttpResponse.getResponseEntity(true,
+                "If an unconfirmed account exists for that e-mail, a new confirmation link has been sent.");
+    }
+
+    @Operation(summary = "Confirm your mobile number with the 6-digit code from the SMS")
+    @ApiResponse(content = @Content(schema = @Schema(implementation = HttpResponse.class)), responseCode = "200")
+    @ApiResponse(responseCode = "400", description = "The code is wrong or has expired (5 wrong tries kill it); ask for a new one")
+    @ApiResponse(responseCode = "429", description = "Too many tries from this network")
+    @PostMapping(value = "/verify-phone")
+    public ResponseEntity<HttpResponse> verifyPhone(@Valid @RequestBody VerifyPhoneRequest request,
+                                                    @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang,
+                                                    HttpServletRequest httpServletRequest) {
+        phoneVerificationService.verify(request.getCountryCode(), request.getMobileNumber(), request.getCode(),
+                httpServletRequest.getRemoteAddr(), lang);
+        return HttpResponse.getResponseEntity(true, "Your mobile number is confirmed.");
+    }
+
+    @Operation(summary = "Send a new confirmation code by SMS. Always answers 200 so accounts cannot be enumerated.")
+    @ApiResponse(content = @Content(schema = @Schema(implementation = HttpResponse.class)), responseCode = "200")
+    @ApiResponse(responseCode = "429", description = "Too many requests for this number or network")
+    @PostMapping(value = "/resend-phone-code")
+    public ResponseEntity<HttpResponse> resendPhoneCode(@Valid @RequestBody PhoneRequest request,
+                                                        @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang,
+                                                        HttpServletRequest httpServletRequest) {
+        phoneVerificationService.resend(request.getCountryCode(), request.getMobileNumber(),
+                httpServletRequest.getRemoteAddr(), lang);
+        return HttpResponse.getResponseEntity(true,
+                "If an unconfirmed account exists for that number, a new code has been sent.");
+    }
+
     @Operation(summary = "Sign-out.", security = @SecurityRequirement(name = "jwtToken"))
     @ApiResponse(content = @Content(schema = @Schema(implementation = HttpResponse.class)), responseCode = "200")
     @GetMapping(value = "/sign-out")
     public ResponseEntity<HttpResponse> signOut(HttpServletRequest httpServletRequest, @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
         authService.signOut(httpServletRequest, lang);
-        return HttpResponse.getResponseEntity(
+        return RefreshCookies.cleared(HttpResponse.getResponseEntity(
                 true,
-                "You are signed out.");
+                "You are signed out."));
     }
 }

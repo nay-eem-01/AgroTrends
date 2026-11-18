@@ -1,0 +1,95 @@
+package com.project.agriculturalblogapplication.service;
+
+import com.project.agriculturalblogapplication.config.AppProperties;
+import com.project.agriculturalblogapplication.constatnt.ErrorCode;
+import com.project.agriculturalblogapplication.entities.Report;
+import com.project.agriculturalblogapplication.enums.AiAnswerStatus;
+import com.project.agriculturalblogapplication.enums.BlogStatus;
+import com.project.agriculturalblogapplication.enums.ReportStatus;
+import com.project.agriculturalblogapplication.enums.ReportTarget;
+import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
+import com.project.agriculturalblogapplication.model.request.CreateReportRequest;
+import com.project.agriculturalblogapplication.model.response.ReportResponse;
+import com.project.agriculturalblogapplication.repositories.QuestionAiAnswerRepository;
+import com.project.agriculturalblogapplication.repositories.ReportRepository;
+import com.project.agriculturalblogapplication.security.service.AuthorizationService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/** Users report content or other users for moderators to review (roadmap 8.3). */
+@Service
+@RequiredArgsConstructor
+public class ReportService {
+
+    private final ReportRepository reportRepository;
+
+    private final BlogService blogService;
+
+    private final QuestionService questionService;
+
+    private final AnswerService answerService;
+
+    private final QuestionAiAnswerRepository aiAnswerRepository;
+
+    private final CommentService commentService;
+
+    private final UserService userService;
+
+    private final AuthorizationService authorizationService;
+
+    private final ModerationService moderationService;
+
+    private final AppProperties appProperties;
+
+    /** One report per user and target; the target must exist (404 otherwise). */
+    @Transactional
+    public ReportResponse report(CreateReportRequest request, String lang) {
+        Long reporterId = authorizationService.currentUserId(lang);
+        if (reportRepository.existsByReporterIdAndTargetTypeAndTargetId(reporterId, request.getTargetType(), request.getTargetId())) {
+            throw new ApplicationException(HttpStatus.CONFLICT, ErrorCode.ERROR_ALREADY_REPORTED, lang);
+        }
+        assertExists(request, reporterId, lang);
+
+        Report report = new Report();
+        report.setReporter(userService.findByIdWithException(reporterId, lang));
+        report.setTargetType(request.getTargetType());
+        report.setTargetId(request.getTargetId());
+        report.setReason(request.getReason());
+        report.setDetails(request.getDetails() == null || request.getDetails().isBlank() ? null : request.getDetails().strip());
+        ReportResponse response = ReportResponse.from(reportRepository.save(report));
+        // Enough different users (one report each) hide a post until a moderator decides; users are never auto-banned.
+        if (request.getTargetType() != ReportTarget.USER && reportRepository.countByTargetTypeAndTargetIdAndStatus(
+                request.getTargetType(), request.getTargetId(), ReportStatus.OPEN) >= appProperties.getModeration().getAutoHideReports()) {
+            moderationService.hideForReview(request.getTargetType(), request.getTargetId());
+        }
+        return response;
+    }
+
+    private void assertExists(CreateReportRequest request, Long reporterId, String lang) {
+        Long id = request.getTargetId();
+        switch (request.getTargetType()) {
+            case BLOG -> {
+                // A draft is private: reporting one must not confirm that it exists.
+                if (blogService.findByIdWithException(id).getStatus() != BlogStatus.PUBLISHED) {
+                    throw new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_BLOG_NOT_FOUND, lang);
+                }
+            }
+            case QUESTION -> questionService.findByIdWithException(id);
+            case ANSWER -> answerService.findByIdWithException(id);
+            case AI_ANSWER -> {
+                if (!aiAnswerRepository.existsByQuestionIdAndStatusNotAndQuestionHiddenFalse(id, AiAnswerStatus.FLAGGED)) {
+                    throw new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_AI_ANSWER_NOT_FOUND, lang);
+                }
+            }
+            case COMMENT -> commentService.findByIdWithException(id);
+            case USER -> {
+                if (id.equals(reporterId)) {
+                    throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_CANNOT_REPORT_YOURSELF, lang);
+                }
+                userService.findByIdWithException(id, lang);
+            }
+        }
+    }
+}

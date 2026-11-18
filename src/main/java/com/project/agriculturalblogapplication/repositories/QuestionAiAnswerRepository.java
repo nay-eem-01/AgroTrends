@@ -1,0 +1,108 @@
+package com.project.agriculturalblogapplication.repositories;
+
+import com.project.agriculturalblogapplication.entities.Answer;
+import com.project.agriculturalblogapplication.entities.QuestionAiAnswer;
+import com.project.agriculturalblogapplication.entities.User;
+import com.project.agriculturalblogapplication.enums.AiAnswerStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+
+public interface QuestionAiAnswerRepository extends JpaRepository<QuestionAiAnswer, Long> {
+
+    @EntityGraph(attributePaths = {"question", "reviewedBy"})
+    Optional<QuestionAiAnswer> findByQuestionId(Long questionId);
+
+    boolean existsByQuestionId(Long questionId);
+
+    /** Questions whose AI answer this user confirmed in this topic (to reopen when their badge is revoked). */
+    @Query("select a.question.id from QuestionAiAnswer a where a.reviewedBy.id = :userId and a.question.category.id = :topicId"
+            + " and a.status = :status")
+    List<Long> reviewedBy(@Param("userId") Long userId, @Param("topicId") Long topicId, @Param("status") AiAnswerStatus status);
+
+    /**
+     * Moderator hide: FLAGGED, remembering the status it had; who reviewed it (and any correction) stays on record.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("""
+            update QuestionAiAnswer a set a.statusBeforeHide = a.status,
+                   a.status = com.project.agriculturalblogapplication.enums.AiAnswerStatus.FLAGGED
+            where a.question.id = :questionId
+              and a.status <> com.project.agriculturalblogapplication.enums.AiAnswerStatus.FLAGGED""")
+    int hide(@Param("questionId") Long questionId);
+
+    /** Undoes a moderation hide; 0 when it was not hidden by moderation (an expert's own flag stays). */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("""
+            update QuestionAiAnswer a set a.status = a.statusBeforeHide, a.statusBeforeHide = null
+            where a.question.id = :questionId and a.statusBeforeHide is not null
+              and a.status = com.project.agriculturalblogapplication.enums.AiAnswerStatus.FLAGGED""")
+    int unhide(@Param("questionId") Long questionId);
+
+    boolean existsByQuestionIdAndStatusNotAndQuestionHiddenFalse(Long questionId, AiAnswerStatus status);
+
+    /** Puts these AI answers back to UNCHECKED. */
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            update QuestionAiAnswer a set a.status = com.project.agriculturalblogapplication.enums.AiAnswerStatus.UNCHECKED,
+                   a.reviewedBy = null, a.reviewedAt = null, a.correction = null
+            where a.question.id in :questionIds""")
+    int reopen(@Param("questionIds") Collection<Long> questionIds);
+
+    /** Puts the AI answer this answer corrected back to UNCHECKED: without the correction it needs a new review. */
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            update QuestionAiAnswer a set a.status = com.project.agriculturalblogapplication.enums.AiAnswerStatus.UNCHECKED,
+                   a.reviewedBy = null, a.reviewedAt = null, a.correction = null
+            where a.correction.id = :answerId""")
+    int reopenCorrectedBy(@Param("answerId") Long answerId);
+
+    @EntityGraph(attributePaths = "question")
+    Page<QuestionAiAnswer> findAllByStatusAndQuestionCategoryIdInAndQuestionHiddenFalse(AiAnswerStatus status,
+                                                                                    Collection<Long> topicIds,
+                                                                                    Pageable pageable);
+
+    /** Moves the review state only if it is still in {@code from}: two reviewers at once cannot both win. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("""
+            update QuestionAiAnswer a set a.status = :to, a.reviewedBy = :reviewer, a.reviewedAt = :reviewedAt,
+                   a.correction = :correction
+            where a.id = :id and a.status in :from""")
+    int transition(@Param("id") Long id, @Param("from") Collection<AiAnswerStatus> from, @Param("to") AiAnswerStatus to,
+                   @Param("reviewer") User reviewer, @Param("reviewedAt") LocalDateTime reviewedAt,
+                   @Param("correction") Answer correction);
+
+    long countByStatusAndQuestionHiddenFalse(AiAnswerStatus status);
+
+    /** AI answers on public questions (not flagged) citing any of these questions' vetted answers. */
+    @Query(value = """
+            select count(*) from question_ai_answers a join questions q on q.id = a.question_id
+            where q.hidden = false and a.status <> 'FLAGGED'
+              and exists (select 1 from jsonb_array_elements(a.sources) s
+                          where cast(s ->> 'questionId' as bigint) in (:questionIds))
+            """, nativeQuery = true)
+    long countCitingQuestions(@Param("questionIds") java.util.Collection<Long> questionIds);
+
+    /** Citations of a user's published stories by AI answers on public questions (not flagged), summed over stories. */
+    @Query(value = """
+            select count(*) from question_ai_answers a join questions q on q.id = a.question_id
+              cross join lateral jsonb_array_elements(a.sources) s
+              join blogs b on b.id = cast(s ->> 'blogId' as bigint)
+            where q.hidden = false and a.status <> 'FLAGGED' and b.author_id = :userId and b.status = 'PUBLISHED'
+            """, nativeQuery = true)
+    long countStoryCitations(@Param("userId") Long userId);
+
+    long countByStatusAndQuestionCategoryIdInAndQuestionHiddenFalse(AiAnswerStatus status, Collection<Long> topicIds);
+
+    Optional<QuestionAiAnswer> findFirstByStatusAndQuestionCategoryIdInAndQuestionHiddenFalseOrderByCreationDateAsc(
+            AiAnswerStatus status, Collection<Long> topicIds);
+}

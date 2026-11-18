@@ -1,14 +1,21 @@
 package com.project.agriculturalblogapplication.entities;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.hibernate.annotations.Formula;
+import com.project.agriculturalblogapplication.util.SafeHtml;
 import com.project.agriculturalblogapplication.constatnt.AppTables.CategoryTable;
 import com.project.agriculturalblogapplication.constatnt.AppTables.BlogTable;
 import com.project.agriculturalblogapplication.constatnt.AppTables.AuthorTable;
+import com.project.agriculturalblogapplication.constatnt.AppTables.TagTable;
+import com.project.agriculturalblogapplication.enums.BlogStatus;
 import com.project.agriculturalblogapplication.model.AuditModel;
+import com.project.agriculturalblogapplication.model.EnumNameConverter;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.ColumnDefault;
 
-import java.util.List;
+import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Entity
 @NoArgsConstructor
@@ -21,12 +28,55 @@ public class Blog extends AuditModel<String> {
     @Column(name = BlogTable.TITLE)
     private String title;
 
-    @Lob
-    @Column(name = BlogTable.CONTENT)
+    @Column(name = "subtitle", length = 200)
+    private String subtitle;
+
+    /** False keeps the post out of the AI's sources (and out of related posts, which use the same index). */
+    @ColumnDefault("true")
+    @Column(name = "ai_citable", nullable = false)
+    private boolean aiCitable = true;
+
+    @Column(name = BlogTable.CONTENT, columnDefinition = "TEXT")
     private String content;
 
     @Column(name = BlogTable.IMAGE_URL)
     private String imageUrl;
+
+    @Embedded
+    private AgriMetadata agri = new AgriMetadata();
+
+    /** Sum of all readers' claps, kept in step by ClapService so lists need no count query. */
+    @ColumnDefault("0")
+    @Column(name = BlogTable.CLAP_COUNT, nullable = false)
+    private long clapCount;
+
+    /** AI answers on public questions that cite this post (flagged ones left out); computed by the database. */
+    @Formula("(select count(*) from question_ai_answers a join questions q on q.id = a.question_id"
+            + " where q.hidden = false and a.status <> 'FLAGGED'"
+            + " and a.sources @> jsonb_build_array(jsonb_build_object('blogId', id)))")
+    private long citedCount;
+
+    /** Set once at creation from the title and never changed, so shared links keep working. */
+    @Column(name = BlogTable.SLUG, unique = true)
+    private String slug;
+
+    // Rows that existed before drafts were introduced were all public, so the column defaults to PUBLISHED.
+    @Convert(converter = StatusConverter.class)
+    @ColumnDefault("'PUBLISHED'")
+    @Column(name = BlogTable.STATUS, nullable = false, length = 40)
+    private BlogStatus status = BlogStatus.PUBLISHED;
+
+    // Converted, not @Enumerated: Hibernate's enum CHECK is never widened by ddl-auto (HIDDEN came later).
+    @Converter
+    static class StatusConverter extends EnumNameConverter<BlogStatus> {
+        StatusConverter() {
+            super(BlogStatus.class);
+        }
+    }
+
+    /** Set the first time the post is published; kept when it is unpublished and published again. */
+    @Column(name = BlogTable.PUBLISHED_AT)
+    private LocalDateTime publishedAt;
 
     @ManyToOne
     @JoinColumn(name = CategoryTable.CATEGORY_ID, nullable = false)
@@ -36,7 +86,17 @@ public class Blog extends AuditModel<String> {
     @JoinColumn(name = AuthorTable.AUTHOR_ID, nullable = false)
     private Author author;
 
-    @JsonIgnore
-    @OneToMany(mappedBy = "blog", cascade = CascadeType.PERSIST,fetch = FetchType.LAZY)
-    private List<Comment> comments;
+    // Eager: a post has at most five tags and every response shows them, including outside a web request.
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = TagTable.BLOG_TAGS,
+            joinColumns = @JoinColumn(name = TagTable.BLOG_ID),
+            inverseJoinColumns = @JoinColumn(name = TagTable.TAG_ID))
+    private Set<Tag> tags = new LinkedHashSet<>();
+
+    /** Stored HTML is always safe, whichever endpoint wrote it. */
+    @PrePersist
+    @PreUpdate
+    void sanitize() {
+        content = SafeHtml.clean(content);
+    }
 }

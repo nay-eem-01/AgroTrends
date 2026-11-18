@@ -10,6 +10,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
+
 /**
  * Single place that answers "who is calling?" and "may they touch this?".
  * Identity always comes from the validated JWT, never from a request body.
@@ -18,18 +20,28 @@ import org.springframework.stereotype.Component;
 public class AuthorizationService {
 
     public CustomUserDetails currentPrincipal(String lang) {
+        return signedInPrincipal().orElseThrow(() ->
+                new ApplicationException(HttpStatus.UNAUTHORIZED, ErrorCode.ERROR_UNAUTHORIZED_ACCESS, lang));
+    }
+
+    public Long currentUserId(String lang) {
+        return currentPrincipal(lang).getId();
+    }
+
+    /** The signed-in caller on an endpoint that anonymous visitors may also call; empty when anonymous. */
+    public Optional<CustomUserDetails> signedInPrincipal() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null
                 || authentication instanceof AnonymousAuthenticationToken
                 || !authentication.isAuthenticated()
                 || !(authentication.getPrincipal() instanceof CustomUserDetails principal)) {
-            throw new ApplicationException(HttpStatus.UNAUTHORIZED, ErrorCode.ERROR_UNAUTHORIZED_ACCESS, lang);
+            return Optional.empty();
         }
-        return principal;
+        return Optional.of(principal);
     }
 
-    public Long currentUserId(String lang) {
-        return currentPrincipal(lang).getId();
+    public Optional<Long> signedInUserId() {
+        return signedInPrincipal().map(CustomUserDetails::getId);
     }
 
     public boolean isAdmin(CustomUserDetails principal) {
@@ -44,12 +56,15 @@ public class AuthorizationService {
         return false;
     }
 
+    public boolean isOwnerOrAdmin(Long ownerUserId, String lang) {
+        CustomUserDetails principal = currentPrincipal(lang);
+        return isAdmin(principal) || (ownerUserId != null && ownerUserId.equals(principal.getId()));
+    }
+
     /** Passes for the owner of a resource or any admin; otherwise 403. */
     public void assertOwnerOrAdmin(Long ownerUserId, String lang) {
-        CustomUserDetails principal = currentPrincipal(lang);
-        if (isAdmin(principal) || (ownerUserId != null && ownerUserId.equals(principal.getId()))) {
-            return;
+        if (!isOwnerOrAdmin(ownerUserId, lang)) {
+            throw new ApplicationException(HttpStatus.FORBIDDEN, ErrorCode.ERROR_FORBIDDEN, lang);
         }
-        throw new ApplicationException(HttpStatus.FORBIDDEN, ErrorCode.ERROR_FORBIDDEN, lang);
     }
 }

@@ -1,8 +1,8 @@
 package com.project.agriculturalblogapplication.entities;
 
-import com.project.agriculturalblogapplication.constatnt.AppTables.UserTable;
+import com.project.agriculturalblogapplication.constatnt.AppTables.AuditModelTable;
 import com.project.agriculturalblogapplication.constatnt.AppTables.AuthorTable;
-import com.project.agriculturalblogapplication.model.AuditModel;
+import com.project.agriculturalblogapplication.model.AuditFields;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -17,10 +17,15 @@ import java.util.List;
 @Getter
 @Setter
 @Table(name = AuthorTable.NAME)
-public class Author extends AuditModel<String> {
+public class Author extends AuditFields<String> {
 
+    /** The user's own id: an author is a user, so one id serves for both (follow, profile, posts). */
+    @Id
+    private Long id;
+
+    @MapsId
     @OneToOne
-    @JoinColumn(name = UserTable.USER_ID)
+    @JoinColumn(name = AuditModelTable.ID)
     private User user;
 
     @Column(name = AuthorTable.OCCUPATION)
@@ -33,4 +38,14 @@ public class Author extends AuditModel<String> {
     private String workPlaceOrInstitution;
 
     private List<String> specialities;
+
+    /** The author's own introduction ("professionalStatement" at sign-up). */
+    @Column(name = AuthorTable.BIO, columnDefinition = "TEXT")
+    private String bio;
+
+    @Column(name = AuthorTable.PROFILE_IMAGE_URL)
+    private String profileImageUrl;
+
+    /** Up to 5 http(s) links: LinkedIn, a website, research. */
+    private List<String> links;
 }

@@ -8,10 +8,19 @@ import com.project.agriculturalblogapplication.model.request.CreateCommentReques
 import com.project.agriculturalblogapplication.model.response.CommentResponse;
 import com.project.agriculturalblogapplication.repositories.CommentRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
+import com.project.agriculturalblogapplication.model.request.ReplyCommentRequest;
+import com.project.agriculturalblogapplication.enums.BlogStatus;
+import com.project.agriculturalblogapplication.enums.NotificationTarget;
+import com.project.agriculturalblogapplication.enums.NotificationType;
+import com.project.agriculturalblogapplication.notification.NotificationMessage;
+import com.project.agriculturalblogapplication.notification.NotificationPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,8 +39,9 @@ class CommentServiceTest {
     private final UserService userService = mock(UserService.class);
     private final CommentRepository commentRepository = mock(CommentRepository.class);
     private final AuthorizationService authorization = mock(AuthorizationService.class);
+    private final NotificationPublisher notifications = mock(NotificationPublisher.class);
     private final CommentService commentService =
-            new CommentService(blogService, userService, authorization, commentRepository);
+            new CommentService(mock(ImageCleanup.class), blogService, userService, authorization, commentRepository, notifications);
 
     private User author;
     private Blog blog;
@@ -55,6 +65,30 @@ class CommentServiceTest {
     }
 
     @Test
+    void repliesAreReadByQueryNotThroughACollectionOnTheParent() {
+        Comment parent = comment(10L, null);
+        when(commentRepository.findById(10L)).thenReturn(Optional.of(parent));
+        when(commentRepository.findByParentCommentIdAndHiddenFalseOrderByIdAsc(10L)).thenReturn(List.of(comment(11L, parent)));
+
+        List<CommentResponse> replies = commentService.viewReplies(10L);
+
+        assertEquals(List.of(11L), replies.stream().map(CommentResponse::getCommentId).toList());
+    }
+
+    @Test
+    void theCommentListCarriesEachThreadsReplyCount() {
+        blog.setStatus(BlogStatus.PUBLISHED);
+        when(blogService.findVisibleBlog(3L, "en")).thenReturn(blog);
+        when(commentRepository.findByBlogIdAndParentCommentIsNullAndHiddenFalse(3L))
+                .thenReturn(List.of(comment(10L, null), comment(12L, null)));
+        when(commentRepository.replyCounts(List.of(10L, 12L))).thenReturn(List.<Object[]>of(new Object[]{10L, 3L}));
+
+        List<CommentResponse> list = commentService.getAllByBlogId(3L, "en");
+
+        assertEquals(List.of(3L, 0L), list.stream().map(CommentResponse::getReplyCount).toList());
+    }
+
+    @Test
     void topLevelCommentMapsWithNullParentInsteadOfThrowing() {
         when(commentRepository.findById(10L)).thenReturn(Optional.of(comment(10L, null)));
 
@@ -66,6 +100,66 @@ class CommentServiceTest {
     }
 
     @Test
+    void aReplyNotifiesTheParentCommentsAuthor() {
+        User replier = new User();
+        replier.setId(8L);
+        when(authorization.currentUserId("en")).thenReturn(8L);
+        when(userService.findByIdWithException(8L, "en")).thenReturn(replier);
+        when(blogService.findVisibleBlog(3L, "en")).thenReturn(blog);
+        when(commentRepository.findById(10L)).thenReturn(Optional.of(comment(10L, null)));
+        when(commentRepository.save(any(Comment.class))).thenAnswer(call -> call.getArgument(0));
+        ReplyCommentRequest request = new ReplyCommentRequest();
+        request.setBlogId(3L);
+        request.setParentCommentId(10L);
+        request.setContent("Thanks!");
+
+        commentService.reply(request, "en");
+
+        verify(notifications).publish(new NotificationMessage(7L, 8L, NotificationType.COMMENT_REPLY,
+                NotificationTarget.BLOG, 3L));
+    }
+
+    @Test
+    void aReplyToAReplyJoinsTheThreadAndNotifiesTheReplysAuthor() {
+        User replier = new User();
+        replier.setId(8L);
+        User firstReplier = new User();
+        firstReplier.setId(9L);
+        Comment root = comment(10L, null);
+        Comment firstReply = comment(11L, root);
+        firstReply.setUser(firstReplier);
+        when(authorization.currentUserId("en")).thenReturn(8L);
+        when(userService.findByIdWithException(8L, "en")).thenReturn(replier);
+        when(blogService.findVisibleBlog(3L, "en")).thenReturn(blog);
+        when(commentRepository.findById(11L)).thenReturn(Optional.of(firstReply));
+        when(commentRepository.save(any(Comment.class))).thenAnswer(call -> call.getArgument(0));
+        ReplyCommentRequest request = new ReplyCommentRequest();
+        request.setBlogId(3L);
+        request.setParentCommentId(11L);
+        request.setContent("@Karim how much?");
+
+        assertEquals(10L, commentService.reply(request, "en").getParentCommentId());
+        verify(notifications).publish(new NotificationMessage(9L, 8L, NotificationType.COMMENT_REPLY,
+                NotificationTarget.BLOG, 3L));
+    }
+
+    @Test
+    void aCommentOnAHiddenOrDraftPostOrUnderAHiddenCommentIsNotFound() {
+        blog.setStatus(BlogStatus.HIDDEN);
+        when(commentRepository.findById(10L)).thenReturn(Optional.of(comment(10L, null)));
+        assertThrows(ApplicationException.class, () -> commentService.findById(10L));
+
+        blog.setStatus(BlogStatus.DRAFT);
+        assertThrows(ApplicationException.class, () -> commentService.findById(10L));
+
+        blog.setStatus(BlogStatus.PUBLISHED);
+        Comment parent = comment(9L, null);
+        parent.setHidden(true);
+        when(commentRepository.findById(11L)).thenReturn(Optional.of(comment(11L, parent)));
+        assertThrows(ApplicationException.class, () -> commentService.findById(11L));
+    }
+
+    @Test
     void replyMapsItsParentId() {
         Comment parent = comment(10L, null);
         when(commentRepository.findById(11L)).thenReturn(Optional.of(comment(11L, parent)));
@@ -74,10 +168,25 @@ class CommentServiceTest {
     }
 
     @Test
+    void commentShowsItsAuthorsNameAndIsoTimestamps() {
+        author.setName("Rahim");
+        author.setEmail("rahim@example.com");
+        Comment comment = comment(12L, null);
+        comment.setCreationDate(LocalDateTime.of(2026, 10, 7, 9, 0));
+        when(commentRepository.findById(12L)).thenReturn(Optional.of(comment));
+
+        CommentResponse response = commentService.findById(12L);
+
+        assertEquals("Rahim", response.getAuthorName());
+        assertEquals(LocalDateTime.of(2026, 10, 7, 9, 0).atZone(ZoneId.systemDefault()).toInstant(),
+                response.getCreatedAt());
+    }
+
+    @Test
     void createUsesTheAuthenticatedUserNotAnythingFromTheBody() {
         when(authorization.currentUserId("en")).thenReturn(7L);
         when(userService.findByIdWithException(7L, "en")).thenReturn(author);
-        when(blogService.findByIdWithException(3L)).thenReturn(blog);
+        when(blogService.findVisibleBlog(3L, "en")).thenReturn(blog);
         when(commentRepository.save(any(Comment.class))).thenAnswer(inv -> {
             Comment saved = inv.getArgument(0);
             saved.setId(1L);

@@ -17,7 +17,6 @@ public final class AppTables {
 
     public static final String ROLE_PRIVILEGE_NAME = "role_privilege";
 
-    public static final String USER_TYPES = "user_types";
 
     public static final class AuditModelTable {
 
@@ -40,6 +39,14 @@ public final class AppTables {
 
         public static final String IMAGE_URL = "image_url";
 
+        public static final String STATUS = "status";
+
+        public static final String PUBLISHED_AT = "published_at";
+
+        public static final String SLUG = "slug";
+
+        public static final String CLAP_COUNT = "clap_count";
+
         public static final String NAME = "blogs";
     }
 
@@ -54,6 +61,150 @@ public final class AppTables {
         public static final String PASSWORD = "user_password";
 
         public static final String MOBILE_NUMBER = "mobile_number";
+
+        public static final String GOOGLE_SUBJECT = "google_subject";
+
+        public static final String EMAIL_VERIFIED_AT = "email_verified_at";
+        public static final String PHONE_VERIFIED_AT = "phone_verified_at";
+
+        public static final String BANNED_AT = "banned_at";
+
+        public static final String BAN_REASON = "ban_reason";
+        public static final String LOCATION = "location";
+        public static final String COVER_URL = "cover_url";
+        public static final String PREFERRED_LANG = "preferred_lang";
+        public static final String EMAIL_ON_ANSWER = "email_on_answer";
+        public static final String EMAIL_WEEKLY_DIGEST = "email_weekly_digest";
+    }
+
+    public static final class FollowTable {
+
+        public static final String AUTHOR_FOLLOWS = "author_follows";
+
+        public static final String TAG_FOLLOWS = "tag_follows";
+
+        public static final String USER_ID = "user_id";
+
+        public static final String AUTHOR_ID = "author_id";
+
+        public static final String TAG_ID = "tag_id";
+    }
+
+    public static final class BookmarkTable {
+
+        public static final String NAME = "bookmarks";
+
+        public static final String USER_ID = "user_id";
+
+        public static final String BLOG_ID = "blog_id";
+    }
+
+    public static final class ClapTable {
+
+        public static final String NAME = "claps";
+
+        public static final String BLOG_ID = "blog_id";
+
+        public static final String USER_ID = "user_id";
+
+        public static final String CLAP_COUNT = "clap_count";
+    }
+
+    public static final class VoteTable {
+
+        public static final String NAME = "votes";
+
+        public static final String DIRECTION = "direction";
+
+        public static final String SCORE = "score";
+    }
+
+    public static final class ReputationEventTable {
+
+        public static final String NAME = "reputation_events";
+
+        public static final String REASON = "reason";
+
+        public static final String POINTS = "points";
+    }
+
+    public static final class ExpertApplicationTable {
+
+        public static final String NAME = "expert_applications";
+
+        public static final String EXPERT_APPLICATION_ID = "expert_application_id";
+
+        public static final String TOPICS = "expert_application_topics";
+
+        public static final String FIELD_TITLE = "field_title";
+
+        public static final String CREDENTIAL_TYPE = "credential_type";
+
+        public static final String INSTITUTION = "institution";
+
+        public static final String PROOF_IMAGE_URLS = "proof_image_urls";
+
+        public static final String LINKS = "links";
+
+        public static final String STATUS = "status";
+
+        public static final String REVIEW_NOTE = "review_note";
+    }
+
+    public static final class ExpertBadgeTable {
+
+        public static final String NAME = "expert_badges";
+
+        public static final String REVOKED_AT = "revoked_at";
+    }
+
+    public static final class NotificationTable {
+
+        public static final String NAME = "notifications";
+
+        public static final String RECIPIENT_ID = "recipient_id";
+
+        public static final String ACTOR_ID = "actor_id";
+
+        public static final String TYPE = "type";
+
+        public static final String TARGET_TYPE = "target_type";
+
+        public static final String TARGET_ID = "target_id";
+
+        public static final String READ_AT = "read_at";
+    }
+
+    public static final class ReportTable {
+
+        public static final String NAME = "reports";
+
+        public static final String REPORTER_ID = "reporter_id";
+
+        public static final String TARGET_TYPE = "target_type";
+
+        public static final String TARGET_ID = "target_id";
+
+        public static final String REASON = "reason";
+
+        public static final String DETAILS = "details";
+
+        public static final String SNAPSHOT = "snapshot";
+
+        public static final String STATUS = "status";
+    }
+
+    public static final class TagTable {
+
+        public static final String TAG_NAME = "tag_name";
+
+        public static final String NAME = "tags";
+
+        public static final String BLOG_TAGS = "blog_tags";
+
+        public static final String BLOG_ID = "blog_id";
+
+        public static final String TAG_ID = "tag_id";
     }
 
     public static final class CategoryTable {
@@ -78,6 +229,10 @@ public final class AppTables {
         public static final String DESIGNATION = "designation";
         
         public static final String WORK_PLACE_OR_INSTITUTION = "work_place_or_institution";
+
+        public static final String BIO = "bio";
+
+        public static final String PROFILE_IMAGE_URL = "profile_image_url";
     }
 
     public static final class RoleTable {
@@ -117,6 +272,12 @@ public final class AppTables {
         public static final String CONTENT = "content";
 
         public static final String TITLE = "title";
+
+        public static final String QUESTION_TAGS = "question_tags";
+
+        public static final String IMAGE_URLS = "image_urls";
+
+        public static final String ACCEPTED_ANSWER_ID = "accepted_answer_id";
     }
 
     public static final class RefreshTokenTable {
@@ -163,53 +324,27 @@ public final class AppTables {
         public static final String USER_ID = "user_id";
     }
 
-    public static final class LocalizedTextTable {
-        private LocalizedTextTable() {}
+    public static final class QuestionAiAnswerTable {
 
-        public static final String TABLE_NAME = "localized_texts";
+        public static final String NAME = "question_ai_answers";
 
-        public static final String ORIGINAL_TEXT = "original_text";
+        public static final String ANSWER = "answer";
 
-        public static final String ORIGINAL_LANGUAGE_CODE = "original_language_code";
-    }
+        public static final String SOURCES = "sources";
 
-    public static final class TranslationTable {
-        private TranslationTable() {}
+        public static final String STATUS = "status";
 
-        public static final String TABLE_NAME = "translations";
+        public static final String PROMPT_TOKENS = "prompt_tokens";
 
-        public static final String LANGUAGE_ID = "language_id";
+        public static final String COMPLETION_TOKENS = "completion_tokens";
 
-        public static final String LANGUAGE_CODE = "language_code";
+        public static final String REVIEWED_BY = "reviewed_by";
 
-        public static final String TRANSLATED_TEXT = "translated_text";
+        public static final String REVIEWED_AT = "reviewed_at";
 
-        public static final String LOCALIZED_TEXT_ID = "localized_text_id";
-    }
+        public static final String CORRECTION_ANSWER_ID = "correction_answer_id";
 
-    public static final class ErrorCodeEntityTable {
-
-        private ErrorCodeEntityTable() {}
-
-        public static final String TABLE_NAME =  "error_codes";
-
-        public static final String INTERNAL_CODE = "internal_code";
-
-        public static final String MESSAGE = "message_id";
-
-        public static final String INTERNAL_MESSAGE = "internal_message";
-    }
-    public static final class LanguageTable {
-
-        private LanguageTable() {}
-
-        public static final String TABLE_NAME =  "languages";
-
-        public static final String LANGUAGE_CODE = "language_code";
-
-        public static final String NAME = "name";
-
-        public static final String ACTIVE = "active";
+        public static final String STATUS_BEFORE_HIDE = "status_before_hide";
     }
 
     public static final class AiAnswerTable {
@@ -222,6 +357,14 @@ public final class AppTables {
 
         public static final String QUESTION = "question";
 
+        public static final String PROMPT_TOKENS = "prompt_tokens";
+
+        public static final String COMPLETION_TOKENS = "completion_tokens";
+
         public static final String AI_ANSWER = "ai_answer";
+
+        public static final String SOURCES = "sources";
+
+        public static final String PUBLISHED_QUESTION_ID = "published_question_id";
     }
 }

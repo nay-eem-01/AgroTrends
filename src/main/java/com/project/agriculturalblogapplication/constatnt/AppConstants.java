@@ -1,11 +1,15 @@
 package com.project.agriculturalblogapplication.constatnt;
 
 import java.math.BigDecimal;
+import java.time.ZoneId;
 import java.util.HashMap;
 
 public final class AppConstants {
 
     private AppConstants() {}
+
+    /** The users' clock: daily limits reset and launch-test weeks start at midnight here, whatever the server's zone. */
+    public static final ZoneId APP_ZONE = ZoneId.of("Asia/Dhaka");
 
     public static final String PAGE_NO = "pageNo";
     public static final String PAGE_SIZE = "pageSize";
@@ -15,10 +19,18 @@ public final class AppConstants {
 
     public static final String DEFAULT_PAGE_NO = "0";
     public static final String DEFAULT_PAGE_SIZE = "20";
+    public static final int MAX_PAGE_SIZE = 100;
     public static final String ASC_OR_DESC_VALUE = "asc";
     public static final String SORT_BY_VALUE = "creationDate";
     public static final String PARAMETERS = "parameters";
     public static final String LANG = "lang";
+    public static final int AI_MAX_QUESTION_LENGTH = 1000;
+    public static final int MAX_TAGS_PER_POST = 5;
+    public static final int MAX_TAG_LENGTH = 40;
+    public static final int MAX_PHOTOS_PER_QUESTION = 4;
+    public static final int MAX_EXPERT_TOPICS = 3;
+    public static final int MAX_EXPERT_PROOF_IMAGES = 4;
+    public static final int MAX_EXPERT_LINKS = 3;
 
     public static final String INITIAL_MOBILE_NUMBER = "+01833849973";
 
@@ -58,6 +70,8 @@ public final class AppConstants {
             put("CATEGORY_DELETE", "CATEGORY DELETE");
 
             put("NOTIFICATION_SEND", "NOTIFICATION SEND");
+            put("EXPERT_REVIEW", "EXPERT APPLICATION REVIEW");
+            put("CONTENT_MODERATE", "CONTENT MODERATION");
             put("USER_UPDATE_FROM_ADMIN", "USER UPDATE FROM ADMIN");
         }
     };

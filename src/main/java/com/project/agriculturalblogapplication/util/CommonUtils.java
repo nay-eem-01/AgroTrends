@@ -1,19 +1,18 @@
 package com.project.agriculturalblogapplication.util;
 
+import org.springframework.http.HttpStatus;
+import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.project.agriculturalblogapplication.constatnt.AppConstants;
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
-import com.project.agriculturalblogapplication.entities.LocalizedText;
 import com.project.agriculturalblogapplication.enums.AscOrDescType;
 import com.project.agriculturalblogapplication.payloads.PaginationArgs;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -26,6 +25,7 @@ import java.lang.reflect.Field;
 import java.text.Normalizer;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -37,6 +37,16 @@ import java.util.stream.Stream;
 public final class CommonUtils {
 
 	private CommonUtils() {}
+
+	/** Plain text of user HTML (never the HTML itself), cut at a word near {@code max} characters. */
+	public static String excerpt(String html, int max) {
+		String text = html == null ? "" : org.jsoup.Jsoup.parse(html).text().strip();
+		if (text.length() <= max) {
+			return text;
+		}
+		int cut = text.lastIndexOf(' ', max);
+		return text.substring(0, cut > max / 2 ? cut : max) + "…";
+	}
 
 	public static boolean isTrue (Boolean value) {
 		return value != null && value;
@@ -235,11 +245,33 @@ public final class CommonUtils {
 				.toArray(String[]::new);
 	}
 
+	/** A page request with a non-negative page number and a page size clamped to 1..MAX_PAGE_SIZE. */
+	public static Pageable clampedPageable(int pageNo, int pageSize, Sort sort) {
+		return PageRequest.of(Math.max(pageNo, 0), Math.min(Math.max(pageSize, 1), AppConstants.MAX_PAGE_SIZE), sort);
+	}
+
+	/** Audit timestamps are server-local LocalDateTime; the API speaks Instant (ISO-8601 UTC). */
+	public static Instant toInstant(LocalDateTime dateTime) {
+		return dateTime == null ? null : dateTime.atZone(ZoneId.systemDefault()).toInstant();
+	}
+
+	/**
+	 * Like {@link #getPageable(PaginationArgs)}, but only sorts by fields on the endpoint's allowlist: an unknown
+	 * field is a 400 instead of a 500, and nobody can sort by a nested field such as author.user.password.
+	 */
+	public static Pageable getPageable(PaginationArgs paginationArgs, Set<String> sortableFields, String lang) {
+		String sortBy = paginationArgs.getSortBy();
+		if (sortBy != null && !sortBy.isBlank() && !sortableFields.contains(sortBy)) {
+			throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_INVALID_SORT_FIELD, lang);
+		}
+		return getPageable(paginationArgs);
+	}
+
 	public static Pageable getPageable(PaginationArgs paginationArgs) {
 		Pageable pageable;
 		String sortBy = paginationArgs.getSortBy();
-		int pageNo = paginationArgs.getPageNo();
-		int pageSize = paginationArgs.getPageSize();
+		int pageNo = Math.max(paginationArgs.getPageNo(), 0);
+		int pageSize = Math.min(Math.max(paginationArgs.getPageSize(), 1), AppConstants.MAX_PAGE_SIZE);
 
 		if(sortBy != null && sortBy.length() > 0) {
 			if (paginationArgs.getAscOrDesc().equals(AscOrDescType.asc)) {
@@ -270,34 +302,6 @@ public final class CommonUtils {
 		return pageable;
 	}
 
-	public static Pageable getLocalizedPageable(PaginationArgs paginationArgs, Class<?> className) {
-		Pageable pageable;
-		String sortBy = paginationArgs.getSortBy();
-		int pageNo = paginationArgs.getPageNo();
-		int pageSize = paginationArgs.getPageSize();
-
-		try {
-			Field field = className.getDeclaredField(sortBy);
-			if (field.getType() == LocalizedText.class) {
-				sortBy = sortBy+".translations.translatedText";
-			}
-		} catch (Exception ex) {
-			sortBy = sortBy;
-		}
-
-		if (sortBy != null && sortBy.length() > 0) {
-			if (paginationArgs.getAscOrDesc().equals(AscOrDescType.asc)) {
-				pageable = PageRequest.of(pageNo, pageSize, Sort.by(sortBy).ascending());
-			} else {
-				pageable = PageRequest.of(pageNo, pageSize, Sort.by(sortBy).descending());
-			}
-		} else {
-			pageable = PageRequest.of(pageNo, pageSize);
-		}
-
-		return pageable;
-	}
-
 	public static Map<String, Object> getParameters(Map<String, Object> parameters) {
 		parameters.remove(AppConstants.PAGE_NO);
 		parameters.remove(AppConstants.PAGE_SIZE);
@@ -307,13 +311,5 @@ public final class CommonUtils {
 		parameters.remove(AppConstants.LANG);
 		parameters.remove(AppConstants.LOAD_ORIGINAL_TEXT);
 		return parameters;
-	}
-
-	public static <D, E> D mapEntityToDto(ModelMapper modelMapper, E entity, Class<D> dtoClass) {
-		return modelMapper.map(entity, dtoClass);
-	}
-
-	public static <E, D> Page<D> mapEntityPageToDtoPage(ModelMapper modelMapper, Page<E> entities, Class<D> dtoClass) {
-		return entities.map(objectEntity -> modelMapper.map(objectEntity, dtoClass));
 	}
 }

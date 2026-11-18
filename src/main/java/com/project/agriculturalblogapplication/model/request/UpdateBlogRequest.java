@@ -1,5 +1,10 @@
 package com.project.agriculturalblogapplication.model.request;
 
+import jakarta.validation.Valid;
+import com.project.agriculturalblogapplication.model.AgriInfo;
+import java.util.List;
+import jakarta.validation.constraints.Size;
+import com.project.agriculturalblogapplication.constatnt.AppConstants;
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -25,6 +30,17 @@ public class UpdateBlogRequest {
 
     private String imageUrl;
 
+    @Size(max = 200, message = ErrorCode.ERROR_SUBTITLE_TOO_LONG)
+    private String subtitle;
+    /** False keeps the post out of the AI's sources; omitted means unchanged. */
+    private Boolean aiCitable;
+
     @NotNull(message = ErrorCode.ERROR_CATEGORY_IS_REQUIRED)
     private Long categoryId;
+    /** Up to five topic tags, e.g. "rice blast"; new names are created. */
+    @Size(max = AppConstants.MAX_TAGS_PER_POST, message = ErrorCode.ERROR_TOO_MANY_TAGS)
+    private List<@NotBlank @Size(max = AppConstants.MAX_TAG_LENGTH, message = ErrorCode.ERROR_TAG_TOO_LONG) String> tags;
+    /** Optional crop, season, region and soil the post is about. */
+    @Valid
+    private AgriInfo agri;
 }

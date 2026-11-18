@@ -17,6 +17,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -96,56 +97,90 @@ public class RoleService {
 	}
 
 	public Role createRole(CreateRoleRequest request, String lang) {
+		requireAdminType(request.getRoleType(), lang);
 		if (existsByRoleName(request.getRoleName())) {
 			throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_ROLE_ALREADY_EXISTS, lang);
 		}
 
-		if (request.getPrivilegeIds().isEmpty()) {
-			throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_PLEASE_SELECT_PRIVILEGES, lang);
-		}
-
-		List<Privilege> privileges = new ArrayList<>();
-		request.getPrivilegeIds().forEach((Long privilegeId)-> {
-			Privilege privilege = privilegeService.findByIdWithException(privilegeId);
-			privileges.add(privilege);
-		});
-
 		Role role = new Role();
 		role.setRoleName(request.getRoleName());
 		role.setRoleType(request.getRoleType());
-		role.setPrivileges(privileges);
+		role.setPrivileges(grantablePrivileges(request.getPrivilegeIds(), lang));
 		return saveRole(role);
 	}
 
 	public Role updateRole(UpdateRoleRequest request, String lang) {
 		Role role = findByIdWithException(request.getId(), lang);
+		requireAdminType(role.getRoleType(), lang);
+		requireAdminType(request.getRoleType(), lang);
 
 		if (existsByRoleNameAndIdNot(request.getRoleName(), role.getId())) {
 			throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_ROLE_ALREADY_EXISTS, lang);
 		}
 
-		if (request.getPrivilegeIds().isEmpty()) {
-			throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_PLEASE_SELECT_PRIVILEGES, lang);
-		}
-
-		List<Privilege> privileges = new ArrayList<>();
-		request.getPrivilegeIds().forEach((Long privilegeId)-> {
-			Privilege privilege = privilegeService.findByIdWithException(privilegeId);
-			privileges.add(privilege);
-		});
-
 		role.setRoleName(request.getRoleName());
-		role.setRoleType(request.getRoleType());
-		role.setPrivileges(privileges);
+		role.setPrivileges(grantablePrivileges(request.getPrivilegeIds(), lang));
 		return saveRole(role);
 	}
-	
+
 	public void deleteRole(Long roleId, String lang) {
 		Role role = findByIdWithException(roleId, lang);
+		requireAdminType(role.getRoleType(), lang);
 		if(userRepository.existsByRolesIn(Set.of(role))) {
 			throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_USER_ALREADY_ASSIGNED_WITH_ROLE, lang);
 		}
 
 		roleRepository.delete(role);
+	}
+
+	/** Gives the user an ADMIN-type role; their privileges change on their next request. */
+	@Transactional
+	public User grantRole(Long userId, Long roleId, String lang) {
+		Role role = findByIdWithException(roleId, lang);
+		requireAdminType(role.getRoleType(), lang);
+		User user = userWithException(userId, lang);
+		user.getRoles().add(role);
+		return userRepository.save(user);
+	}
+
+	@Transactional
+	public User removeRole(Long userId, Long roleId, String lang) {
+		Role role = findByIdWithException(roleId, lang);
+		requireAdminType(role.getRoleType(), lang);
+		User user = userWithException(userId, lang);
+		user.getRoles().removeIf(r -> r.getId().equals(roleId));
+		return userRepository.save(user);
+	}
+
+	/** Only ADMIN roles are managed through the API: the USER and SUPER_ADMIN roles are seeded and fixed. */
+	private static void requireAdminType(RoleType type, String lang) {
+		if (type != RoleType.ADMIN) {
+			throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_ONLY_ADMIN_ROLES, lang);
+		}
+	}
+
+	/** ROLE_* privileges stay with the super-admin, so an admin role can never hand out more admin roles. */
+	private List<Privilege> grantablePrivileges(List<Long> privilegeIds, String lang) {
+		if (privilegeIds == null || privilegeIds.isEmpty()) {
+			throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_PLEASE_SELECT_PRIVILEGES, lang);
+		}
+		List<Privilege> privileges = new ArrayList<>();
+		for (Long privilegeId : new LinkedHashSet<>(privilegeIds)) {
+			Privilege privilege = privilegeService.findByIdWithException(privilegeId);
+			if (!isGrantable(privilege)) {
+				throw new ApplicationException(HttpStatus.BAD_REQUEST, ErrorCode.ERROR_PRIVILEGE_NOT_GRANTABLE, lang);
+			}
+			privileges.add(privilege);
+		}
+		return privileges;
+	}
+
+	public static boolean isGrantable(Privilege privilege) {
+		return !privilege.getPrivilegeName().startsWith("ROLE_");
+	}
+
+	private User userWithException(Long userId, String lang) {
+		return userRepository.findById(userId).orElseThrow(() ->
+				new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_USER_NOT_FOUND, lang));
 	}
 }

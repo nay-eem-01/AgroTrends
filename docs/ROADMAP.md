@@ -8,9 +8,40 @@ gets split here first.
 
 **Legend:** ✅ done · 🔄 in progress · ⬜ not started · ⏸ deferred / needs the owner
 
-**Progress:** 13 of 42 steps done
+**Progress:** 117 of 126 steps done
+
+**Launch scope (decided 2026-10-13):** Phases 4–8 must all be done before the public launch. Order of work:
+5 → 6 → 7 → 8 → 4 (deploy) → live test → launch. Nothing is deployed until Phases 5–8 are done. After launch, the
+8-week test decides what comes from **Later** (see `docs/PLAN.md` §6).
 
 ---
+
+## Staging hosting automation (2026-11-17)
+
+Deployment operations are tracked separately from feature counts.
+
+| Step | Status |
+|---|---|
+| Scripts, staging Actions workflows, rollback checks and Nginx/Vite documentation | ✅ prepared locally |
+| Configure dedicated SSH key, GitHub staging Environments and VM prerequisites | ⬜ |
+| Promote via development → staging and verify the first automated releases | ⬜ |
+| Resolve real backup/upload/isolated restore, monitor uptime/credits/disk | ⬜ |
+
+
+## Deployment follow-up (2026-11-16)
+
+Supabase/profile writes, R2 upload/display (`agrotrends-files`), Brevo delivery, Docker build/database/health and
+frontend login against Docker are confirmed by Nayeem. See `docs/DEPLOY.md` for the current Azure plan.
+The three implementation steps below are included in the feature count; infrastructure acceptance checks are tracked separately.
+
+| Step | Status |
+|---|---|
+| Docker R2 and Brevo acceptance checks | ⬜ |
+| Resolve WSL backup authentication; verify real dump, R2 copy and isolated restore | ⏸ unresolved |
+| Azure VM, production DNS/HTTPS, monitoring | ⬜ |
+| Storage deletion and after-commit cleanup infrastructure | ✅ |
+| Detached saved image cleanup in R2/local storage, preserving shared references | ✅ |
+| Seed 40 starter topics on an empty database without replacing existing topics | ✅ |
 
 ## Phase 0 — Stop the bleeding
 
@@ -46,18 +77,26 @@ Everything that makes it a publishing platform. Each step one small PR.
 
 | # | Step | Status |
 |---|---|---|
-| 2.1 | Response DTOs for User, Blog, Category (and a clamped `pageSize`); stop returning entities | ⬜ |
-| 2.2 | Real database pagination for blogs by category/author/user; `sortBy` allowlist -> 400 | ⬜ |
-| 2.3 | Blog `status` (DRAFT/PUBLISHED), slug, reading time, `published_at`; public lists show PUBLISHED only | ⬜ |
-| 2.4 | Tags/topics (many-to-many) and filtering by tag | ⬜ |
-| 2.5 | `Blog.content` `@Lob` -> `TEXT`; full-text search endpoint | ⬜ |
-| 2.6 | Image upload (cover + inline) behind a storage port; size/type limits | ⬜ |
-| 2.7 | Claps on blogs (one user, many claps capped) and counts | ⬜ |
-| 2.8 | Bookmarks / reading lists (private; 404 for others) | ⬜ |
-| 2.9 | Follow authors and topics | ⬜ |
-| 2.10 | Public author profile endpoint (bio, specialities, posts, counts) | ⬜ |
-| 2.11 | Home feed: following, trending, latest | ⬜ |
-| 2.12 | Agriculture metadata on blogs and questions (crop, season, region, soil) + filters | ⬜ |
+| 2.1a | Response DTOs for Blog and Category (author shown as `{authorId, name}`); clamped `pageSize` | ✅ |
+| 2.1b | Response DTOs for User: private `/me` and auth payloads (`UserResponse`), public `/id/{id}` (`{id, name}`), admin list | ✅ |
+| 2.1c | Answer / Comment / Question responses: `authorName`, `createdAt`, `updatedAt` (ISO `Instant`; never `createdBy`, which holds the e-mail) | ✅ |
+| 2.2 | Real database pagination for blogs by category/author; `sortBy` allowlist -> 400; author lists by Author id | ✅ |
+| 2.3a | Blog `status` (DRAFT/PUBLISHED), `publishedAt`, publish/unpublish, drafts list; public lists PUBLISHED only; `status` in vector metadata + retrieval filter | ✅ |
+| 2.3b | Blog slug (stable, Unicode-friendly) and reading time; `GET /api/blogs/slug/{slug}` | ✅ |
+| 2.4 | Tags (many-to-many, normalised, max 5 per blog), `GET /api/blogs/all/tag/{tagName}`, `GET /api/tags?q=` | ✅ |
+| 2.5 | `Blog.content` / `AiAnswer.aiAnswer` `@Lob` -> `TEXT` (startup patch before Hibernate); full-text search `GET /api/blogs/search?q=` | ✅ |
+| 2.6 | Image upload (`POST /api/images`, authors, JPEG/PNG/WebP by magic bytes, 5 MB) behind an `ImageStorage` port; local disk served at `/uploads/**` | ✅ |
+| 2.7 | Claps on published blogs (max 50 per reader, not own), `clapCount` on blogs; `/api/blogs/id/{blogId}/claps` | ✅ |
+| 2.8 | Bookmarks: private reading list (`PUT`/`DELETE /api/blogs/id/{blogId}/bookmark`, `GET /api/bookmarks`) | ✅ |
+| 2.9 | Follow authors and topic tags (`/api/authors/{authorId}/follow`, `/api/tags/{tagName}/follow`, `/api/me/following/*`) | ✅ |
+| 2.10 | Public author profile `GET /api/authors/{authorId}` (bio, specialities, post/follower counts) and `PUT /api/authors/me` | ✅ |
+| 2.11 | Home feed: `/api/feed/latest`, `/api/feed/following` (authors + tags), `/api/feed/trending` (14 days, most clapped) | ✅ |
+| 2.12a | Agriculture metadata on blogs (crop, season, region, soil) + filters on `/api/blogs/all` | ✅ |
+| 2.12b | Agriculture metadata on questions + filters on `/api/questions/all` | ✅ |
+| 2.13 | Public reading: anonymous GET on published content (blogs, feeds latest/trending, search, tags, categories, authors, comments, questions, answers); every write still needs sign-in | ✅ |
+| 2.14 | `GET /api/authors/me` (prefill the author profile editor) and `authorId` on `UserResponse` (null for readers) | ✅ |
+| 2.15a | Google ID-token verifier (`spring-security-oauth2-jose`, Google JWKS, `iss`/`aud`/expiry checks); `GOOGLE_CLIENT_ID` | ✅ |
+| 2.15b | `POST /api/auth/google`: find by Google id, else link by e-mail, else create; `emailVerifiedAt`; password and mobile optional | ✅ |
 
 ## Phase 3 — AI that cites
 
@@ -65,26 +104,165 @@ The differentiator. See `docs/research/rag-and-platform-findings.md`.
 
 | # | Step | Status |
 |---|---|---|
-| 3.1 | Replace the shut-down embedding model; set dimensions; re-embed all blogs; verify end to end | ⬜ |
-| 3.2 | Index with metadata (`blogId`, author, category, status) + `TokenTextSplitter` chunking | ⬜ |
-| 3.3 | Delete/replace vectors on blog update, unpublish and delete; backfill script | ⬜ |
-| 3.4 | Retrieval advisor on the chat client (`QuestionAnswerAdvisor`), PUBLISHED only | ⬜ |
-| 3.5 | Citations: `/api/ai/ask` returns the source posts | ⬜ |
-| 3.6 | Per-user daily quota, prompt length cap, timeout; token usage on `AiAnswer` | ⬜ |
-| 3.7 | `GET /api/ai/history` (private to the caller) | ⬜ |
-| 3.8 | AI helpers: suggested tags, summary, related posts, labelled AI draft for unanswered questions | ⬜ |
+| 3.1 | Replace the shut-down embedding model (`gemini-embedding-2`, 768 dims); verify end to end | ✅ |
+| 3.2 | Index with metadata (`blogId`, `authorId`, `categoryId`, `title`) + `TokenTextSplitter` chunking (~800 tokens); `status` is added with 2.3 | ✅ |
+| 3.3 | Replace vectors on blog update, delete them on blog delete; one-off re-index (`AI_REINDEX_ON_STARTUP`); unpublish is handled in 2.3 | ✅ |
+| 3.4 | Retrieval advisor on the chat client (`RetrievalAugmentationAdvisor`, top 5, similarity ≥ 0.7); PUBLISHED-only filter lands with 2.3 | ✅ |
+| 3.5 | Citations: `/api/ai/ask` returns `sources` (`blogId`, `title`) next to `answer` | ✅ |
+| 3.6 | Per-user daily quota (20), question cap (1000 chars), 60 s Gemini timeout, 503 on AI failure; token usage on `AiAnswer` | ✅ |
+| 3.7 | `GET /api/ai/history` (private to the caller, newest first, paged) | ✅ |
+| 3.8a | AI helpers: related posts for a blog (`GET /api/blogs/id/{blogId}/related`) | ✅ |
+| 3.8b | AI helpers: summary and suggested tags for an author's draft (`POST /api/ai/blog-assist`) | ✅ |
+| 3.8c | AI helpers: labelled AI draft answer for an unanswered question (`POST /api/questions/id/{questionId}/ai-draft`) | ✅ |
+
 
 ## Phase 4 — Ship it
 
-Operability and regression safety.
+Operability and regression safety. Runs after Phases 5–8 are complete; then deploy and live-test before launch.
 
 | # | Step | Status |
 |---|---|---|
-| 4.1 | `dev` / `prod` profiles; `ddl-auto=validate`; CORS origins from a property | ⬜ |
-| 4.2 | Flyway baseline + migrations for the existing schema | ⬜ |
-| 4.3 | `docker-compose.yml` with `pgvector/pgvector:pg16`; Dockerfile | ⬜ |
+| 4.1 | `prod` profile (no API docs); CORS origins from `CORS_ORIGINS`, default `app.frontendUrl` (audit B6); `server.forward-headers-strategy=native` so per-IP limits see the client IP behind the proxy. `ddl-auto=validate` moved to 4.2 | ✅ |
+| 4.2 | Flyway baseline + migrations for the existing schema; then delete `SchemaPatches` (audit O8) and switch to `ddl-auto=validate` | ⬜ |
+| 4.3 | `docker-compose.yml` with `pgvector/pgvector:pg16` and Caddy (HTTPS); Dockerfile; `uploads/` on a named volume; `docs/DEPLOY.md` (Azure VM) | ✅ |
 | 4.4 | Testcontainers (pgvector): `contextLoads` passes; `@WebMvcTest` slices for auth and ownership | ⬜ |
 | 4.5 | GitHub Actions: build + test + gitleaks | ⬜ |
 | 4.6 | README: prerequisites, env vars, run, endpoint table | ⬜ |
-| 4.7 | Housekeeping: rename `constatnt`, delete dead Thymeleaf templates and orphan OTP DTOs, fix `AuditModel` date format, unify `TranslationService` injection | ⬜ |
-| 4.8 | Rate-limit store: move `AttemptLimiter` to a shared store if running more than one instance | ⬜ |
+| 4.7 | Housekeeping: rename `constatnt`, fix `AuditModel` date format (dead code moved to 5.4; 4xx logged at DEBUG since 2026-10-17) | ⬜ |
+| 4.8 | Rate-limit store: move `AttemptLimiter` to a shared store if running more than one instance | ⏸ |
+| 4.9 | Spring Boot Actuator: public `/actuator/health` (UP/DOWN, no details), nothing else exposed. Metrics later, when there is somewhere to send them | ✅ |
+| 4.10 | Backups: nightly `pg_dump` (`deploy/backup.sh`), last 7 on the server and a copy in a private R2 bucket; restore tested once on the local stack. Images already live in R2 | ✅ |
+| 4.11 | Logging: correlation id per request (`X-Correlation-Id`), secret masking in every appender, async appenders, rolling file outside the repo (not in `prod`) | ✅ |
+| 4.12 | Answers and comments: drop the `OneToMany` collections (`Question.answers`, `Answer.replies`, `Comment.replies`, `Blog.comments`) for `ON DELETE CASCADE` + reply queries; index the `answers` and `comment` foreign keys; `Answer` relations `LAZY` | ✅ |
+| 4.13 | Images on Cloudflare R2 (S3 API) when `R2_BUCKET` is set, local disk otherwise; e-mail through Brevo SMTP (config only) | ✅ |
+| 4.14 | Account takeover fixes: changing an e-mail or phone revokes the links and codes sent to the old one; Google linking an unverified account also drops its mobile number | ✅ |
+| 4.15 | Profile as a portfolio: `userId`, expert topics, answer and accepted-answer counts, up to 5 http(s) `links` on the author profile; `GET /api/answers/all/user/{userId}` (public answers with the question title, newest first) | ✅ |
+| 4.16 | Public user summary `GET /api/users/{userId}/profile` (authorId, location, cover, joined, answer/accepted/question/story counts, checked credentials) and `PUT /api/user/profile` (location ≤ 80, cover from `/api/images`) — frontend request §1 | ✅ |
+| 4.17 | An author is a user: `authors.id` = `users.id` (`@MapsId`), existing rows and their foreign keys remapped at startup in one statement; every user has a profile from sign-up (and a startup backfill), so anyone can be followed — frontend request §2 | ✅ |
+| 4.18 | Experts to follow: public `GET /api/experts?categoryId=` — verified, not banned, most accepted answers first, with field, institution, topics and `followedByMe` — frontend request §4 | ✅ |
+| 4.19 | Trending questions: public `GET /api/feed/trending/questions` (last 14 days, highest score, then most answered), shown beside `/api/feed/trending` posts — frontend request §6 | ✅ |
+| 4.20 | Question views: `viewCount` on `QuestionResponse`, counted once per signed-in user (or per address for visitors) per day on `GET /api/questions/id/{id}` — frontend request §7 | ✅ |
+| 4.21 | Story `subtitle` (≤ 200) and `aiCitable` (default true) on blog create/update and both blog responses; an opted-out post is dropped from the AI index — frontend request §9 | ✅ |
+| 4.22 | Public numbers: `GET /api/stats/public` (members, verified experts, questions, answered questions), counted at most hourly — frontend request §10 | ✅ |
+| 4.23 | A new question reaches its topic's experts even without an AI answer: `NEW_QUESTION_IN_TOPIC` when the AI fails or the asker hit the daily limit (`NEW_REVIEW_ITEM` stays for an AI answer to review) — frontend request §12 | ✅ |
+| 4.24 | Fix: sign-up and the super-admin seed failed on a fresh database (`detached entity passed to persist`); `AuthorService.profileOf` now runs in one transaction | ✅ |
+| 4.25 | Database on Supabase (managed PostgreSQL + pgvector, session pooler) instead of a container on the server; `backup.sh` dumps schema `public` from `DB_URL` and restores with `backup.sh restore` | ✅ |
+| 4.26 | Reply to a reply, two levels (like Facebook): a reply to a reply joins the same thread under the top-level comment or answer; on comments, the author of the reply that was answered is the one notified. No schema change | ✅ |
+| 4.27 | Replies on answers notify: `ANSWER_REPLY` to the author of the answer or reply that was answered, linked to the question | ✅ |
+| 4.28 | B1 Reply counts: `replyCount` on answers and comments, one grouped count per list, hidden replies not counted | ✅ |
+| 4.29 | B2 `GET /api/ai/allowance`: limit, used today, reset time; the advisor's day is midnight Asia/Dhaka in the check too | ✅ |
+| 4.30 | B4 `GET /api/questions/all?following=true`: questions with a tag the caller follows; 401 signed out, empty page when none followed | ✅ |
+| 4.31 | B5 `preferredLang`, `emailOnAnswer`, `emailWeeklyDigest`; `GET/PUT /api/user/settings`; signed one-click unsubscribe (GET redirects to the web, POST for RFC 8058); `BACKEND_URL` | ✅ |
+| 4.32 | B6 `GET /api/admin/launch-metrics?weeks=8`: the week-8 numbers per Dhaka week, with a staff-only row | ✅ |
+| 4.33 | B7 `/share/questions/{id}`, `/share/stories/{slug}`: Open Graph preview pages, escaped, nothing private, honest expert claim | ✅ |
+| 4.34 | B8 E-mail the asker about new answers and expert checks: at most hourly per question, folded, claimed once, HTML + text, List-Unsubscribe | ✅ |
+| 4.35 | B9 `citedCount` on blog responses (JSONB containment, GIN index); `GET /api/users/{id}/impact`, cached an hour | ✅ |
+| 4.36 | B10 Weekly digest, Mondays 08:00 Asia/Dhaka: unanswered questions in followed tags, experts' waiting reviews; `digest_sent`; admin preview | ✅ |
+| 4.37 | B12 Refresh token also in an HttpOnly `agrotrends_refresh` cookie (Strict, `/api/auth`); refresh reads it; sign-out clears it | ✅ |
+| 4.38 | B3 Relax the password rule (8–64, no composition rule) — waits for Nayeem's decision | ⏸ |
+| 4.39 | B11 Follow a question — after week 8 | ⏸ |
+
+## Phase 5 — Launch blockers
+
+Code-audit fixes (`docs/research/product-study-2026-10.md` §6) and the account model. One account type for
+everyone; a confirmed e-mail before any write.
+
+| # | Step | Status |
+|---|---|---|
+| 5.1 | AI indexing never fails a blog save: catch + log in `DocumentService.indexBlog`/`reindexBlog`, the re-index runner heals (audit B1) | ✅ |
+| 5.2 | System prompt: drop the "Bangla only if explicitly asked" sentence; test asserts it (audit B2) | ✅ |
+| 5.3 | Delete the DB-driven i18n error stack (`ErrorCodeEntity`, `Language`, `LocalizedText`, `Translation` + services) and unused `ErrorCode` constants (audit O1, O3; fixes B4) | ✅ |
+| 5.4 | Delete dead code: `dtos/` + ModelMapper, Thymeleaf, `ForgetPasswordService` and other orphans (audit O4–O6) | ✅ |
+| 5.5 | One account type: sign-up takes no `userType`; the author profile becomes the user's profile, created on first need; any confirmed user may publish | ✅ |
+| 5.6 | E-mail confirmation: token mailed at sign-up, `POST /api/auth/verify-email`, `POST /api/auth/resend-verification`; Google sign-in counts as confirmed | ✅ |
+| 5.7 | Confirmed-e-mail gate on every write (questions, answers, comments, blogs, votes, images, AI): 403 `EMAIL_NOT_VERIFIED` | ✅ |
+| 5.8 | Per-IP daily cap on `/api/ai/**` and `/api/auth/google` (audit B3 remainder) | ✅ |
+| 5.9 | Server-side HTML sanitising (jsoup safelist) for blogs, questions and answers | ✅ |
+| 5.10 | `BlogSummaryResponse` with a 200-character excerpt for every list endpoint (audit A1) | ✅ |
+| 5.11 | `@EntityGraph` on list queries; `open-in-view=false` (audit A2) | ✅ |
+
+## Phase 6 — Community Q&A and reputation
+
+Stack Overflow-style trust. Topics are the existing categories. Point values are in `docs/PLAN.md` §5.
+
+| # | Step | Status |
+|---|---|---|
+| 6.1 | Topic (category, required) and tags on questions; filter by topic and tag | ✅ |
+| 6.2 | Photos on questions (up to 4 image URLs from `POST /api/images`, now open to every confirmed user) | ✅ |
+| 6.3 | Full-text search over questions; `answerCount`; `unanswered` filter | ✅ |
+| 6.4 | Votes on questions and answers: up/down, one per user, not on your own, atomic `score` | ✅ |
+| 6.5 | Accepted answer: the asker picks one (can change it); accepted answer sorts first | ✅ |
+| 6.6 | Reputation ledger: `ReputationEvent` rows per user and topic, written and reversed with votes and accepts; downvoting needs 50 points | ✅ |
+| 6.7 | Reputation on profiles and posts: totals per topic on `GET /api/users/{id}/reputation`; author reputation + badges on question/answer responses | ✅ |
+| 6.8 | Top Contributor badge, computed per topic (250 points and 5 accepted answers) | ✅ |
+
+## Phase 7 — Verified experts and AI review
+
+The trust layer. An expert is verified **per topic**; only verified experts confirm or correct AI answers.
+
+| # | Step | Status |
+|---|---|---|
+| 7.1 | Expert application: `POST /api/experts/applications` (topics, field title, credential type, institution, proof images, links); `GET /api/experts/applications/me` | ✅ |
+| 7.2 | Admin review: pending list, approve (grants an `ExpertBadge` per topic) / reject with reason, revoke a badge | ✅ |
+| 7.3a | Stored AI answer on every new question, generated after commit (async), status `UNCHECKED`; responses carry a safety `disclaimer` | ✅ |
+| 7.3b | Retire the on-demand `POST /api/questions/id/{id}/ai-draft` (replaced by 7.3a) | ✅ |
+| 7.4 | Review queue for experts (their topics only): confirm / correct (creates an expert answer, AI answer `CORRECTED`) / flag (`FLAGGED`, hidden); admin can reopen | ✅ |
+| 7.5 | "Ask an expert to check this": turn a private `/api/ai/ask` answer into a public question | ✅ |
+| 7.6a | RAG over Q&A: index accepted answers, expert answers and confirmed AI answers (`type=answer`, `questionId`); remove on un-accept, delete, reopen or badge revoked (hide arrives with 8.4) | ✅ |
+| 7.6b | Citations for answers: `sources` gain `type` and `questionId` | ✅ |
+| 7.7 | Question crop/season/region passed into the AI prompt | ✅ |
+
+## Phase 8 — Notifications and moderation
+
+Replaces the old Kafka phase: in-process after-commit events, same API, no broker (`docs/PLAN.md` decision 13).
+The old `feature/kafka-impl` branch can be deleted.
+
+| # | Step | Status |
+|---|---|---|
+| 8.1a | `NotificationPublisher` interface, transport chosen by `app.notifications.transport` (`spring` = after-commit Spring events; a broker later is config + one class); `Notification` rows; triggers: answer on your question, your answer accepted, AI answer on your question reviewed | ✅ |
+| 8.1b | Triggers: new review item in your topic, application decided, reply to your comment | ✅ |
+| 8.2 | `/api/notifications` for the caller only: list, unread count, mark one / all read | ✅ |
+| 8.3 | Reports: `POST /api/reports` (blog, question, answer, AI answer, comment, user; reason); one per user per target | ✅ |
+| 8.4a | Moderation: admin report queue, dismiss, remove reported content (deleted through the existing paths: out of lists and RAG, reputation reversed; snapshot kept on the reports; author notified); AI answers hidden; badge revocation is 7.2 | ✅ |
+| 8.4b | Ban a user: sign-in and token refresh refused, sessions revoked; unban | ✅ |
+| 8.5a | Visibility: drafts for their author only (not admins); blog status `HIDDEN` (nobody, no edits/republish); comments only on visible posts; banned e-mail refused at sign-up | ✅ |
+| 8.5b | Hidden questions, answers and comments: out of every list, search, single read and the AI index; frozen while hidden | ✅ |
+| 8.5c | Report threshold: N open reports hide a post (snapshot kept, author told); admin confirms → deleted, admin dismisses → all its reports closed and the post restored | ✅ |
+
+## Phase 9 — Admin dashboard
+
+What the web admin dashboard needs on top of Phases 7–8 (queues and actions already exist). Part of launch scope.
+
+| # | Step | Status |
+|---|---|---|
+| 9.1 | Admin users: `GET /api/admin/users` (search name/e-mail, banned filter, ban state shown) and `GET /api/admin/users/{id}` (post counts, open reports, expert topics); replaces `/api/user/paginated` | ✅ |
+| 9.2 | Overview counts: `GET /api/admin/stats` (users, new this week, banned, questions, answers, stories, open reports, pending applications, unchecked AI answers) | ✅ |
+| 9.3 | Admin roles: list privileges and roles, create/edit/delete `ADMIN` roles, grant or remove one on a user (super-admin only); who moderates becomes a dashboard setting | ✅ |
+
+## Phase 10 — Phone sign-up
+
+Sign up with an e-mail, a phone number or both; add the other later. Phones are confirmed by an SMS code. Part of
+launch scope (most of the audience has a phone before an e-mail).
+
+| # | Step | Status |
+|---|---|---|
+| 10.1 | JWT subject is the user id (not the e-mail); sign-in takes `identifier` (e-mail or phone; `email` still accepted); phones stored in E.164 | ✅ |
+| 10.2 | Sign-up with e-mail, phone or both; `phoneVerifiedAt`; a confirmed e-mail **or** phone opens writes; profile update adds or changes either | ✅ |
+| 10.3 | SMS codes: `SmsService` (logged in dev), 6-digit code at sign-up and on a phone change, `POST /api/auth/verify-phone`, `POST /api/auth/resend-phone-code` | ✅ |
+| 10.4 | Forgot password by phone: `POST /api/auth/forgot-password/phone` sends an SMS code, `POST /api/auth/reset-password/phone` uses it | ✅ |
+| 10.5 | A real SMS provider (after the team picks one) | ⏸ |
+
+## Later — after the 8-week launch test
+
+Not counted in progress. Each one waits for the week-8 decision (`docs/PLAN.md` §6) and is tested by hand
+before it is built.
+
+| Item | Note |
+|---|---|
+| AgroTrends Academy (courses, cohorts, enrolment) | First course runs on Google Meet + bKash, no code |
+| Paid priority questions, then expert appointments | Start as a bKash number on expert profiles |
+| Payments (bKash / SSLCommerz) | Only once a paid stream is proven |
+| Remove the `String lang` parameter from service signatures (audit O2) | Use `Accept-Language` / `LocaleContextHolder` when needed |
+| Messenger bot, photo triage (Gemini vision), voice in/out | Product study §5 |
+| Multi-turn AI chat; thumbs up/down on AI answers | |
+| SEO: sitemap, OpenGraph, RSS; weekly e-mail digest | |

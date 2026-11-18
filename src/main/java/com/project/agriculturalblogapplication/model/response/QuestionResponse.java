@@ -1,11 +1,13 @@
 package com.project.agriculturalblogapplication.model.response;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
+import com.project.agriculturalblogapplication.enums.Badge;
+import com.project.agriculturalblogapplication.model.AgriInfo;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.util.List;
 
 @Getter
 @Setter
@@ -16,9 +18,37 @@ public class QuestionResponse {
     private String title;
     private String content;
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm:ss")
-    private LocalDateTime createdAt;
+    /** The author's display name (never their e-mail). */
+    private String authorName;
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm:ss")
-    private LocalDateTime updatedAt;
+    /** The author's total reputation. */
+    private long authorReputation;
+
+    /** The author's badges in this question's topic. */
+    private List<Badge> authorBadges;
+
+    private Instant createdAt;
+
+    private Instant updatedAt;
+
+    private AgriInfo agri;
+
+    /** Null only on questions asked before topics existed. */
+    private CategoryResponse category;
+
+    private List<String> tags;
+
+    private List<String> imageUrls;
+
+    /** Direct answers, not counting replies. */
+    private long answerCount;
+
+    /** Upvotes minus downvotes. */
+    private long score;
+
+    /** Once per signed-in user, or per address for visitors, per day. */
+    private long viewCount;
+
+    /** The answer the asker accepted, or null. */
+    private Long acceptedAnswerId;
 }

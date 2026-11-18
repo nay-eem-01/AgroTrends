@@ -1,5 +1,6 @@
 package com.project.agriculturalblogapplication.service;
 
+import com.project.agriculturalblogapplication.util.CommonUtils;
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.entities.Blog;
@@ -11,15 +12,27 @@ import com.project.agriculturalblogapplication.model.request.UpdateCommentReques
 import com.project.agriculturalblogapplication.model.response.CommentResponse;
 import com.project.agriculturalblogapplication.repositories.CommentRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
+import com.project.agriculturalblogapplication.enums.BlogStatus;
+import com.project.agriculturalblogapplication.enums.NotificationTarget;
+import com.project.agriculturalblogapplication.enums.NotificationType;
+import com.project.agriculturalblogapplication.notification.NotificationMessage;
+import com.project.agriculturalblogapplication.notification.NotificationPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
+// Comment's user, blog and parent are lazy: every method maps them inside a transaction (open-in-view is off).
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class CommentService {
+
+    private final ImageCleanup imageCleanup;
 
     private final BlogService blogService;
 
@@ -29,8 +42,10 @@ public class CommentService {
 
     private final CommentRepository commentRepository;
 
+    private final NotificationPublisher notificationPublisher;
+
     public CommentResponse create(CreateCommentRequest request, String lang) {
-        Blog blog = blogService.findByIdWithException(request.getBlogId());
+        Blog blog = blogService.findVisibleBlog(request.getBlogId(), lang);
         User user = userService.findByIdWithException(authorizationService.currentUserId(lang), lang);
 
         Comment comment = new Comment();
@@ -47,6 +62,7 @@ public class CommentService {
 
         authorizationService.assertOwnerOrAdmin(comment.getUser().getId(), lang);
 
+        imageCleanup.consider(comment.getCommentContent());
         comment.setCommentContent(request.getContent());
         comment = commentRepository.save(comment);
 
@@ -54,23 +70,52 @@ public class CommentService {
     }
 
     public void delete(Long commentId, String lang) {
-        Comment comment = findByIdWithException(commentId);
+        Comment comment = findIncludingHidden(commentId);
         authorizationService.assertOwnerOrAdmin(comment.getUser().getId(), lang);
+        imageCleanup.consider(comment.getCommentContent());
+        imageCleanup.commentReplies(comment.getId());
         commentRepository.delete(comment);
     }
 
-    public List<CommentResponse> getAllByBlogId(Long blogId) {
-        blogService.findByIdWithException(blogId);
+    /**
+     * Deletes after a moderator confirmed reports about it; the authorization is the moderation endpoint's.
+     * Package-private: only ModerationService may skip the owner-or-admin check.
+     */
+    void removeForModeration(Long commentId) {
+        Comment comment = findIncludingHidden(commentId);
+        imageCleanup.consider(comment.getCommentContent());
+        imageCleanup.commentReplies(comment.getId());
+        commentRepository.delete(comment);
+    }
 
-        List<Comment> comments = commentRepository.findByBlogIdAndParentCommentIsNull(blogId);
+    // Hidden comments can still be deleted, by their author or a moderator confirming the reports.
+    private Comment findIncludingHidden(Long commentId) {
+        return commentRepository.findById(commentId).orElseThrow(() ->
+                new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_COMMENT_NOT_FOUND));
+    }
+
+    public List<CommentResponse> getAllByBlogId(Long blogId, String lang) {
+        blogService.findVisibleBlog(blogId, lang);
+
+        List<Comment> comments = commentRepository.findByBlogIdAndParentCommentIsNullAndHiddenFalse(blogId);
+        if (comments.isEmpty()) {
+            return List.of();
+        }
+        // One grouped count for the whole list; replies themselves have none (threads are two levels).
+        Map<Long, Long> replyCounts = commentRepository.replyCounts(comments.stream().map(Comment::getId).toList()).stream()
+                .collect(Collectors.toMap(row -> (Long) row[0], row -> (Long) row[1]));
 
         return comments.stream()
-                .map(this::mapToCommentResponse)
+                .map(comment -> {
+                    CommentResponse response = mapToCommentResponse(comment);
+                    response.setReplyCount(replyCounts.getOrDefault(comment.getId(), 0L));
+                    return response;
+                })
                 .toList();
     }
 
     public CommentResponse reply(ReplyCommentRequest request, String lang) {
-        Blog blog = blogService.findByIdWithException(request.getBlogId());
+        Blog blog = blogService.findVisibleBlog(request.getBlogId(), lang);
 
         User user = userService.findByIdWithException(authorizationService.currentUserId(lang), lang);
 
@@ -83,24 +128,33 @@ public class CommentService {
         Comment reply = new Comment();
         reply.setUser(user);
         reply.setBlog(blog);
-        reply.setParentComment(parentComment);
+        // Two levels, like Facebook: a reply to a reply joins the same thread; its author is still the one notified.
+        reply.setParentComment(parentComment.getParentComment() == null ? parentComment : parentComment.getParentComment());
         reply.setCommentContent(request.getContent());
 
         reply =  commentRepository.save(reply);
+        notificationPublisher.publish(new NotificationMessage(parentComment.getUser().getId(), user.getId(),
+                NotificationType.COMMENT_REPLY, NotificationTarget.BLOG, blog.getId()));
 
         return mapToCommentResponse(reply);
     }
 
     public List<CommentResponse> viewReplies(Long parentCommentId) {
-        Comment parentComment = findByIdWithException(parentCommentId);
-
-        return parentComment.getReplies().stream()
+        findByIdWithException(parentCommentId); // 404 unless the parent comment and its post are visible
+        return commentRepository.findByParentCommentIdAndHiddenFalseOrderByIdAsc(parentCommentId).stream()
                 .map(this::mapToCommentResponse)
                 .toList();
     }
 
+    /**
+     * A 404 unless the comment, its parent and its post are all visible (only published posts take comments from
+     * others), so nothing under review can be read, edited, replied to or reported.
+     */
     public Comment findByIdWithException(Long commentId) {
-        return commentRepository.findById(commentId).orElseThrow(() ->
+        return commentRepository.findById(commentId)
+                .filter(comment -> !comment.isHidden() && comment.getBlog().getStatus() == BlogStatus.PUBLISHED
+                        && (comment.getParentComment() == null || !comment.getParentComment().isHidden()))
+                .orElseThrow(() ->
                 new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_COMMENT_NOT_FOUND));
     }
 
@@ -117,6 +171,9 @@ public class CommentService {
         response.setBlogId(comment.getBlog().getId());
         response.setUserId(comment.getUser().getId());
         response.setContent(comment.getCommentContent());
+        response.setAuthorName(comment.getUser().getName());
+        response.setCreatedAt(CommonUtils.toInstant(comment.getCreationDate()));
+        response.setUpdatedAt(CommonUtils.toInstant(comment.getLastModifiedDate()));
 
         return response;
     }

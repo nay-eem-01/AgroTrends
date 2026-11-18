@@ -1,0 +1,253 @@
+package com.project.agriculturalblogapplication.service;
+
+import com.project.agriculturalblogapplication.entities.Answer;
+import com.project.agriculturalblogapplication.entities.Category;
+import com.project.agriculturalblogapplication.entities.Question;
+import com.project.agriculturalblogapplication.events.AnswerChanged;
+import com.project.agriculturalblogapplication.enums.NotificationTarget;
+import com.project.agriculturalblogapplication.enums.NotificationType;
+import com.project.agriculturalblogapplication.notification.NotificationMessage;
+import com.project.agriculturalblogapplication.notification.NotificationPublisher;
+import com.project.agriculturalblogapplication.entities.User;
+import com.project.agriculturalblogapplication.enums.Badge;
+import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
+import com.project.agriculturalblogapplication.model.AuthorStanding;
+import com.project.agriculturalblogapplication.model.response.AnswerResponse;
+import com.project.agriculturalblogapplication.model.response.UserAnswerResponse;
+import com.project.agriculturalblogapplication.repositories.AnswerRepository;
+import com.project.agriculturalblogapplication.repositories.QuestionAiAnswerRepository;
+import com.project.agriculturalblogapplication.security.service.AuthorizationService;
+import com.project.agriculturalblogapplication.model.request.ReplyToAnswerRequest;
+import org.junit.jupiter.api.BeforeEach;
+import org.mockito.ArgumentCaptor;
+import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.http.HttpStatus;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+class AnswerServiceTest {
+
+    private static final String LANG = "en";
+    private static final long ASKER = 7L;
+
+    private final AnswerRepository answerRepository = mock(AnswerRepository.class);
+    private final AuthorizationService authorization = mock(AuthorizationService.class);
+    private final ReputationService reputation = mock(ReputationService.class);
+    private final QuestionAiAnswerRepository aiAnswers = mock(QuestionAiAnswerRepository.class);
+    private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
+    private final NotificationPublisher notifications = mock(NotificationPublisher.class);
+    private final QuestionService questionService = mock(QuestionService.class);
+    private final UserService userService = mock(UserService.class);
+    private final AnswerService answerService = new AnswerService(mock(ImageCleanup.class), questionService, userService,
+            authorization, answerRepository, aiAnswers, reputation, events, notifications);
+
+    private Question question;
+
+    @BeforeEach
+    void setUp() {
+        question = new Question();
+        question.setId(1L);
+        question.setUser(user(ASKER));
+    }
+
+    @Test
+    void theAskerAcceptsAnAnswerAndCanSwitchToAnother() {
+        when(authorization.currentUserId(LANG)).thenReturn(ASKER);
+        Answer first = answer(3L, 0);
+        Answer second = answer(4L, 0);
+
+        assertTrue(answerService.accept(3L, LANG).isAccepted());
+        assertSame(first, question.getAcceptedAnswer());
+        answerService.accept(4L, LANG);
+        assertSame(second, question.getAcceptedAnswer());
+        answerService.accept(4L, LANG);
+
+        verify(reputation).accepted(first);
+        verify(reputation).unaccepted(first);
+        verify(reputation).accepted(second);
+        verify(reputation, never()).unaccepted(second);
+        // The switch re-checks both answers' place in the AI index.
+        verify(events, times(2)).publishEvent(new AnswerChanged(3L));
+        verify(events).publishEvent(new AnswerChanged(4L));
+        verify(notifications).publish(new NotificationMessage(first.getUser().getId(), ASKER,
+                NotificationType.ANSWER_ACCEPTED, NotificationTarget.QUESTION, 1L));
+    }
+
+    @Test
+    void onlyTheAskerMayAccept() {
+        when(authorization.currentUserId(LANG)).thenReturn(99L);
+        answer(3L, 0);
+
+        ApplicationException refused = assertThrows(ApplicationException.class, () -> answerService.accept(3L, LANG));
+
+        assertEquals(HttpStatus.FORBIDDEN, refused.getHttpStatus());
+        assertNull(question.getAcceptedAnswer());
+    }
+
+    @Test
+    void aReplyUnderAHiddenAnswerIsNotFound() {
+        Answer parent = answer(3L, 0);
+        parent.setHidden(true);
+        answer(4L, 0).setParentAnswer(parent);
+
+        assertThrows(ApplicationException.class, () -> answerService.findById(4L));
+    }
+
+    @Test
+    void aReplyToAReplyJoinsTheThreadUnderTheAnswer() {
+        when(authorization.currentUserId(LANG)).thenReturn(ASKER);
+        when(userService.findByIdWithException(ASKER, LANG)).thenReturn(user(ASKER));
+        when(questionService.findByIdWithException(1L)).thenReturn(question);
+        when(answerRepository.save(any(Answer.class))).thenAnswer(call -> call.getArgument(0));
+        Answer root = answer(3L, 0);
+        answer(4L, 0).setParentAnswer(root);
+        ReplyToAnswerRequest request = new ReplyToAnswerRequest();
+        request.setQuestionId(1L);
+        request.setParentAnswerId(4L);
+        request.setContent("@Karim thanks");
+
+        answerService.replyToAnswer(request, LANG);
+
+        ArgumentCaptor<Answer> saved = ArgumentCaptor.forClass(Answer.class);
+        verify(answerRepository).save(saved.capture());
+        assertEquals(root, saved.getValue().getParentAnswer());
+        // The author of the reply that was answered hears about it, linked to the question.
+        verify(notifications).publish(new NotificationMessage(24L, ASKER, NotificationType.ANSWER_REPLY,
+                NotificationTarget.QUESTION, 1L));
+    }
+
+    @Test
+    void theAnswerListCarriesEachThreadsReplyCount() {
+        Answer first = answer(3L, 5);
+        Answer second = answer(4L, 1);
+        when(answerRepository.findByQuestionIdAndParentAnswerIsNullAndHiddenFalse(1L)).thenReturn(List.of(first, second));
+        when(answerRepository.replyCounts(List.of(3L, 4L))).thenReturn(List.<Object[]>of(new Object[]{4L, 2L}));
+
+        List<AnswerResponse> list = answerService.getAllByQuestionId(1L);
+
+        assertEquals(List.of(0L, 2L), list.stream().map(AnswerResponse::getReplyCount).toList());
+    }
+
+    @Test
+    void aReplyCannotBeAccepted() {
+        when(authorization.currentUserId(LANG)).thenReturn(ASKER);
+        answer(3L, 0).setParentAnswer(new Answer());
+
+        assertEquals(HttpStatus.BAD_REQUEST,
+                assertThrows(ApplicationException.class, () -> answerService.accept(3L, LANG)).getHttpStatus());
+    }
+
+    @Test
+    void unacceptingAnotherAnswerKeepsTheAcceptedOne() {
+        when(authorization.currentUserId(LANG)).thenReturn(ASKER);
+        Answer accepted = answer(3L, 0);
+        answer(4L, 0);
+        question.setAcceptedAnswer(accepted);
+
+        assertFalse(answerService.unaccept(4L, LANG).isAccepted());
+        assertSame(accepted, question.getAcceptedAnswer());
+        answerService.unaccept(3L, LANG);
+        assertNull(question.getAcceptedAnswer());
+        verify(reputation).unaccepted(accepted);
+    }
+
+    @Test
+    void deletingTheAcceptedAnswerClearsTheAccept() {
+        // Regression: the question still pointed at the deleted answer and the flush failed with a 500.
+        when(authorization.currentUserId(LANG)).thenReturn(ASKER);
+        Answer accepted = answer(3L, 0);
+        question.setAcceptedAnswer(accepted);
+
+        answerService.delete(3L, LANG);
+
+        assertNull(question.getAcceptedAnswer());
+        verify(answerRepository).delete(accepted);
+        // Had it corrected an AI answer, that answer goes back to the review queue.
+        verify(aiAnswers).reopenCorrectedBy(accepted.getId());
+        verify(reputation, never()).unaccepted(any());
+    }
+
+    @Test
+    void theAcceptedAnswerComesFirstThenHighestScoreThenOldest() {
+        Answer oldLow = answer(1L, 1);
+        Answer high = answer(2L, 9);
+        Answer accepted = answer(3L, -2);
+        Answer newLow = answer(4L, 1);
+        question.setAcceptedAnswer(accepted);
+        when(answerRepository.findByQuestionIdAndParentAnswerIsNullAndHiddenFalse(1L)).thenReturn(List.of(newLow, oldLow, high, accepted));
+
+        Category rice = new Category();
+        rice.setId(5L);
+        question.setCategory(rice);
+        when(reputation.standings(List.of(23L, 22L, 21L, 24L))).thenReturn(Map.of(22L, new AuthorStanding(400, Set.of(5L), Set.of())));
+
+        List<AnswerResponse> answers = answerService.getAllByQuestionId(1L);
+
+        assertEquals(List.of(3L, 2L, 1L, 4L), answers.stream().map(AnswerResponse::getAnswerId).toList());
+        assertEquals(List.of(0L, 400L, 0L, 0L), answers.stream().map(AnswerResponse::getAuthorReputation).toList());
+        assertEquals(List.of(Badge.TOP_CONTRIBUTOR), answers.get(1).getAuthorBadges());
+        assertEquals(List.of(), answers.get(0).getAuthorBadges());
+    }
+
+    @Test
+    void repliesAreReadByQueryNotThroughACollectionOnTheParent() {
+        answer(3L, 0);
+        Answer reply = answer(5L, 0);
+        when(answerRepository.findByParentAnswerIdAndHiddenFalseOrderByIdAsc(3L)).thenReturn(List.of(reply));
+
+        List<AnswerResponse> replies = answerService.viewReplies(3L);
+
+        assertEquals(List.of(5L), replies.stream().map(AnswerResponse::getAnswerId).toList());
+    }
+
+    @Test
+    void aUsersProfileListsTheirAnswersWithTheQuestionAndWhichWasAccepted() {
+        question.setTitle("Why are my rice leaves yellow?");
+        Answer accepted = answer(3L, 5);
+        Answer other = answer(4L, 1);
+        question.setAcceptedAnswer(accepted);
+        when(answerRepository.findAllByUserIdAndParentAnswerIsNullAndHiddenFalseAndQuestionHiddenFalse(any(), any()))
+                .thenReturn(new PageImpl<>(List.of(accepted, other)));
+
+        List<UserAnswerResponse> answers = answerService.getAllByUser(23L, 0, 10, LANG).getContent();
+
+        assertEquals("Why are my rice leaves yellow?", answers.get(0).questionTitle());
+        assertEquals(5L, answers.get(0).score());
+        assertTrue(answers.get(0).accepted());
+        assertFalse(answers.get(1).accepted());
+    }
+
+    private Answer answer(long id, long score) {
+        Answer answer = new Answer();
+        answer.setId(id);
+        answer.setScore(score);
+        answer.setQuestion(question);
+        answer.setUser(user(20L + id));
+        when(answerRepository.findById(id)).thenReturn(Optional.of(answer));
+        return answer;
+    }
+
+    private static User user(long id) {
+        User user = new User();
+        user.setId(id);
+        return user;
+    }
+}

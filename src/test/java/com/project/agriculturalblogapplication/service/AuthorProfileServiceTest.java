@@ -1,0 +1,254 @@
+package com.project.agriculturalblogapplication.service;
+
+import com.project.agriculturalblogapplication.entities.Author;
+import com.project.agriculturalblogapplication.entities.Category;
+import com.project.agriculturalblogapplication.entities.ExpertApplication;
+import com.project.agriculturalblogapplication.entities.ExpertBadge;
+import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
+import com.project.agriculturalblogapplication.model.request.UpdateUserProfileRequest;
+import com.project.agriculturalblogapplication.model.response.UserProfileResponse;
+import com.project.agriculturalblogapplication.model.response.ExpertSummaryResponse;
+import org.springframework.data.domain.PageImpl;
+import com.project.agriculturalblogapplication.entities.User;
+import com.project.agriculturalblogapplication.model.request.UpdateAuthorProfileRequest;
+import com.project.agriculturalblogapplication.model.response.AuthorProfileResponse;
+import com.project.agriculturalblogapplication.security.service.AuthorizationService;
+import org.junit.jupiter.api.BeforeEach;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import org.junit.jupiter.api.Test;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+class AuthorProfileServiceTest {
+
+    private final ImageCleanup cleanup = mock(ImageCleanup.class);
+    private final AuthorService authorService = mock(AuthorService.class);
+    private final BlogService blogService = mock(BlogService.class);
+    private final FollowService followService = mock(FollowService.class);
+    private final AuthorizationService authorization = mock(AuthorizationService.class);
+    private final AnswerService answerService = mock(AnswerService.class);
+    private final ExpertService expertService = mock(ExpertService.class);
+    private final QuestionService questionService = mock(QuestionService.class);
+    private final UserService userService = mock(UserService.class);
+    private final ImageService imageService = mock(ImageService.class);
+    private final AuthorProfileService service = new AuthorProfileService(cleanup, authorService, blogService, followService,
+            authorization, answerService, expertService, questionService, userService, imageService);
+
+    @Test
+    void removingACoverSchedulesTheOldFileForCleanup() {
+        User me = author().getUser();
+        me.setCoverUrl("https://images.example.com/abc.png");
+        when(userService.findByIdWithException(7L, "en")).thenReturn(me);
+        when(userService.saveUser(me)).thenReturn(me);
+        UpdateUserProfileRequest request = new UpdateUserProfileRequest();
+        request.setCoverUrl("");
+        service.updateSummary(request, "en");
+        assertNull(me.getCoverUrl());
+        verify(cleanup).consider("https://images.example.com/abc.png");
+    }
+
+    @BeforeEach
+    void setUp() {
+        when(authorization.currentUserId("en")).thenReturn(7L);
+        when(authorization.signedInUserId()).thenReturn(Optional.of(7L));
+    }
+
+    @Test
+    void anonymousVisitorsSeeTheProfileButFollowNobody() {
+        when(authorization.signedInUserId()).thenReturn(Optional.empty());
+        when(authorService.findByIdWithException(20L)).thenReturn(author());
+
+        AuthorProfileResponse profile = service.get(20L, "en");
+
+        assertEquals("Rahim", profile.name());
+        assertFalse(profile.followedByMe());
+        verify(followService, never()).isFollowingAuthor(any(), any());
+        verify(authorization, never()).currentUserId(any());
+    }
+
+    @Test
+    void profileShowsCountsAndWhetherYouFollowWithoutContactDetails() {
+        when(authorService.findByIdWithException(20L)).thenReturn(author());
+        when(blogService.countPublishedByAuthor(20L)).thenReturn(12L);
+        when(followService.followerCount(20L)).thenReturn(340L);
+        when(followService.isFollowingAuthor(7L, 20L)).thenReturn(true);
+
+        AuthorProfileResponse profile = service.get(20L, "en");
+
+        assertEquals("Rahim", profile.name());
+        assertEquals(List.of("rice", "soil health"), profile.specialities());
+        assertEquals(12L, profile.publishedPostCount());
+        assertEquals(340L, profile.followerCount());
+        assertTrue(profile.followedByMe());
+        assertTrue(Arrays.stream(AuthorProfileResponse.class.getRecordComponents())
+                .noneMatch(c -> c.getName().matches("(?i).*(email|mobile|role|password).*")));
+    }
+
+    @Test
+    void theProfileIsAPortfolioOfExpertTopicsAnswersAndLinks() {
+        Author author = author();
+        author.setLinks(List.of("https://www.linkedin.com/in/rahim"));
+        when(authorService.findByIdWithException(20L)).thenReturn(author);
+        Category rice = new Category();
+        rice.setId(3L);
+        rice.setCategoryName("Rice");
+        ExpertBadge badge = new ExpertBadge();
+        badge.setTopic(rice);
+        badge.setFieldTitle("Agronomist, BRRI");
+        when(expertService.activeBadges(10L)).thenReturn(List.of(badge));
+        when(answerService.countPublicByUser(10L)).thenReturn(40L);
+        when(answerService.countAcceptedByUser(10L)).thenReturn(9L);
+
+        AuthorProfileResponse profile = service.get(20L, "en");
+
+        assertEquals(10L, profile.userId());
+        assertEquals(List.of(new AuthorProfileResponse.ExpertTopic(3L, "Rice", "Agronomist, BRRI")), profile.expertTopics());
+        assertEquals(40L, profile.answerCount());
+        assertEquals(9L, profile.acceptedAnswerCount());
+        assertEquals(List.of("https://www.linkedin.com/in/rahim"), profile.links());
+    }
+
+    @Test
+    void profileLinksMustBeHttpAndAtMostFive() {
+        Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
+        UpdateAuthorProfileRequest request = new UpdateAuthorProfileRequest();
+        request.setDesignation("Agronomist");
+        request.setSpecialities(List.of("rice"));
+
+        request.setLinks(List.of("https://rahim.example.com"));
+        assertTrue(validator.validate(request).isEmpty());
+        // A javascript: link would run in the visitor's browser from the profile page.
+        request.setLinks(List.of("javascript:alert(1)"));
+        assertFalse(validator.validate(request).isEmpty());
+        request.setLinks(List.of("https://a.com", "https://b.com", "https://c.com", "https://d.com", "https://e.com", "https://f.com"));
+        assertFalse(validator.validate(request).isEmpty());
+    }
+
+    @Test
+    void theUserSummaryLeadsToTheAuthorPageWithCountsAndCheckedCredentials() {
+        User user = author().getUser();
+        when(userService.findByIdWithException(10L, "en")).thenReturn(user);
+        when(authorService.findAuthorIdByUserId(10L)).thenReturn(Optional.of(20L));
+        when(blogService.countPublishedByAuthor(20L)).thenReturn(12L);
+        when(answerService.countPublicByUser(10L)).thenReturn(184L);
+        when(answerService.countAcceptedByUser(10L)).thenReturn(92L);
+        when(questionService.countPublicByUser(10L)).thenReturn(5L);
+        ExpertApplication application = new ExpertApplication();
+        application.setFieldTitle("PhD, Aquaculture");
+        application.setInstitution("Bangladesh Agricultural University");
+        when(expertService.checkedCredentials(10L)).thenReturn(List.of(application));
+
+        UserProfileResponse summary = service.summary(10L, "en");
+
+        assertEquals(20L, summary.authorId());
+        assertEquals(List.of(184L, 92L, 5L, 12L),
+                List.of(summary.answerCount(), summary.acceptedAnswerCount(), summary.questionCount(), summary.storyCount()));
+        assertEquals(List.of(new UserProfileResponse.Credential("PhD, Aquaculture", "Bangladesh Agricultural University")),
+                summary.credentials());
+        assertTrue(Arrays.stream(UserProfileResponse.class.getRecordComponents())
+                .noneMatch(c -> c.getName().matches("(?i).*(email|mobile|role|password).*")));
+    }
+
+    @Test
+    void expertsToFollowCarryTheirFieldTopicsAndWhetherYouFollow() {
+        Author author = author();
+        author.setId(10L);
+        author.setProfileImageUrl("https://cdn.example/rahim.png");
+        when(expertService.expertIds(null, 0, 5)).thenReturn(new PageImpl<>(List.of(10L)));
+        when(authorService.profileOf(10L)).thenReturn(author);
+        Category rice = new Category();
+        rice.setId(3L);
+        rice.setCategoryName("Rice");
+        ExpertBadge badge = new ExpertBadge();
+        badge.setTopic(rice);
+        badge.setFieldTitle("Agronomist");
+        when(expertService.activeBadges(10L)).thenReturn(List.of(badge));
+        ExpertApplication application = new ExpertApplication();
+        application.setInstitution("BRRI");
+        when(expertService.checkedCredentials(10L)).thenReturn(List.of(application));
+        when(followService.isFollowingAuthor(7L, 10L)).thenReturn(true);
+
+        ExpertSummaryResponse expert = service.experts(null, 0, 5).getContent().get(0);
+
+        assertEquals(new ExpertSummaryResponse(10L, "Rahim", 10L, "https://cdn.example/rahim.png", "Agronomist", "BRRI",
+                List.of(new ExpertSummaryResponse.Topic(3L, "Rice")), true), expert);
+    }
+
+    @Test
+    void aUserWithoutAnAuthorProfileHasNoAuthorIdAndNoStories() {
+        when(userService.findByIdWithException(10L, "en")).thenReturn(author().getUser());
+        when(authorService.findAuthorIdByUserId(10L)).thenReturn(Optional.empty());
+
+        UserProfileResponse summary = service.summary(10L, "en");
+
+        assertNull(summary.authorId());
+        assertEquals(0L, summary.storyCount());
+        verify(blogService, never()).countPublishedByAuthor(any());
+    }
+
+    @Test
+    void aCoverMustBeAnImageUploadedHere() {
+        User me = author().getUser();
+        when(userService.findByIdWithException(7L, "en")).thenReturn(me);
+        when(imageService.requireUploaded(List.of("https://evil.example/x.png"), "en"))
+                .thenThrow(new ApplicationException(org.springframework.http.HttpStatus.BAD_REQUEST, "bad"));
+        UpdateUserProfileRequest request = new UpdateUserProfileRequest();
+        request.setLocation("Mymensingh");
+        request.setCoverUrl("https://evil.example/x.png");
+
+        assertThrows(ApplicationException.class, () -> service.updateSummary(request, "en"));
+        verify(userService, never()).saveUser(any());
+    }
+
+    @Test
+    void myProfileIsTheCallersOwnForPrefillingTheEditor() {
+        Author mine = author();
+        when(authorService.profileOf(7L)).thenReturn(mine);
+
+        assertEquals("Rahim", service.getMine("en").name());
+        verify(authorService, never()).findByIdWithException(any());
+    }
+
+    @Test
+    void editingSavesTheBio() {
+        Author mine = author();
+        when(authorService.profileOf(7L)).thenReturn(mine);
+        when(authorService.save(mine)).thenReturn(mine);
+        UpdateAuthorProfileRequest request = new UpdateAuthorProfileRequest();
+        request.setDesignation("Agronomist");
+        request.setSpecialities(List.of("rice"));
+        request.setBio("Twenty years in paddy research.");
+        request.setLinks(List.of("https://rahim.example.com"));
+
+        AuthorProfileResponse profile = service.updateMine(request, "en");
+
+        assertEquals("Twenty years in paddy research.", profile.bio());
+        assertEquals(List.of("https://rahim.example.com"), profile.links());
+    }
+
+    private static Author author() {
+        User user = new User();
+        user.setId(10L);
+        user.setName("Rahim");
+        user.setEmail("rahim@example.com");
+        Author author = new Author();
+        author.setId(20L);
+        author.setUser(user);
+        author.setSpecialities(List.of("rice", "soil health"));
+        return author;
+    }
+}

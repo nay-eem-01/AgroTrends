@@ -4,169 +4,52 @@ public final class ErrorCode {
 
     private ErrorCode() {}
 
-    public static final String ERROR_ERROR_CODE_NOT_FOUND = "ERROR_ERROR_CODE_NOT_FOUND";
-    public static final String ERROR_ERROR_CODE_ALREADY_EXISTS = "ERROR_ERROR_CODE_ALREADY_EXISTS";
-
-    public static final String ERROR_AUTHENTICATION_FAILED = "Authentication failed.";
     public static final String ERROR_UNAUTHORIZED_ACCESS = "Unauthorized access.";
     public static final String ERROR_USER_NOT_FOUND = "User not found.";
-    public static final String ERROR_USER_IS_BANNED_BY_THE_SYSTEM = "User banned by the system.";
-    public static final String ERROR_USER_IS_NOT_VERIFIED = "User is not verified yet.";
     public static final String ERROR_INVALID_EMAIL = "Invalid email.";
     public static final String ERROR_PASSWORD_IS_REQUIRED = "Password is required.";
     public static final String ERROR_INVALID_TOKEN = "Token is invalid!";
     public static final String ERROR_INCORRECT_PASSWORD = "Incorrect password.";
-    public static final String ERROR_INCORRECT_VERIFICATION_CODE = "Incorrect verification code.";
-    public static final String ERROR_USER_STATUS_IS_REQUIRED = "User status is required.";
     public static final String ERROR_MOBILE_NUMBER_ALREADY_EXISTS = "User already exists with this mobile number. Please try with different mobile number.";
 
-    public static final String ERROR_SECRET_IS_REQUIRED = "Secret is required.";
-    public static final String ERROR_CODE_IS_REQUIRED = "Code is required.";
-    public static final String ERROR_SECRET_NOT_FOUND = "Secret not found.";
-    public static final String ERROR_SECURITY_QUESTION_NOT_FOUND = "Security question not found.";
-    public static final String ERROR_SECURITY_QUESTION_ALREADY_EXISTS = "Security question already exists.";
-    public static final String ERROR_SECURITY_CODE_NOT_FOUND = "Security code not found.";
-    public static final String ERROR_SECURITY_CODE_ALREADY_EXISTS = "Security code already exists.";
-    public static final String ERROR_RECOVERY_METHOD_IS_REQUIRED = "Recovery method is required.";
     public static final String ERROR_QUESTION_IS_REQUIRED = "Question is required.";
-    public static final String ERROR_ANSWER_IS_REQUIRED = "Answer is required.";
-    public static final String ERROR_SECURITY_CODE_IS_REQUIRED = "Security code is required.";
     public static final String ERROR_TOKEN_IS_REQUIRED = "Token is required.";
 
-    public static final String ERROR_SIGN_IN_ATTEMPT_NOT_FOUND = "Sign-in attempt not found.";
-
-    public static final String ERROR_USER_DEVICE_NOT_FOUND = "User device not found.";
-    public static final String ERROR_THERE_IS_NO_USER_DEVICES_TO_EXPORT = "There is no user devices to export.";
-
-    public static final String ERROR_NOTIFICATION_NOT_FOUND = "Notification not found.";
-
-    public static final String ERROR_EMAIL_TEMPLATE_NOT_FOUND = "Email template not found.";
-    public static final String ERROR_EMAIL_TEMPLATE_ALREADY_EXISTS = "Email template already exists.";
-
-    public static final String ERROR_ACCOUNT_RECOVERY_REQUEST_ID_IS_REQUIRED = "Account recovery request ID is required.";
-    public static final String ERROR_ACCOUNT_RECOVERY_REQUEST_STATUS_IS_REQUIRED = "Account recovery request status is required.";
-    public static final String ERROR_NO_USER_FOUND = "Sorry! No user found with the given email.";
-    public static final String ERROR_ACCOUNT_RECOVERY_REQUEST_NOT_FOUND = "Account recovery request not found.";
-    public static final String ERROR_ACCOUNT_RECOVERY_REQUEST_ALREADY_EXISTS = "Your account recovery request is already in progress. Please wait for the response.";
     public static final String ERROR_FIRST_NAME_IS_REQUIRED = "First name is required";
-    public static final String ERROR_LAST_NAME_IS_REQUIRED = "Last name is required.";
-    public static final String ERROR_DATE_OF_BIRTH_IS_REQUIRED = "Date of birth is required.";
-    public static final String ERROR_PLACE_OF_BIRTH_IS_REQUIRED = "Place of birth is required.";
-    public static final String ERROR_OCCUPATION_IS_REQUIRED = "Occupation is required.";
-    public static final String ERROR_SELF_PEP_DECLARATION_IS_REQUIRED = "Self pep declaration is required.";
-    public static final String ERROR_EMAIL_ALREADY_REGISTERED = "Email already registered. Please try with another email.";
 
     public static final String ERROR_ROLE_NOT_FOUND = "Role not found.";
     public static final String ERROR_ROLE_ID_IS_REQUIRED = "Role ID is required.";
-    public static final String ERROR_INVALID_ROLE_TYPE = "Invalid role type.";
     public static final String ERROR_ROLE_NAME_IS_REQUIRED = "Role name is required.";
     public static final String ERROR_ROLE_TYPE_IS_REQUIRED = "Role type is required.";
     public static final String ERROR_ROLE_ALREADY_EXISTS = "Role already exists.";
     public static final String ERROR_PLEASE_SELECT_PRIVILEGES = "Please select privileges.";
     public static final String ERROR_USER_ALREADY_ASSIGNED_WITH_ROLE = "User already assigned with this role. Please delete those user to delete this role.";
 
-    public static final String ERROR_SOURCE_OF_FUNDS_IS_REQUIRED = "Source of funds is required.";
-    public static final String ERROR_PURPOSE_OF_ACCOUNT_IS_REQUIRED = "Purpose of account is required.";
-    public static final String ERROR_YEARLY_EXPECTED_OUTGOING_TRANSACTION_VOLUME_IS_REQUIRED = "Yearly expected outgoing transaction volume is required.";
-    public static final String ERROR_YEARLY_EXPECTED_INCOMING_TRANSACTION_VOLUME_IS_REQUIRED = "Yearly expected incoming transaction volume is required.";
-
-    public static final String ERROR_ADDRESS_LINE_1_IS_REQUIRED = "Address-line 1 is required.";
-    public static final String ERROR_ADDRESS_LINE_1_CAN_CONTAIN_AT_MOST_45_CHARACTERS = "Address-line 1 can contain at most 45 characters.";
-    public static final String ERROR_ADDRESS_LINE_2_IS_REQUIRED = "Address-line 2 is required.";
-    public static final String ERROR_ADDRESS_LINE_2_CAN_CONTAIN_AT_MOST_45_CHARACTERS = "Address-line 2 can contain at most 45 characters.";
-    public static final String ERROR_CITY_IS_REQUIRED = "City is required.";
-    public static final String ERROR_STATE_IS_REQUIRED = "State is required.";
-    public static final String ERROR_CITY_CAN_CONTAIN_AT_MOST_40_CHARACTERS = "City can contain at most 40 characters.";
-    public static final String ERROR_POSTAL_CODE_IS_REQUIRED = "Postal code is required.";
-    public static final String ERROR_POSTAL_CODE_CAN_CONTAIN_AT_MOST_20_CHARACTERS = "Postal code can contain at most 20 characters.";
-
-    public static final String ERROR_COUNTRY_IS_REQUIRED = "Country is required.";
     public static final String ERROR_COUNTRY_CODE_IS_REQUIRED = "Country code is required.";
-    public static final String ERROR_COUNTRY_CODE_MUST_BE_IN_ISO2_FORMAT = "Country code must be in ISO-2 format. For example BE for Belgium.";
 
     public static final String ERROR_PASSWORD_SHOULD_NOT_CONTAIN_WHITE_SPACE = "Password should not contain white spaces.";
     public static final String ERROR_PASSWORD_MUST_HAVE_MINIMUM_OF_8_CHARACTERS_AND_MAXIMUM_OF_16_CHARACTERS = "Password must have minimum of 8 characters and maximum of 16 characters long.";
     public static final String ERROR_PASSWORD_MUST_HAVE_A_DIGIT_A_SPECIAL_CHARACTER_AND_AN_ALPHABET = "Password must have a digit, a special character and a capital letter and a small letter.";
 
-    public static final String ERROR_GENDER_IS_REQUIRED = "Gender is required";
-
     public static final String ERROR_DESIGNATION_IS_REQUIRED = "Designation is required";
     public static final String ERROR_SPECIALITY_IS_REQUIRED = "Doctor's speciality is required";
-    public static final String ERROR_ONMS_REGISTRATION_NUMBER_IS_REQUIRED = "ONMS registration number is required";
 
-    public static final String ERROR_THERE_IS_NO_USERS_TO_EXPORT = "There is no users to export.";
-
-    public static final String ERROR_OTP_IS_REQUIRED = "OTP is required.";
     public static final String ERROR_OTP_TOKEN_IS_REQUIRED = "OTP token is required.";
-    public static final String ERROR_OTP_NOT_FOUND = "OTP not found.";
-    public static final String ERROR_INVALID_OTP_CHANNEL = "Invalid OTP channel.";
     public static final String ERROR_MOBILE_NUMBER_IS_REQUIRED = "Mobile number is required.";
-    public static final String ERROR_CONTACT_EMAIL_IS_REQUIRED = "Contact email is required.";
-    public static final String ERROR_MESSAGE_IS_REQUIRED = "Message is required.";
     public static final String ERROR_NAME_IS_REQUIRED = "Name is required.";
-    public static final String ERROR_ACCOUNT_CATEGORY_IS_REQUIRED = "Account category is required.";
     public static final String ERROR_EMAIL_IS_REQUIRED = "Email is required.";
-    public static final String ERROR_RECIPIENT_EMAIL_IS_REQUIRED = "Recipient email is required..";
-    public static final String ERROR_OTP_IS_ALREADY_USED = "OTP is already used.";
-    public static final String ERROR_OTP_IS_EXPIRED = "OTP is expired.";
-    public static final String ERROR_INCORRECT_OTP = "Incorrect OTP.";
-    public static final String ERROR_MAXIMUM_OTP_ATTEMPTS_EXCEED = "Maximum OTP attempts exceed.";
-    public static final String ERROR_MOBILE_NUMBER_DOES_NOT_EXIST = "Mobile number does not exist.";
-    public static final String ERROR_EMAIL_DOES_NOT_EXIST = "Email does not exist.";
-    public static final String ERROR_FAILED_TO_SEND_MOBILE_NUMBER_VERIFICATION_CODE = "Failed to send mobile number verification code.";
 
     public static final String ERROR_CURRENT_PASSWORD_IS_REQUIRED = "Current password is required.";
     public static final String ERROR_NEW_PASSWORD_IS_REQUIRED = "New password is required.";
     public static final String ERROR_OTP_CHANNEL_IS_REQUIRED = "OTP channel is required.";
-    public static final String ERROR_INCORRECT_CURRENT_PASSWORD = "Incorrect current password.";
-    public static final String ERROR_NEW_PASSWORD_AND_CURRENT_PASSWORD_CAN_NOT_BE_SAME = "New password and current password can not be same.";
 
-    public static final String ERROR_INVALID_API_KEY_OR_HMAC_KEY = "Invalid API key or HMAC key.";
-
-    public static final String ERROR_PAGE_NUMBER_IS_REQUIRED = "Page number is required.";
-    public static final String ERROR_PAGE_LIMIT_IS_REQUIRED = "Page limit is required.";
-    public static final String ERROR_OFFSET_IS_REQUIRED = "Offset is required.";
-    public static final String ERROR_VERIFICATION_CODE_IS_REQUIRED = "Verification code is required.";
-
-    public static final String ERROR_SESSION_TOKEN_IS_REQUIRED = "Session token is required.";
-    public static final String ERROR_INVALID_SESSION_TOKEN = "Session token is invalid.";
-    public static final String ERROR_USER_ID_IS_REQUIRED = "User ID is required.";
     public static final String ERROR_USER_IS_REQUIRED = "User is required.";
 
-    public static final String ERROR_PROFILE_CREATION_FAILED = "Profile creation failed.";
     public static final String ERROR_USER_ALREADY_EXISTS_WITH_EMAIL = "User already exists with email.";
-    public static final String ERROR_DOCTOR_ALREADY_EXIST = "Doctor already exists with ONMS Registration number.";
-    public static final String ERROR_DOCTOR_NOT_FOUND = "Doctor not found";
-    public static final String ERROR_PATIENT_NOT_FOUND = "Patient not found";
-    public static final String ERROR_PROFILE_NOT_FOUND = "Profile not found.";
-    public static final String ERROR_EMAIL_VERIFICATION_FAILED = "Email verification failed.";
-    public static final String ERROR_MOBILE_NUMBER_VERIFICATION_FAILED = "Mobile number verification failed.";
-    public static final String ERROR_MOBILE_NUMBER_ALREADY_VERIFIED = "Mobile number is already verified.";
-    public static final String ERROR_EXCEEDED_VERIFICATION_ATTEMPTS = "Maximum verification attempts exceeded.";
-    public static final String ERROR_COULD_NOT_RESEND_VERIFICATION_CODE = "Could not resend verification code.";
-    public static final String ERROR_EMAIL_IS_ALREADY_VERIFIED = "Email is already verified.";
-    public static final String ERROR_MOBILE_NUMBER_IS_ALREADY_VERIFIED = "Mobile number is already verified.";
-
-
-    public static final String ERROR_PAGE_ALREADY_EXISTS_WITH_TAG = "Page already exists with tag.";
-    public static final String ERROR_PAGE_NOT_FOUND = "Page not found.";
-    public static final String ERROR_PAGE_ALREADY_HAS_SOME_SECTIONS = "Page already has some sections.";
-    public static final String ERROR_SECTION_NOT_FOUND = "Section not found.";
-
-    public static final String ERROR_FILE_UPLOAD_FAILED = "File upload failed.";
-    public static final String ERROR_FILE_OBJECT_NOT_FOUND = "File object not found.";
-
-    public static final String ERROR_FAILED_TO_SEND_EMAIL = "Failed to send email.";
-
-    public static final String ERROR_RECAPTCHA_VALIDATION_FAILED = "Recaptcha validation failed.";
-
-
-    public static final String ERROR_INVALID_DATE_RANGE = "Invalid date range.";
 
     public static final String ERROR_TITLE_IS_REQUIRED = "Blog title is required.";
     public static final String ERROR_CONTENT_IS_REQUIRED = "Blog content is required.";
-    public static final String ERROR_CATEGORY_IS_REQUIRED = "Blog category is required.";
-    public static final String ERROR_AUTHOR_USER_ID_IS_REQUIRED = "Author user id is required.";
+    public static final String ERROR_CATEGORY_IS_REQUIRED = "Category is required.";
     public static final String ERROR_BLOG_ID_IS_REQUIRED = "Blog id is required.";
 
     public static final String ERROR_CATEGORY_NOT_FOUND = "Category not found";
@@ -178,13 +61,95 @@ public final class ErrorCode {
     public static final String ERROR_QUESTION_NOT_FOUND = "Question not found";
     public static final String ERROR_ANSWER_NOT_FOUND = "Answer not found";
     public static final String ERROR_ANSWER_QUESTION_MISMATCH  = "Answer And Question mismatch";
-    public static final String ERROR_COMMENT_AND_USER_MISMATCH  = "Comment and User mismatch";
 
-    public static final String ERROR_INVALID_CREDENTIALS = "Invalid email or password.";
+    public static final String ERROR_INVALID_CREDENTIALS = "Invalid e-mail, phone number or password.";
+    public static final String ERROR_EMAIL_OR_PHONE_IS_REQUIRED = "E-mail or phone number is required.";
+    public static final String ERROR_INVALID_MOBILE_NUMBER = "Invalid mobile number.";
+    public static final String ERROR_CODE_IS_REQUIRED = "Code is required.";
+    public static final String ERROR_INVALID_OR_EXPIRED_CODE = "This code is wrong or has expired. Ask for a new one.";
     public static final String ERROR_TOO_MANY_ATTEMPTS = "Too many attempts. Please try again later.";
     public static final String ERROR_FORBIDDEN = "You do not have permission to perform this action.";
-    public static final String ERROR_INVALID_OR_EXPIRED_RESET_TOKEN = "Reset link is invalid or has expired.";
+    public static final String ERROR_INVALID_GOOGLE_TOKEN = "Google sign-in failed. Please try again.";
+    public static final String ERROR_GOOGLE_EMAIL_UNVERIFIED = "Your Google account's e-mail is not verified.";
+    public static final String ERROR_NO_PASSWORD_SET = "This account signs in with Google and has no password yet. Use 'Forgot password' to set one.";
+    public static final String ERROR_GOOGLE_SIGN_IN_DISABLED = "Google sign-in is not available.";
+    public static final String ERROR_TOO_MANY_REQUESTS_FROM_NETWORK = "Too many requests from your network today. Please try again later.";
+    public static final String ERROR_EMAIL_NOT_VERIFIED = "Confirm your e-mail address or phone number first: use the link or code we sent you, or ask for a new one.";
+    public static final String ERROR_INVALID_OR_EXPIRED_LINK = "This link is invalid or has expired.";
     public static final String ERROR_REFRESH_TOKEN_EXPIRED = "Refresh token has expired. Please sign in again.";
     public static final String ERROR_NEW_PASSWORD_SAME_AS_CURRENT = "New password must be different from the current password.";
-    public static final String ERROR_AUTHOR_PROFILE_REQUIRED = "Only registered authors can publish blogs.";
+    public static final String ERROR_QUESTION_TOO_LONG = "Question must be at most 1000 characters.";
+    public static final String ERROR_AI_DAILY_LIMIT_REACHED = "You have reached today's limit of AI questions. Please try again tomorrow.";
+    public static final String ERROR_AI_UNAVAILABLE = "The AI advisor is not available right now. Please try again later.";
+    public static final String ERROR_NOT_AN_EXPERT = "Only Verified Experts can review AI answers.";
+    public static final String ERROR_NOT_EXPERT_IN_TOPIC = "Only a Verified Expert in this question's topic can review its AI answer.";
+    public static final String ERROR_CANNOT_FLAG_AI_ANSWER = "Only Verified Experts and Top Contributors in this topic can flag an AI answer.";
+    public static final String ERROR_AI_ANSWER_ALREADY_REVIEWED = "This AI answer has already been reviewed.";
+    public static final String ERROR_AI_ANSWER_NOT_REVIEWED = "This AI answer has not been reviewed yet.";
+    public static final String ERROR_AI_ASK_ALREADY_PUBLISHED = "This AI answer has already been sent to the experts as a question.";
+    public static final String ERROR_CORRECTION_REQUIRED = "Write your corrected answer.";
+    public static final String ERROR_CORRECTION_TOO_LONG = "An answer can be at most 5000 characters.";
+    public static final String ERROR_QUESTION_TITLE_TOO_LONG = "A title can be at most 150 characters.";
+    public static final String ERROR_NOTIFICATION_NOT_FOUND = "Notification not found.";
+    public static final String ERROR_REPORT_TARGET_REQUIRED = "Say what you are reporting.";
+    public static final String ERROR_REPORT_REASON_REQUIRED = "Choose a reason for the report.";
+    public static final String ERROR_REPORT_DETAILS_TOO_LONG = "Report details can be at most 500 characters.";
+    public static final String ERROR_ALREADY_REPORTED = "You have already reported this.";
+    public static final String ERROR_CANNOT_REPORT_YOURSELF = "You cannot report yourself.";
+    public static final String ERROR_REPORT_NOT_FOUND = "Report not found.";
+    public static final String ERROR_REPORT_ALREADY_CLOSED = "This report has already been handled.";
+    public static final String ERROR_BAN_INSTEAD = "A user cannot be removed; ban the account instead.";
+    public static final String ERROR_ACCOUNT_BANNED = "This account has been suspended by the moderators.";
+    public static final String ERROR_CANNOT_BAN_ADMIN = "Admin accounts cannot be banned.";
+    public static final String ERROR_ONLY_ADMIN_ROLES = "Only roles of type ADMIN can be managed here.";
+    public static final String ERROR_PRIVILEGE_NOT_GRANTABLE = "Role-management privileges stay with the super-admin.";
+    public static final String ERROR_BAN_REASON_REQUIRED = "Give a reason for the ban (at most 500 characters).";
+    public static final String ERROR_INVALID_BLOG_STATUS = "A new post is either a DRAFT or PUBLISHED.";
+    public static final String ERROR_UNDER_REVIEW = "This post is hidden while the moderators review reports about it.";
+    public static final String ERROR_AI_ANSWER_NOT_FOUND = "This question has no AI answer.";
+    public static final String ERROR_INVALID_SORT_FIELD = "This list cannot be sorted by that field.";
+    public static final String ERROR_BLOG_ALREADY_PUBLISHED = "This blog is already published.";
+    public static final String ERROR_BLOG_NOT_PUBLISHED = "This blog is not published.";
+    public static final String ERROR_TOO_MANY_TAGS = "A post can have at most 5 tags.";
+    public static final String ERROR_TAG_TOO_LONG = "A tag can be at most 40 characters.";
+    public static final String ERROR_SEARCH_QUERY_REQUIRED = "Please enter something to search for.";
+    public static final String ERROR_IMAGE_REQUIRED = "Please choose an image to upload.";
+    public static final String ERROR_IMAGE_TOO_LARGE = "Images can be at most 5 MB.";
+    public static final String ERROR_IMAGE_TYPE_NOT_ALLOWED = "Only JPEG, PNG and WebP images are allowed.";
+    public static final String ERROR_IMAGE_NOT_UPLOADED = "Photos must be uploaded through /api/images first.";
+    public static final String ERROR_TOO_MANY_PHOTOS = "A question can have at most 4 photos.";
+    public static final String ERROR_CANNOT_CLAP_OWN_BLOG = "You cannot clap for your own blog.";
+    public static final String ERROR_INVALID_CLAP_COUNT = "Clap between 1 and 50 times.";
+    public static final String ERROR_CANNOT_VOTE_OWN_POST = "You cannot vote on your own post.";
+    public static final String ERROR_DOWNVOTE_NEEDS_REPUTATION = "You need 50 reputation points to downvote.";
+    public static final String ERROR_ONLY_ASKER_CAN_ACCEPT = "Only the person who asked can accept an answer.";
+    public static final String ERROR_CANNOT_ACCEPT_REPLY = "Only answers, not replies, can be accepted.";
+    public static final String ERROR_CANNOT_FOLLOW_YOURSELF = "You cannot follow yourself.";
+    public static final String ERROR_TAG_NOT_FOUND = "Tag not found.";
+    public static final String ERROR_BIO_TOO_LONG = "A bio can be at most 2000 characters.";
+    public static final String ERROR_SUBTITLE_TOO_LONG = "A subtitle can be at most 200 characters.";
+    public static final String ERROR_LOCATION_TOO_LONG = "A location can be at most 80 characters.";
+    public static final String ERROR_TOO_MANY_LINKS = "A profile can have at most 5 links.";
+    public static final String ERROR_INVALID_LINK = "A link must start with http:// or https://.";
+    public static final String ERROR_AGRI_FIELD_TOO_LONG = "Crop and region can be at most 60 characters.";
+    public static final String ERROR_EXPERT_TOPICS_REQUIRED = "Choose the topics (1 to 3) you are an expert in.";
+    public static final String ERROR_EXPERT_FIELD_TITLE_REQUIRED = "Tell us your field, e.g. Veterinarian or Agronomist.";
+    public static final String ERROR_EXPERT_INSTITUTION_REQUIRED = "Tell us where you studied or work.";
+    public static final String ERROR_EXPERT_CREDENTIAL_TYPE_REQUIRED = "Choose what kind of proof you are sending.";
+    public static final String ERROR_EXPERT_TEXT_TOO_LONG = "Field and institution can be at most 150 characters.";
+    public static final String ERROR_EXPERT_TOO_MANY_PROOFS = "Send at most 4 proof images and 3 links.";
+    public static final String ERROR_EXPERT_INVALID_LINK = "Links must start with http:// or https://.";
+    public static final String ERROR_EXPERT_PROOF_REQUIRED = "Add at least one proof image or link.";
+    public static final String ERROR_EXPERT_APPLICATION_PENDING = "You already have an application waiting for review.";
+    public static final String ERROR_EXPERT_APPLICATION_NOT_FOUND = "Expert application not found.";
+    public static final String ERROR_EXPERT_APPLICATION_DECIDED = "This application has already been decided.";
+    public static final String ERROR_EXPERT_TOPICS_NOT_REQUESTED = "Approve one or more of the topics the applicant asked for.";
+    public static final String ERROR_EXPERT_REJECT_REASON_REQUIRED = "Tell the applicant why the application is rejected.";
+    public static final String ERROR_EXPERT_NOTE_TOO_LONG = "A review note can be at most 500 characters.";
+    public static final String ERROR_EXPERT_BADGE_NOT_FOUND = "This user is not a Verified Expert in that topic.";
+    public static final String ERROR_INVALID_REQUEST = "Invalid request.";
+    // Formatted with the parameter name (and, for enums, the allowed values) by ExceptionHandlingController.
+    public static final String ERROR_INVALID_PARAMETER_VALUE = "Invalid value for '%s'.";
+    public static final String ERROR_INVALID_PARAMETER_CHOICE = "Invalid value for '%s'. Use one of: %s.";
+    public static final String ERROR_MISSING_PARAMETER = "Missing required parameter '%s'.";
 }

@@ -3,11 +3,14 @@ package com.project.agriculturalblogapplication.service;
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import com.project.agriculturalblogapplication.entities.Author;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
-import com.project.agriculturalblogapplication.model.request.AuthorCreateRequest;
 import com.project.agriculturalblogapplication.repositories.AuthorRepository;
+import com.project.agriculturalblogapplication.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -15,26 +18,35 @@ public class AuthorService {
 
     private final AuthorRepository authorRepository;
 
-    public void createAuthorUser(AuthorCreateRequest authorCreateRequest, String lang) {
-        Author author = new Author();
-        author.setDesignation(authorCreateRequest.getProfessionalInfoRequest().getDesignation());
-        author.setOccupation(authorCreateRequest.getProfessionalInfoRequest().getOccupation());
-        author.setWorkPlaceOrInstitution(authorCreateRequest.getProfessionalInfoRequest().getInstitution());
-        author.setSpecialities(authorCreateRequest.getProfessionalInfoRequest().getSpecialities());
-        author.setUser(authorCreateRequest.getUser());
-
-        authorRepository.save(author);
-    }
+    private final UserRepository userRepository;
 
     public Author findByUserIdWithException(Long userId){
         return authorRepository.findByUserId(userId).orElseThrow(()->
                 new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_AUTHOR_NOT_FOUND));
     }
 
-    /** Publishing requires an author profile; callers without one are refused (403) rather than told "not found". */
-    public Author findByUserIdOrForbidden(Long userId, String lang){
-        return authorRepository.findByUserId(userId).orElseThrow(()->
-                new ApplicationException(HttpStatus.FORBIDDEN, ErrorCode.ERROR_AUTHOR_PROFILE_REQUIRED, lang));
+    /**
+     * The user's profile, created the first time it is needed: every account may publish (PLAN decision 11).
+     * One transaction: the author shares the user's id (@MapsId), so the user must still be managed when it is saved.
+     */
+    @Transactional
+    public Author profileOf(Long userId) {
+        return authorRepository.findByUserId(userId).orElseGet(() -> {
+            Author author = new Author();
+            // A loaded user, not a lazy reference: responses read the name after the session has closed.
+            author.setUser(userRepository.findById(userId).orElseThrow(() ->
+                    new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_USER_NOT_FOUND)));
+            return authorRepository.save(author);
+        });
+    }
+
+    /** The author profile id of a user, empty for readers without one. */
+    public Optional<Long> findAuthorIdByUserId(Long userId) {
+        return authorRepository.findByUserId(userId).map(Author::getId);
+    }
+
+    public Author save(Author author) {
+        return authorRepository.save(author);
     }
 
     public Author findByIdWithException(Long userId){

@@ -3,21 +3,38 @@ package com.project.agriculturalblogapplication.controllers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.project.agriculturalblogapplication.config.CommonApiResponses;
 import com.project.agriculturalblogapplication.model.request.SignInRequest;
+import com.project.agriculturalblogapplication.model.response.AdminStatsResponse;
+import com.project.agriculturalblogapplication.model.response.AdminUserDetailResponse;
+import com.project.agriculturalblogapplication.model.response.AdminUserResponse;
 import com.project.agriculturalblogapplication.model.response.HttpResponse;
 import com.project.agriculturalblogapplication.model.response.WebTokenResponse;
+import com.project.agriculturalblogapplication.service.AdminService;
 import com.project.agriculturalblogapplication.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpServletRequest;
+import com.project.agriculturalblogapplication.model.response.LaunchWeekResponse;
+import com.project.agriculturalblogapplication.service.DigestService;
+import com.project.agriculturalblogapplication.service.LaunchMetricsService;
+import org.springframework.http.MediaType;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import com.project.agriculturalblogapplication.security.RefreshCookies;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import static com.project.agriculturalblogapplication.constatnt.AppConstants.DEFAULT_LANGUAGE_CODE;
+import static com.project.agriculturalblogapplication.constatnt.AppConstants.DEFAULT_PAGE_NO;
+import static com.project.agriculturalblogapplication.constatnt.AppConstants.DEFAULT_PAGE_SIZE;
+import static com.project.agriculturalblogapplication.constatnt.AppConstants.LANG;
+import static com.project.agriculturalblogapplication.constatnt.AppConstants.PAGE_NO;
+import static com.project.agriculturalblogapplication.constatnt.AppConstants.PAGE_SIZE;
 
 @Tag(name = "Admin - controller", description = "Admin related operations.")
 @RestController
@@ -28,15 +45,71 @@ public class AdminController {
 
     private final AuthService authService;
 
+    private final AdminService adminService;
+
+    private final LaunchMetricsService launchMetricsService;
+
+    private final DigestService digestService;
+
     @Operation(summary = "Sign in")
     @ApiResponse(content = @Content(schema = @Schema(implementation = WebTokenResponse.class)), responseCode = "200")
     @PostMapping(value = "/sign-in")
     public ResponseEntity<HttpResponse> signIn(@Valid @RequestBody SignInRequest request,
                                                @RequestParam(name = "lang", defaultValue = DEFAULT_LANGUAGE_CODE) String lang,
                                                HttpServletRequest httpServletRequest) throws JsonProcessingException {
-        return HttpResponse.getResponseEntity(
+        return RefreshCookies.withCookie(HttpResponse.getResponseEntity(
                 true,
                 "Sign-in successful.",
-                authService.signInAsAdmin(request, lang, httpServletRequest.getRemoteAddr()));
+                authService.signInAsAdmin(request, lang, httpServletRequest.getRemoteAddr())));
+    }
+
+    @Operation(summary = "Admin: users whose name or e-mail contains q; banned=true/false filters by ban state; newest first",
+            security = @SecurityRequirement(name = "jwtToken"))
+    @ApiResponse(content = @Content(schema = @Schema(implementation = AdminUserResponse.class)), responseCode = "200")
+    @PreAuthorize("hasAuthority('USER_READ')")
+    @GetMapping("/users")
+    public ResponseEntity<HttpResponse> users(@RequestParam(name = "q", required = false) String query,
+                                              @RequestParam(name = "banned", required = false) Boolean banned,
+                                              @RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
+                                              @RequestParam(name = PAGE_SIZE, defaultValue = DEFAULT_PAGE_SIZE) int pageSize) {
+        return HttpResponse.getResponseEntity(true, "Data loaded successfully.", adminService.users(query, banned, pageNo, pageSize));
+    }
+
+    @Operation(summary = "Admin: one user with their post counts, open reports about the account and expert topics",
+            security = @SecurityRequirement(name = "jwtToken"))
+    @ApiResponse(content = @Content(schema = @Schema(implementation = AdminUserDetailResponse.class)), responseCode = "200")
+    @PreAuthorize("hasAuthority('USER_READ')")
+    @GetMapping("/users/{userId}")
+    public ResponseEntity<HttpResponse> user(@PathVariable Long userId,
+                                             @RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        return HttpResponse.getResponseEntity(true, "Data loaded successfully.", adminService.user(userId, lang));
+    }
+
+    @Operation(summary = "Admin: overview counts for the dashboard (any admin privilege)",
+            security = @SecurityRequirement(name = "jwtToken"))
+    @ApiResponse(content = @Content(schema = @Schema(implementation = AdminStatsResponse.class)), responseCode = "200")
+    @PreAuthorize("hasAnyAuthority('USER_READ', 'CONTENT_MODERATE', 'EXPERT_REVIEW')")
+    @GetMapping("/stats")
+    public ResponseEntity<HttpResponse> stats() {
+        return HttpResponse.getResponseEntity(true, "Data loaded successfully.", adminService.stats());
+    }
+
+    @Operation(summary = "Admin: the launch test, one row per Monday-to-Sunday week (Asia/Dhaka), newest first",
+            description = "The current week is partial. staffActivity counts only what admin and staff accounts did.",
+            security = @SecurityRequirement(name = "jwtToken"))
+    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = LaunchWeekResponse.class))),
+            responseCode = "200")
+    @PreAuthorize("hasAnyAuthority('USER_READ', 'CONTENT_MODERATE', 'EXPERT_REVIEW')")
+    @GetMapping("/launch-metrics")
+    public ResponseEntity<HttpResponse> launchMetrics(@RequestParam(name = "weeks", defaultValue = "8") int weeks) {
+        return HttpResponse.getResponseEntity(true, "Data loaded successfully.", launchMetricsService.weeks(weeks));
+    }
+
+    @Operation(summary = "Admin: your own weekly digest as HTML, not sent, to check the copy",
+            security = @SecurityRequirement(name = "jwtToken"))
+    @PreAuthorize("hasAnyAuthority('USER_READ', 'CONTENT_MODERATE', 'EXPERT_REVIEW')")
+    @PostMapping(value = "/digest/preview", produces = MediaType.TEXT_HTML_VALUE)
+    public ResponseEntity<String> digestPreview(@RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).body(digestService.preview(lang));
     }
 }

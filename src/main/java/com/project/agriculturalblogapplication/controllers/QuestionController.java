@@ -2,19 +2,26 @@ package com.project.agriculturalblogapplication.controllers;
 
 import com.project.agriculturalblogapplication.config.CommonApiResponses;
 import com.project.agriculturalblogapplication.enums.AscOrDescType;
+import com.project.agriculturalblogapplication.enums.CropSeason;
+import com.project.agriculturalblogapplication.enums.SoilType;
+import com.project.agriculturalblogapplication.model.AgriInfo;
 import com.project.agriculturalblogapplication.model.request.CreateQuestionRequest;
 import com.project.agriculturalblogapplication.model.request.UpdateQuestionRequest;
+import com.project.agriculturalblogapplication.model.response.QuestionAiAnswerResponse;
 import com.project.agriculturalblogapplication.model.response.HttpResponse;
 import com.project.agriculturalblogapplication.model.response.QuestionResponse;
 import com.project.agriculturalblogapplication.payloads.PaginationArgs;
+import com.project.agriculturalblogapplication.service.AiService;
 import com.project.agriculturalblogapplication.service.QuestionService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -31,22 +38,45 @@ public class QuestionController {
 
     private final QuestionService questionService;
 
-    @Operation(summary = "Get all questions - paginated", security = @SecurityRequirement(name = "jwtToken"))
+    private final AiService aiService;
+
+    @Operation(summary = "All questions - paginated; optional filters categoryId (topic), tag, unanswered, crop, season, region, soil")
     @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = QuestionResponse.class))), responseCode = "200")
     @GetMapping(value = "/all")
     public ResponseEntity<HttpResponse> getAll(
             @RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
             @RequestParam(name = PAGE_SIZE, defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
             @RequestParam(name = SORT_BY, defaultValue = SORT_BY_VALUE) String sortBy,
-            @RequestParam(name = ASC_OR_DESC, defaultValue = ASC_OR_DESC_VALUE) AscOrDescType ascOrDesc) {
+            @RequestParam(name = ASC_OR_DESC, defaultValue = ASC_OR_DESC_VALUE) AscOrDescType ascOrDesc,
+            @RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang,
+            @RequestParam(name = "categoryId", required = false) Long categoryId,
+            @RequestParam(name = "tag", required = false) String tag,
+            @RequestParam(name = "unanswered", defaultValue = "false") boolean unanswered,
+            @Parameter(description = "Only questions with a tag the caller follows (signed in; empty when they follow none)")
+            @RequestParam(name = "following", defaultValue = "false") boolean following,
+            @RequestParam(name = "crop", required = false) String crop,
+            @RequestParam(name = "season", required = false) CropSeason season,
+            @RequestParam(name = "region", required = false) String region,
+            @RequestParam(name = "soil", required = false) SoilType soil) {
         PaginationArgs paginationArgs = new PaginationArgs(pageNo, pageSize, sortBy, ascOrDesc);
         return HttpResponse.getResponseEntity(
                 true,
                 "Data loaded successfully.",
-                questionService.getAll(paginationArgs));
+                questionService.getAll(paginationArgs, categoryId, tag, unanswered, following, new AgriInfo(crop, season, region, soil), lang));
     }
 
-    @Operation(summary = "Get all questions by user - paginated", security = @SecurityRequirement(name = "jwtToken"))
+    @Operation(summary = "Search questions by words in the title or text (supports \"quoted phrases\" and -exclusions), best match first")
+    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = QuestionResponse.class))), responseCode = "200")
+    @GetMapping(value = "/search")
+    public ResponseEntity<HttpResponse> search(@RequestParam(name = "q") String q,
+                                               @RequestParam(name = PAGE_NO, defaultValue = DEFAULT_PAGE_NO) int pageNo,
+                                               @RequestParam(name = PAGE_SIZE, defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
+                                               @RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        return HttpResponse.getResponseEntity(
+                true, "Data loaded successfully.", questionService.search(q, pageNo, pageSize, lang));
+    }
+
+    @Operation(summary = "Get all questions by user - paginated")
     @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = QuestionResponse.class))), responseCode = "200")
     @GetMapping(value = "/all/user/{userId}")
     public ResponseEntity<HttpResponse> getAllByUser(
@@ -63,12 +93,22 @@ public class QuestionController {
                 questionService.getAllByUser(paginationArgs, userId, lang));
     }
 
-    @Operation(summary = "Get question info by id", security = @SecurityRequirement(name = "jwtToken"))
+    @Operation(summary = "Get question info by id")
     @ApiResponse(content = @Content(schema = @Schema(implementation = QuestionResponse.class)), responseCode = "200")
     @GetMapping(value = "/id/{questionId}")
-    public ResponseEntity<HttpResponse> findById(@PathVariable Long questionId) {
+    public ResponseEntity<HttpResponse> findById(@PathVariable Long questionId, HttpServletRequest httpServletRequest) {
         return HttpResponse.getResponseEntity(
-                true, "Data loaded successfully.", questionService.findById(questionId));
+                true, "Data loaded successfully.", questionService.findById(questionId, httpServletRequest.getRemoteAddr()));
+    }
+
+    @Operation(summary = "The AI's answer to a question (public): generated a few seconds after the question is posted, "
+            + "404 until then; show the disclaimer and the review status with it")
+    @ApiResponse(content = @Content(schema = @Schema(implementation = QuestionAiAnswerResponse.class)), responseCode = "200")
+    @GetMapping(value = "/id/{questionId}/ai-answer")
+    public ResponseEntity<HttpResponse> aiAnswer(@PathVariable Long questionId,
+                                                 @RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        return HttpResponse.getResponseEntity(
+                true, "Data loaded successfully.", aiService.questionAnswer(questionId, lang));
     }
 
     @Operation(summary = "New question creation", security = @SecurityRequirement(name = "jwtToken"))
