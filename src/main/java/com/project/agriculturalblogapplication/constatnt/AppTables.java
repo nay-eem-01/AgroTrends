@@ -83,6 +83,8 @@ public final class AppTables {
 
         public static final String TAG_FOLLOWS = "tag_follows";
 
+        public static final String CATEGORY_FOLLOWS = "category_follows";
+
         public static final String USER_ID = "user_id";
 
         public static final String AUTHOR_ID = "author_id";

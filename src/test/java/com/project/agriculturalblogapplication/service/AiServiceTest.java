@@ -1,6 +1,7 @@
 package com.project.agriculturalblogapplication.service;
 
 import com.project.agriculturalblogapplication.constatnt.AppConstants;
+import com.project.agriculturalblogapplication.constatnt.ErrorCode;
 import com.project.agriculturalblogapplication.model.response.AiAllowanceResponse;
 import org.mockito.ArgumentCaptor;
 import java.time.LocalDate;
@@ -57,6 +58,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -357,7 +359,7 @@ class AiServiceTest {
     }
 
     @Test
-    void aFlaggedOrMissingAiAnswerIsNotFoundAndAnUncheckedOneCarriesTheDisclaimer() {
+    void aVisibleQuestionMayHaveNoAiAnswerAndAnUncheckedAnswerCarriesTheDisclaimer() {
         QuestionAiAnswer stored = new QuestionAiAnswer();
         stored.setQuestion(question("Yellow leaves", "Why?"));
         stored.setAnswer("Check nitrogen.");
@@ -368,8 +370,11 @@ class AiServiceTest {
         assertEquals(QuestionAiAnswerResponse.DISCLAIMER, response.disclaimer());
 
         stored.setStatus(AiAnswerStatus.FLAGGED);
-        assertEquals(HttpStatus.NOT_FOUND,
-                assertThrows(ApplicationException.class, () -> aiService.questionAnswer(4L, "en")).getHttpStatus());
+        assertNull(aiService.questionAnswer(4L, "en"));
+        when(questionAiAnswers.findByQuestionId(4L)).thenReturn(Optional.empty());
+        assertNull(aiService.questionAnswer(4L, "en"));
+        org.mockito.Mockito.doThrow(new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_QUESTION_NOT_FOUND))
+                .when(questionService).requireVisible(5L, "en");
         assertEquals(HttpStatus.NOT_FOUND,
                 assertThrows(ApplicationException.class, () -> aiService.questionAnswer(5L, "en")).getHttpStatus());
     }

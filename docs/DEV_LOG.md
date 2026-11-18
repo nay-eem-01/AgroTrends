@@ -5,6 +5,17 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-11-18 — Live application fixes
+
+- Added category follows by ID and included them alongside tag follows in the following feeds. PostgreSQL enforces one follow per user and category.
+- Added public avatar URLs to question, answer, comment and story-author responses. Joined question-list users and categories in the page query.
+- Added caching for local uploaded images and a ten-minute browser cache for allowed CORS preflights. R2 uploads already send immutable one-year cache headers.
+- Set the default chat model to Gemini 3.1 Flash-Lite, configurable via `GEMINI_CHAT_MODEL`. Kept the embedding model and dimensions. A visible question with no public AI answer now returns an empty payload.
+- Java 21 suite passed 449 tests, including disposable PostgreSQL and pgvector integration. Verified local upload cache and CORS response headers.
+- Live VM timing, Gemini generation with the deployment key and a custom R2 domain remain release acceptance items.
+
+---
+
 ## 2026-11-17 — Staging deployment automation prepared
 
 **Done**

@@ -5,6 +5,7 @@ import com.project.agriculturalblogapplication.constatnt.AppTables;
 import com.project.agriculturalblogapplication.constatnt.AppTables.UserTable;
 import com.project.agriculturalblogapplication.model.AuditModel;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.Formula;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -75,6 +76,10 @@ public class User extends AuditModel<String> {
 
     @Column(name = UserTable.BAN_REASON, length = 500)
     private String banReason;
+
+    /** Public photo from the shared-primary-key author profile. */
+    @Formula("(select a.profile_image_url from authors a where a.id = id)")
+    private String authorPhotoUrl;
 
     /** Public, as the user typed it (a district or town). */
     @Column(name = UserTable.LOCATION, length = 80)

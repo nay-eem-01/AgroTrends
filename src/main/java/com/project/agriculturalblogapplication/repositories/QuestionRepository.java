@@ -4,6 +4,8 @@ import com.project.agriculturalblogapplication.entities.Question;
 import com.project.agriculturalblogapplication.entities.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
@@ -17,7 +19,13 @@ import java.util.List;
 
 @Repository
 public interface QuestionRepository extends JpaRepository<Question, Long>, JpaSpecificationExecutor<Question> {
+    @Override
+    @EntityGraph(attributePaths = {"user", "category"})
+    Page<Question> findAll(Specification<Question> specification, Pageable pageable);
+
     List<Question> findAllByUser(User user);
+
+    boolean existsByIdAndHiddenFalse(Long id);
 
     Page<Question> findAllByUserAndHiddenFalse(User user, Pageable pageable);
 

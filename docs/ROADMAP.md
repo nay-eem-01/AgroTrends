@@ -16,6 +16,16 @@ gets split here first.
 
 ---
 
+## Live application follow-up (2026-11-18)
+
+| Step | Status |
+|---|---|
+| Category follows, public avatar data, question query and cache improvements, and AI model and answer response | Implemented on the feature step |
+| Measure post-release API latency and verify generation with the deployed Gemini project | Pending live acceptance |
+| Assess a custom R2 image domain and references already stored with the current host | Pending |
+
+---
+
 ## Staging hosting automation (2026-11-17)
 
 Deployment operations are tracked separately from feature counts.
