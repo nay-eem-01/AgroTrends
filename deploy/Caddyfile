@@ -1,5 +1,0 @@
-# HTTPS for the API domain (certificate from Let's Encrypt, renewed automatically).
-{$API_DOMAIN} {
-	encode gzip
-	reverse_proxy app:8080
-}
