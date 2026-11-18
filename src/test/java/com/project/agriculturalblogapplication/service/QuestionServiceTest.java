@@ -48,12 +48,9 @@ class QuestionServiceTest {
     private final TagService tagService = mock(TagService.class);
     private final ImageService imageService = mock(ImageService.class);
     private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
-    private final com.project.agriculturalblogapplication.repositories.TagFollowRepository tagFollows =
-            mock(com.project.agriculturalblogapplication.repositories.TagFollowRepository.class);
     private final QuestionService questionService =
             new QuestionService(mock(ImageCleanup.class), questionRepository, userService, authorization, categoryService, tagService, imageService,
-                    mock(ReputationService.class), events, new com.project.agriculturalblogapplication.security.service.AttemptLimiter(),
-                    tagFollows);
+                    mock(ReputationService.class), events, new com.project.agriculturalblogapplication.security.service.AttemptLimiter());
 
     @Test
     void aViewerCountsOncePerDayAndAnotherViewerCountsAgain() {
@@ -218,24 +215,8 @@ class QuestionServiceTest {
     }
 
     @Test
-    void forYouIsEmptyWhenTheCallerFollowsNoTags() {
+    void forYouQueriesUsingTheSignedInReader() {
         when(authorization.currentUserId("en")).thenReturn(7L);
-        when(tagFollows.followedTagIds(7L)).thenReturn(List.of());
-
-        var page = questionService.getAll(new com.project.agriculturalblogapplication.payloads.PaginationArgs(0, 10, "creationDate",
-                com.project.agriculturalblogapplication.enums.AscOrDescType.desc), null, null, false, true,
-                new com.project.agriculturalblogapplication.model.AgriInfo(null, null, null, null), "en");
-
-        assertTrue(page.isEmpty());
-        verify(questionRepository, never()).findAll(
-                org.mockito.ArgumentMatchers.<org.springframework.data.jpa.domain.Specification<Question>>any(),
-                any(org.springframework.data.domain.Pageable.class));
-    }
-
-    @Test
-    void forYouAsksForQuestionsWithAFollowedTag() {
-        when(authorization.currentUserId("en")).thenReturn(7L);
-        when(tagFollows.followedTagIds(7L)).thenReturn(List.of(4L));
         when(questionRepository.findAll(
                 org.mockito.ArgumentMatchers.<org.springframework.data.jpa.domain.Specification<Question>>any(),
                 any(org.springframework.data.domain.Pageable.class))).thenReturn(org.springframework.data.domain.Page.empty());
@@ -244,6 +225,9 @@ class QuestionServiceTest {
                 com.project.agriculturalblogapplication.enums.AscOrDescType.desc), null, null, false, true,
                 new com.project.agriculturalblogapplication.model.AgriInfo(null, null, null, null), "en");
 
-        verify(tagFollows).followedTagIds(7L);
+        verify(authorization).currentUserId("en");
+        verify(questionRepository).findAll(
+                org.mockito.ArgumentMatchers.<org.springframework.data.jpa.domain.Specification<Question>>any(),
+                any(org.springframework.data.domain.Pageable.class));
     }
 }

@@ -266,6 +266,7 @@ public class AnswerService {
         response.setQuestionId(answer.getQuestion().getId());
         response.setContent(answer.getContent());
         response.setAuthorName(answer.getUser().getName());
+        response.setAuthorPhotoUrl(answer.getUser().getAuthorPhotoUrl());
         AuthorStanding author = standings.getOrDefault(answer.getUser().getId(), AuthorStanding.NONE);
         Category topic = answer.getQuestion().getCategory();
         response.setAuthorReputation(author.reputation());

@@ -22,6 +22,8 @@ public class CommentResponse {
     /** The author's display name (never their e-mail). */
     private String authorName;
 
+    private String authorPhotoUrl;
+
     private Instant createdAt;
 
     private Instant updatedAt;
