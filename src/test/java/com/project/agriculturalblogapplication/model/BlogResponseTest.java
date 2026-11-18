@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class BlogResponseTest {
 
     @Test
-    void aBlogShowsItsAuthorByNameOnly() {
+    void aBlogShowsOnlyPublicAuthorFields() {
         User user = new User();
         user.setId(10L);
         user.setName("Rahim");
@@ -30,6 +30,7 @@ class BlogResponseTest {
         Author author = new Author();
         author.setId(20L);
         author.setUser(user);
+        author.setProfileImageUrl("https://images.example/rahim.webp");
         Category category = new Category();
         category.setId(30L);
         category.setCategoryName("Crop diseases");
@@ -43,13 +44,13 @@ class BlogResponseTest {
 
         BlogResponse response = BlogResponse.from(blog);
 
-        assertEquals(new AuthorSummaryResponse(20L, "Rahim"), response.author());
+        assertEquals(new AuthorSummaryResponse(20L, "Rahim", "https://images.example/rahim.webp"), response.author());
         assertEquals(new CategoryResponse(30L, "Crop diseases"), response.category());
         assertEquals(LocalDateTime.of(2026, 10, 7, 9, 30).atZone(ZoneId.systemDefault()).toInstant(), response.createdAt());
         assertNull(response.updatedAt());
         // Regression: the entity used to serialize author.user with e-mail, mobile number and roles.
         assertTrue(Arrays.stream(AuthorSummaryResponse.class.getRecordComponents())
-                .allMatch(c -> Set.of("authorId", "name").contains(c.getName())));
+                .allMatch(c -> Set.of("authorId", "name", "profileImageUrl").contains(c.getName())));
         assertTrue(Arrays.stream(BlogResponse.class.getRecordComponents())
                 .noneMatch(c -> c.getType() == User.class || c.getType() == Author.class));
     }

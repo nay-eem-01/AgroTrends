@@ -10,6 +10,8 @@ import com.project.agriculturalblogapplication.model.request.UpdateQuestionReque
 import com.project.agriculturalblogapplication.model.response.QuestionResponse;
 import com.project.agriculturalblogapplication.payloads.PaginationArgs;
 import com.project.agriculturalblogapplication.entities.Question;
+import com.project.agriculturalblogapplication.entities.CategoryFollow;
+import com.project.agriculturalblogapplication.entities.TagFollow;
 import com.project.agriculturalblogapplication.entities.Tag;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.model.AgriInfo;
@@ -17,10 +19,10 @@ import com.project.agriculturalblogapplication.model.AuthorStanding;
 import com.project.agriculturalblogapplication.model.response.CategoryResponse;
 import com.project.agriculturalblogapplication.repositories.AgriSpecifications;
 import com.project.agriculturalblogapplication.repositories.QuestionRepository;
-import com.project.agriculturalblogapplication.repositories.TagFollowRepository;
 import com.project.agriculturalblogapplication.util.CommonUtils;
 import com.project.agriculturalblogapplication.security.service.AttemptLimiter;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
+import jakarta.persistence.criteria.JoinType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -63,8 +65,6 @@ public class QuestionService {
 
     private final AttemptLimiter attemptLimiter;
 
-    private final TagFollowRepository tagFollowRepository;
-
     /** Saves the question; the AI answers it after the commit (AiService.answerQuestion). */
     @Transactional
     public QuestionResponse create(CreateQuestionRequest request, String lang) {
@@ -89,27 +89,35 @@ public class QuestionService {
 
     /**
      * All questions, optionally filtered by topic, tag, no answers yet, crop, season, region and soil. {@code following}
-     * keeps those carrying a tag the caller follows: a 401 when signed out, an empty page when they follow none.
+     * keeps those in a category or carrying a tag the caller follows: a 401 when signed out, an empty page when they follow none.
      */
+    @Transactional(readOnly = true)
     public Page<QuestionResponse> getAll(PaginationArgs paginationArgs, Long categoryId, String tag, boolean unanswered,
                                          boolean following, AgriInfo filter, String lang) {
         Pageable pageable = CommonUtils.getPageable(paginationArgs, SORTABLE_FIELDS, lang);
         Specification<Question> spec = AgriSpecifications.<Question>matches(filter)
                 .and(inTopicWithTag(categoryId, tag, unanswered));
         if (following) {
-            List<Long> tagIds = tagFollowRepository.followedTagIds(authorizationService.currentUserId(lang));
-            if (tagIds.isEmpty()) {
-                return Page.empty(pageable);
-            }
-            spec = spec.and(withAnyTag(tagIds));
+            spec = spec.and(followedBy(authorizationService.currentUserId(lang)));
         }
         return mapToQuestionResponses(questionRepository.findAll(spec, pageable));
     }
 
-    static Specification<Question> withAnyTag(List<Long> tagIds) {
+    static Specification<Question> followedBy(Long userId) {
         return (root, query, cb) -> {
-            query.distinct(true); // a question with two followed tags would otherwise come twice
-            return root.join("tags").get("id").in(tagIds);
+            var categories = query.subquery(Long.class);
+            var categoryFollow = categories.from(CategoryFollow.class);
+            categories.select(categoryFollow.get("categoryId"))
+                    .where(cb.equal(categoryFollow.get("userId"), userId));
+
+            var tags = query.subquery(Long.class);
+            var question = tags.correlate(root);
+            var tag = question.join("tags", JoinType.INNER);
+            var tagFollow = tags.from(TagFollow.class);
+            tags.select(tag.get("id")).where(cb.equal(tagFollow.get("user").get("id"), userId),
+                    cb.equal(tagFollow.get("tag"), tag));
+
+            return cb.or(root.get("category").get("id").in(categories), cb.exists(tags));
         };
     }
 
@@ -205,6 +213,12 @@ public class QuestionService {
         eventPublisher.publishEvent(new QuestionDeleted(question.getId()));
     }
 
+    public void requireVisible(Long questionId, String lang) {
+        if (!questionRepository.existsByIdAndHiddenFalse(questionId)) {
+            throw new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_QUESTION_NOT_FOUND, lang);
+        }
+    }
+
     /** A hidden question is a 404 here, so it cannot be read, edited, answered or voted on while under review. */
     public Question findByIdWithException(Long questionId) {
         return questionRepository.findById(questionId).filter(question -> !question.isHidden()).orElseThrow(() ->
@@ -243,6 +257,7 @@ public class QuestionService {
         response.setTitle(question.getTitle());
         response.setContent(question.getContent());
         response.setAuthorName(question.getUser().getName());
+        response.setAuthorPhotoUrl(question.getUser().getAuthorPhotoUrl());
         AuthorStanding author = standings.getOrDefault(question.getUser().getId(), AuthorStanding.NONE);
         response.setAuthorReputation(author.reputation());
         response.setAuthorBadges(author.badgesIn(question.getCategory() == null ? null : question.getCategory().getId()));

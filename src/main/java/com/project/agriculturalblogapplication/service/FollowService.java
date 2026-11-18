@@ -7,7 +7,9 @@ import com.project.agriculturalblogapplication.entities.Tag;
 import com.project.agriculturalblogapplication.entities.TagFollow;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.model.response.AuthorSummaryResponse;
+import com.project.agriculturalblogapplication.model.response.CategoryResponse;
 import com.project.agriculturalblogapplication.repositories.AuthorFollowRepository;
+import com.project.agriculturalblogapplication.repositories.CategoryFollowRepository;
 import com.project.agriculturalblogapplication.repositories.TagFollowRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import com.project.agriculturalblogapplication.util.CommonUtils;
@@ -18,6 +20,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 /** Following authors and topics. Every operation acts for the caller; following is idempotent. */
 @Service
@@ -35,6 +39,24 @@ public class FollowService {
     private final UserService userService;
 
     private final AuthorizationService authorizationService;
+
+    private final CategoryService categoryService;
+
+    private final CategoryFollowRepository categoryFollows;
+
+    public void followCategory(Long categoryId, String lang) {
+        Long userId = authorizationService.currentUserId(lang);
+        categoryService.findByIdWithException(categoryId);
+        categoryFollows.follow(userId, categoryId);
+    }
+
+    public void unfollowCategory(Long categoryId, String lang) {
+        categoryFollows.unfollow(authorizationService.currentUserId(lang), categoryId);
+    }
+
+    public List<CategoryResponse> followedCategories(String lang) {
+        return categoryFollows.followed(authorizationService.currentUserId(lang));
+    }
 
     public void followAuthor(Long authorId, String lang) {
         Long userId = authorizationService.currentUserId(lang);
