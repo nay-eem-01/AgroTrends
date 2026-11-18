@@ -1,5 +1,6 @@
 package com.project.agriculturalblogapplication.service;
 
+import com.google.genai.errors.ApiException;
 import com.project.agriculturalblogapplication.config.AiProperties;
 import com.project.agriculturalblogapplication.constatnt.AppConstants;
 import com.project.agriculturalblogapplication.constatnt.ErrorCode;
@@ -36,6 +37,7 @@ import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
+import org.springframework.core.NestedExceptionUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -85,7 +87,13 @@ public class AiService {
         Long userId = authorizationService.currentUserId(lang);
         assertDailyLimitNotReached(userId, lang);
 
-        ChatClientResponse response = callModel(question, lang);
+        ChatClientResponse response;
+        try {
+            response = callModel(question);
+        } catch (RuntimeException e) {
+            log.warn("AI advisor generation failed ({})", failureType(e));
+            throw new ApplicationException(HttpStatus.SERVICE_UNAVAILABLE, ErrorCode.ERROR_AI_UNAVAILABLE, lang);
+        }
         ChatResponse chatResponse = response.chatResponse();
         String answer = chatResponse.getResult().getOutput().getText();
         Usage usage = chatResponse.getMetadata().getUsage();
@@ -177,7 +185,7 @@ public class AiService {
                 return;
             }
             attemptLimiter.record(allowance, aiProperties.getDailyQuestionLimit(), Duration.ofDays(1));
-            ChatClientResponse response = chatClient.prompt().user(promptFor(question)).call().chatClientResponse();
+            ChatClientResponse response = callModel(promptFor(question));
             ChatResponse chatResponse = response.chatResponse();
             Usage usage = chatResponse.getMetadata().getUsage();
 
@@ -190,7 +198,7 @@ public class AiService {
             questionAiAnswerRepository.save(aiAnswer);
             notifyReviewers(question);
         } catch (RuntimeException e) {
-            log.error("AI answer for question {} failed", event.questionId(), e);
+            log.warn("AI answer for question {} failed ({})", event.questionId(), failureType(e));
             if (question != null) {
                 notifyExperts(question, NotificationType.NEW_QUESTION_IN_TOPIC);
             }
@@ -230,12 +238,16 @@ public class AiService {
         return String.join("; ", details);
     }
 
-    /** The question's AI answer; 404 while it is being generated, when there is none, or when it was flagged. */
+    /** A visible question may have no public AI answer yet. Hidden and missing questions still return 404. */
+    @Transactional(readOnly = true)
     public QuestionAiAnswerResponse questionAnswer(Long questionId, String lang) {
-        return questionAiAnswerRepository.findByQuestionId(questionId)
-                .filter(aiAnswer -> aiAnswer.getStatus() != AiAnswerStatus.FLAGGED && !aiAnswer.getQuestion().isHidden())
-                .map(QuestionAiAnswerResponse::from)
-                .orElseThrow(() -> new ApplicationException(HttpStatus.NOT_FOUND, ErrorCode.ERROR_AI_ANSWER_NOT_FOUND, lang));
+        var stored = questionAiAnswerRepository.findByQuestionId(questionId);
+        if (stored.isPresent() && !stored.get().getQuestion().isHidden()
+                && stored.get().getStatus() != AiAnswerStatus.FLAGGED) {
+            return QuestionAiAnswerResponse.from(stored.get());
+        }
+        questionService.requireVisible(questionId, lang);
+        return null;
     }
 
     /** Only answered questions count, so a failed or timed-out call does not use up the allowance. */
@@ -260,17 +272,21 @@ public class AiService {
         }
     }
 
-    private ChatClientResponse callModel(String question, String lang) {
-        try {
-            return chatClient.prompt()
-                    .user(question)
-                    .call()
-                    .chatClientResponse();
-        } catch (RuntimeException e) {
-            // Timeouts, quota errors and outages at Gemini: the caller gets a clean 503, the log keeps the cause.
-            log.error("AI call failed", e);
-            throw new ApplicationException(HttpStatus.SERVICE_UNAVAILABLE, ErrorCode.ERROR_AI_UNAVAILABLE, lang);
+    /** The upstream status helps diagnose a model 404 without logging provider bodies or keys. */
+    private static String failureType(RuntimeException error) {
+        Throwable cause = NestedExceptionUtils.getMostSpecificCause(error);
+        return cause instanceof ApiException apiError ? "Gemini HTTP " + apiError.code() : cause.getClass().getSimpleName();
+    }
+
+    private ChatClientResponse callModel(String question) {
+        ChatClientResponse response = chatClient.prompt().user(question).call().chatClientResponse();
+        ChatResponse chat = response == null ? null : response.chatResponse();
+        var result = chat == null ? null : chat.getResult();
+        String text = result == null ? null : result.getOutput().getText();
+        if (text == null || text.isBlank()) {
+            throw new IllegalStateException("The model returned no answer");
         }
+        return response;
     }
 
     /** The caller's own questions and answers, newest first. */

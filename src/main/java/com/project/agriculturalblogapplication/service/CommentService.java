@@ -172,6 +172,7 @@ public class CommentService {
         response.setUserId(comment.getUser().getId());
         response.setContent(comment.getCommentContent());
         response.setAuthorName(comment.getUser().getName());
+        response.setAuthorPhotoUrl(comment.getUser().getAuthorPhotoUrl());
         response.setCreatedAt(CommonUtils.toInstant(comment.getCreationDate()));
         response.setUpdatedAt(CommonUtils.toInstant(comment.getLastModifiedDate()));
 

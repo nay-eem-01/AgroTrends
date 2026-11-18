@@ -39,7 +39,8 @@ public interface BlogRepositories extends JpaRepository<Blog, Long>, JpaSpecific
             SELECT b FROM Blog b
             WHERE b.status = com.project.agriculturalblogapplication.enums.BlogStatus.PUBLISHED
               AND (EXISTS (SELECT f FROM AuthorFollow f WHERE f.user.id = :userId AND f.author = b.author)
-                   OR EXISTS (SELECT tf FROM TagFollow tf WHERE tf.user.id = :userId AND tf.tag MEMBER OF b.tags))
+                   OR EXISTS (SELECT tf FROM TagFollow tf WHERE tf.user.id = :userId AND tf.tag MEMBER OF b.tags)
+                   OR EXISTS (SELECT cf FROM CategoryFollow cf WHERE cf.userId = :userId AND cf.category = b.category))
             """)
     Page<Blog> findFollowingFeed(@Param("userId") Long userId, Pageable pageable);
 

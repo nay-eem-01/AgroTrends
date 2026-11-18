@@ -21,6 +21,8 @@ public class QuestionResponse {
     /** The author's display name (never their e-mail). */
     private String authorName;
 
+    private String authorPhotoUrl;
+
     /** The author's total reputation. */
     private long authorReputation;
 

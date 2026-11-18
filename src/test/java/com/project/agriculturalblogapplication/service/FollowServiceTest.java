@@ -7,6 +7,7 @@ import com.project.agriculturalblogapplication.entities.TagFollow;
 import com.project.agriculturalblogapplication.entities.User;
 import com.project.agriculturalblogapplication.exceptionHandler.ApplicationException;
 import com.project.agriculturalblogapplication.repositories.AuthorFollowRepository;
+import com.project.agriculturalblogapplication.repositories.CategoryFollowRepository;
 import com.project.agriculturalblogapplication.repositories.TagFollowRepository;
 import com.project.agriculturalblogapplication.security.service.AuthorizationService;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,8 +30,10 @@ class FollowServiceTest {
     private final TagService tagService = mock(TagService.class);
     private final UserService userService = mock(UserService.class);
     private final AuthorizationService authorization = mock(AuthorizationService.class);
+    private final CategoryService categories = mock(CategoryService.class);
+    private final CategoryFollowRepository categoryFollows = mock(CategoryFollowRepository.class);
     private final FollowService followService =
-            new FollowService(authorFollows, tagFollows, authorService, tagService, userService, authorization);
+            new FollowService(authorFollows, tagFollows, authorService, tagService, userService, authorization, categories, categoryFollows);
 
     @BeforeEach
     void setUp() {
@@ -71,6 +74,18 @@ class FollowServiceTest {
         verify(tagFollows).save(any(TagFollow.class));
         verify(tagFollows).deleteByUserIdAndTagId(7L, 5L);
         verify(authorFollows).deleteByUserIdAndAuthorId(7L, 20L);
+    }
+
+    @Test
+    void categoryFollowValidatesTheCategoryAndUsesOnlyTheCaller() {
+        followService.followCategory(5L, "en");
+        followService.unfollowCategory(5L, "en");
+        followService.followedCategories("en");
+
+        verify(categories).findByIdWithException(5L);
+        verify(categoryFollows).follow(7L, 5L);
+        verify(categoryFollows).unfollow(7L, 5L);
+        verify(categoryFollows).followed(7L);
     }
 
     private static Author author(Long userId) {

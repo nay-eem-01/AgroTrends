@@ -102,7 +102,7 @@ public class QuestionController {
     }
 
     @Operation(summary = "The AI's answer to a question (public): generated a few seconds after the question is posted, "
-            + "404 until then; show the disclaimer and the review status with it")
+            + "returns an empty payload until available; show the disclaimer and the review status with it")
     @ApiResponse(content = @Content(schema = @Schema(implementation = QuestionAiAnswerResponse.class)), responseCode = "200")
     @GetMapping(value = "/id/{questionId}/ai-answer")
     public ResponseEntity<HttpResponse> aiAnswer(@PathVariable Long questionId,

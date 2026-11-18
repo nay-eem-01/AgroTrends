@@ -2,6 +2,7 @@ package com.project.agriculturalblogapplication.controllers;
 
 import com.project.agriculturalblogapplication.config.CommonApiResponses;
 import com.project.agriculturalblogapplication.model.response.AuthorSummaryResponse;
+import com.project.agriculturalblogapplication.model.response.CategoryResponse;
 import com.project.agriculturalblogapplication.model.response.HttpResponse;
 import com.project.agriculturalblogapplication.service.FollowService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,6 +26,30 @@ import static com.project.agriculturalblogapplication.constatnt.AppConstants.*;
 public class FollowController {
 
     private final FollowService followService;
+
+    @Operation(summary = "Follow a category", security = @SecurityRequirement(name = "jwtToken"))
+    @PutMapping("/categories/{categoryId}/follow")
+    public ResponseEntity<HttpResponse> followCategory(@PathVariable Long categoryId,
+            @RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        followService.followCategory(categoryId, lang);
+        return HttpResponse.getResponseEntity(true, "Following.");
+    }
+
+    @Operation(summary = "Stop following a category", security = @SecurityRequirement(name = "jwtToken"))
+    @DeleteMapping("/categories/{categoryId}/follow")
+    public ResponseEntity<HttpResponse> unfollowCategory(@PathVariable Long categoryId,
+            @RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        followService.unfollowCategory(categoryId, lang);
+        return HttpResponse.getResponseEntity(true, "Unfollowed.");
+    }
+
+    @Operation(summary = "Categories you follow", security = @SecurityRequirement(name = "jwtToken"))
+    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = CategoryResponse.class))), responseCode = "200")
+    @GetMapping("/me/following/categories")
+    public ResponseEntity<HttpResponse> followedCategories(
+            @RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        return HttpResponse.getResponseEntity(true, "Data loaded successfully.", followService.followedCategories(lang));
+    }
 
     @Operation(summary = "Follow an author (by author.authorId; repeating it is harmless)", security = @SecurityRequirement(name = "jwtToken"))
     @PutMapping("/authors/{authorId}/follow")
