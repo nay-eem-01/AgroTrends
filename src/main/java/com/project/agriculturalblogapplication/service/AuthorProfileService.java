@@ -79,17 +79,26 @@ public class AuthorProfileService {
     @Transactional
     public Page<ExpertSummaryResponse> experts(Long topicId, int pageNo, int pageSize) {
         Long callerId = authorizationService.signedInUserId().orElse(null);
-        return expertService.expertIds(topicId, pageNo, pageSize).map(userId -> {
-            Author author = authorService.profileOf(userId);
-            List<ExpertBadge> badges = expertService.activeBadges(userId);
-            ExpertApplication latest = expertService.checkedCredentials(userId).stream().findFirst().orElse(null);
-            return new ExpertSummaryResponse(userId, author.getUser().getName(), author.getId(), author.getProfileImageUrl(),
-                    badges.isEmpty() ? null : badges.get(0).getFieldTitle(),
-                    latest == null ? null : latest.getInstitution(),
-                    badges.stream().map(badge -> new ExpertSummaryResponse.Topic(badge.getTopic().getId(),
-                            badge.getTopic().getCategoryName())).toList(),
-                    callerId != null && followService.isFollowingAuthor(callerId, author.getId()));
-        });
+        return expertService.expertIds(topicId, pageNo, pageSize).map(userId -> expertSummary(userId, callerId));
+    }
+
+    @Transactional
+    public List<ExpertSummaryResponse> recommendedExperts(String lang) {
+        Long callerId = authorizationService.currentUserId(lang);
+        return expertService.recommendedExpertIds(callerId).stream()
+                .map(userId -> expertSummary(userId, null)).toList();
+    }
+
+    private ExpertSummaryResponse expertSummary(Long userId, Long callerId) {
+        Author author = authorService.profileOf(userId);
+        List<ExpertBadge> badges = expertService.activeBadges(userId);
+        ExpertApplication latest = expertService.checkedCredentials(userId).stream().findFirst().orElse(null);
+        return new ExpertSummaryResponse(userId, author.getUser().getName(), author.getId(), author.getProfileImageUrl(),
+                badges.isEmpty() ? null : badges.getFirst().getFieldTitle(),
+                latest == null ? null : latest.getInstitution(),
+                badges.stream().map(badge -> new ExpertSummaryResponse.Topic(badge.getTopic().getId(),
+                        badge.getTopic().getCategoryName())).toList(),
+                callerId != null && followService.isFollowingAuthor(callerId, author.getId()));
     }
 
     /** Public: the way from a {@code userId} on a question or answer to the person and their author page. */

@@ -161,6 +161,10 @@ public class ExpertService {
         return badgeRepository.expertIds(topicId, CommonUtils.clampedPageable(pageNo, pageSize, Sort.unsorted()));
     }
 
+    public List<Long> recommendedExpertIds(Long callerId) {
+        return badgeRepository.recommendedExpertIds(callerId);
+    }
+
     /** Approved applications, while the user still holds a badge: the credentials an admin checked. */
     public List<ExpertApplication> checkedCredentials(Long userId) {
         return activeBadges(userId).isEmpty() ? List.of()

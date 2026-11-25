@@ -53,6 +53,15 @@ public class ExpertController {
                 authorProfileService.experts(categoryId, pageNo, pageSize));
     }
 
+    @Operation(summary = "Recommend verified experts in the caller's followed topics, highest topic reputation first",
+            security = @SecurityRequirement(name = "jwtToken"))
+    @ApiResponse(content = @Content(array = @ArraySchema(schema = @Schema(implementation = ExpertSummaryResponse.class))), responseCode = "200")
+    @GetMapping("/api/me/recommended-experts")
+    public ResponseEntity<HttpResponse> recommendedExperts(
+            @RequestParam(name = LANG, defaultValue = DEFAULT_LANGUAGE_CODE) String lang) {
+        return HttpResponse.getResponseEntity(true, "Data loaded successfully.", authorProfileService.recommendedExperts(lang));
+    }
+
     @Operation(summary = "Your own expert applications and their decisions, newest first",
             security = @SecurityRequirement(name = "jwtToken"))
     @ApiResponse(content = @Content(schema = @Schema(implementation = ExpertApplicationResponse.class)), responseCode = "200")
