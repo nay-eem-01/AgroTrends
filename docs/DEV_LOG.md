@@ -5,6 +5,13 @@ The step-by-step plan and progress are in `docs/ROADMAP.md`; the reasoning is in
 
 ---
 
+## 2026-11-25 — Expert recommendations
+
+- Added an authenticated list of up to three verified experts ranked by reputation earned in topics the reader follows.
+- Matched tag follows through public questions and published stories. Excluded the reader, existing follows, banned users and revoked badges.
+
+---
+
 ## 2026-11-18 — Live application fixes
 
 - Added category follows by ID and included them alongside tag follows in the following feeds. PostgreSQL enforces one follow per user and category.
