@@ -286,6 +286,27 @@ class BlogServiceTest {
     }
 
     @Test
+    void changingACoverClearsItsDescriptionUnlessTheAuthorSuppliesOne() {
+        Blog blog = blog(5L);
+        blog.setImageUrl("/uploads/old.jpg");
+        blog.setImageAlt("The old cover");
+        when(blogRepositories.findById(5L)).thenReturn(Optional.of(blog));
+        when(categoryService.findByIdWithException(30L)).thenReturn(blog.getCategory());
+        when(blogRepositories.save(blog)).thenReturn(blog);
+
+        UpdateBlogRequest sameCover = updateRequest(5L);
+        sameCover.setImageUrl("/uploads/old.jpg");
+        assertEquals("The old cover", blogService.update(sameCover, LANG).imageAlt());
+
+        UpdateBlogRequest replacement = updateRequest(5L);
+        replacement.setImageUrl("/uploads/new.jpg");
+        assertNull(blogService.update(replacement, LANG).imageAlt());
+
+        replacement.setImageAlt("  Rows of seedlings  ");
+        assertEquals("Rows of seedlings", blogService.update(replacement, LANG).imageAlt());
+    }
+
+    @Test
     void searchNeedsSomethingToSearchForAndTrimsIt() {
         ApplicationException e = assertThrows(ApplicationException.class, () -> blogService.search("   ", 0, 20, LANG));
         assertEquals(HttpStatus.BAD_REQUEST, e.getHttpStatus());

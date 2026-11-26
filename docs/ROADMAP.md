@@ -21,6 +21,7 @@ gets split here first.
 | Step | Status |
 |---|---|
 | Category follows, public avatar data, question query and cache improvements, and AI model and answer response | Implemented on the feature step |
+| Recommend verified experts by followed topic reputation | Implemented |
 | Measure post-release API latency and verify generation with the deployed Gemini project | Pending live acceptance |
 | Assess a custom R2 image domain and references already stored with the current host | Pending |
 

@@ -42,6 +42,9 @@ public class Blog extends AuditModel<String> {
     @Column(name = BlogTable.IMAGE_URL)
     private String imageUrl;
 
+    @Column(length = 250)
+    private String imageAlt;
+
     @Embedded
     private AgriMetadata agri = new AgriMetadata();
 
