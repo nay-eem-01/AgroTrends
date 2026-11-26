@@ -69,6 +69,11 @@ public class BlogService {
 
     private final TagService tagService;
 
+    private static String coverAlt(String imageUrl, String description) {
+        return imageUrl == null || imageUrl.isBlank() || description == null || description.isBlank()
+                ? null : description.strip();
+    }
+
     public BlogResponse create(CreateBlogRequest request, String lang) {
         Category category = categoryService.findByIdWithException(request.getCategoryId());
 
@@ -80,6 +85,7 @@ public class BlogService {
         blog.setTitle(request.getTitle());
         blog.setContent(request.getContent());
         blog.setImageUrl(request.getImageUrl());
+        blog.setImageAlt(coverAlt(request.getImageUrl(), request.getImageAlt()));
         blog.setSubtitle(request.getSubtitle());
         blog.setAiCitable(request.getAiCitable() == null || request.getAiCitable());
         blog.setSlug(uniqueSlug(request.getTitle()));
@@ -190,6 +196,9 @@ public class BlogService {
         blog.setTitle(request.getTitle());
         blog.setContent(request.getContent());
         blog.setCategory(category);
+        if (request.getImageAlt() != null || !Objects.equals(blog.getImageUrl(), request.getImageUrl())) {
+            blog.setImageAlt(coverAlt(request.getImageUrl(), request.getImageAlt()));
+        }
         blog.setImageUrl(request.getImageUrl());
         // Omitted tags, agri info, subtitle or AI opt-out keep the current values, so clients that do not send them do
         // not wipe them.

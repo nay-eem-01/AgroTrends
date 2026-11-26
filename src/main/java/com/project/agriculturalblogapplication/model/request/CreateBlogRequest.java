@@ -30,6 +30,9 @@ public class CreateBlogRequest {
 
     private String imageUrl;
 
+    @Size(max = 250)
+    private String imageAlt;
+
     @Size(max = 200, message = ErrorCode.ERROR_SUBTITLE_TOO_LONG)
     private String subtitle;
     /** False keeps the post out of the AI's sources; omitted means true. */
